@@ -1,0 +1,75 @@
+name: fintrack
+description: A production-ready Flutter personal finance management app with expense tracking, budget planning, and investment tracking.
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  provider: ^6.1.1
+  
+  # Local Database
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  
+  # UI & Design
+  google_fonts: ^6.3.0
+  intl: ^0.20.2
+  cupertino_icons: ^1.0.8
+  flutter_colorpicker: ^1.0.3
+  dropdown_search: ^5.0.6
+  
+  # Charts & Analytics
+  fl_chart: ^0.63.0
+  
+  # Local Notifications
+  flutter_local_notifications: ^18.0.0
+  timezone: ^0.10.1
+  
+  # Image & File Handling
+  image_picker: ^1.0.0
+  path_provider: ^2.1.0
+  
+  # Biometric & Security
+  local_auth: ^2.3.0
+  encrypt: ^5.0.0
+  
+  # Data Export/Import
+  share_plus: ^7.2.2
+  csv: ^6.0.0
+  file_picker: ^5.5.0
+  
+  # Utilities
+  uuid: ^4.0.0
+  url_launcher: ^6.1.0
+  
+  # Animation
+  lottie: ^3.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  hive_generator: ^2.0.0
+  build_runner: ^2.4.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/animations/
+    - assets/icons/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/fintrack_icon.png"
+  remove_alpha_ios: true
