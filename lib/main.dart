@@ -21,6 +21,16 @@ import 'services/notification_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Ignore FlutterError for Google Fonts network issues
+  FlutterError.onError = (FlutterErrorDetails details) {
+    if (details.exception.toString().contains('google_fonts') ||
+        details.exception.toString().contains('fonts.gstatic.com')) {
+      // Ignore Google Fonts network errors
+      return;
+    }
+    FlutterError.presentError(details);
+  };
+
   // Initialize Hive database
   await HiveService.init();
 

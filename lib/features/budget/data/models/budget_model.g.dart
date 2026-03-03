@@ -26,13 +26,16 @@ class BudgetAdapter extends TypeAdapter<Budget> {
       enableAlerts: fields[6] as bool,
       month: fields[7] as int,
       year: fields[8] as int,
+      recurrenceType: fields[9] as String?,
+      endDate: fields[10] as DateTime?,
+      baselineId: fields[11] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Budget obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -50,7 +53,13 @@ class BudgetAdapter extends TypeAdapter<Budget> {
       ..writeByte(7)
       ..write(obj.month)
       ..writeByte(8)
-      ..write(obj.year);
+      ..write(obj.year)
+      ..writeByte(9)
+      ..write(obj.recurrenceType)
+      ..writeByte(10)
+      ..write(obj.endDate)
+      ..writeByte(11)
+      ..write(obj.baselineId);
   }
 
   @override

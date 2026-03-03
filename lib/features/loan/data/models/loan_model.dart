@@ -46,6 +46,9 @@ class Loan extends HiveObject {
   @HiveField(13)
   String? accountId; // Link to PaymentAccount
 
+  @HiveField(14)
+  DateTime? lastPaymentDate; // Track when last payment was made
+
   Loan({
     required this.id,
     required this.lender,
@@ -61,6 +64,7 @@ class Loan extends HiveObject {
     this.currency = 'USD',
     this.notes,
     this.accountId,
+    this.lastPaymentDate,
   });
 
   double get pendingAmount => borrowedAmount - paidAmount;
@@ -113,6 +117,7 @@ class Loan extends HiveObject {
     String? currency,
     String? notes,
     String? accountId,
+    DateTime? lastPaymentDate,
   }) {
     return Loan(
       id: id ?? this.id,
@@ -129,6 +134,7 @@ class Loan extends HiveObject {
       currency: currency ?? this.currency,
       notes: notes ?? this.notes,
       accountId: accountId ?? this.accountId,
+      lastPaymentDate: lastPaymentDate ?? this.lastPaymentDate,
     );
   }
 
@@ -148,6 +154,7 @@ class Loan extends HiveObject {
       'currency': currency,
       'notes': notes,
       'accountId': accountId,
+      'lastPaymentDate': lastPaymentDate?.toIso8601String(),
     };
   }
 
@@ -167,6 +174,9 @@ class Loan extends HiveObject {
       currency: json['currency'] ?? 'USD',
       notes: json['notes'],
       accountId: json['accountId'],
+      lastPaymentDate: json['lastPaymentDate'] != null
+          ? DateTime.parse(json['lastPaymentDate'])
+          : null,
     );
   }
 }

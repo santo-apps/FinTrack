@@ -11,6 +11,27 @@ import 'package:fintrack/features/expense/presentation/providers/expense_provide
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
 import 'package:fintrack/features/expense/presentation/pages/expense_list_screen.dart';
 
+bool shouldShowTransactionForAccount(Expense expense, String accountId) {
+  final isSourceAccount = expense.accountId == accountId;
+  if (isSourceAccount) return true;
+
+  final transactionType = expense.transactionType ?? 'expense';
+  final supportsDestinationView =
+      transactionType == 'transfer' || transactionType == 'payment';
+
+  return supportsDestinationView && expense.destinationAccountId == accountId;
+}
+
+bool isDebitTransactionForAccount(Expense expense, String accountId) {
+  final transactionType = expense.transactionType ?? 'expense';
+  final isDestinationSide = expense.destinationAccountId == accountId &&
+      expense.accountId != accountId;
+
+  return transactionType == 'expense' ||
+      transactionType == 'payment' ||
+      (transactionType == 'transfer' && !isDestinationSide);
+}
+
 class AccountTransactionScreen extends StatefulWidget {
   final PaymentAccount account;
 
@@ -58,9 +79,13 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
             );
           }
 
-          // Filter expenses for this account
+          // Filter expenses for this account.
+          // Show source-side transactions always, and destination-side
+          // entries for transfer/payment so both involved accounts can see
+          // the same transaction.
           final expenses = expenseProvider.expenses
-              .where((expense) => expense.accountId == currentAccount.id)
+              .where((expense) =>
+                  shouldShowTransactionForAccount(expense, currentAccount.id))
               .toList();
 
           // Sort by date descending
@@ -70,7 +95,10 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
           double totalDebits = 0;
 
           for (final expense in expenses) {
-            if (expense.amount > 0) {
+            final isDebit =
+                isDebitTransactionForAccount(expense, currentAccount.id);
+
+            if (isDebit && expense.amount > 0) {
               totalDebits += expense.amount;
             }
           }
@@ -181,6 +209,7 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
               const SizedBox(height: 12),
               ...expenses.map((expense) => _TransactionCard(
                     expense: expense,
+                    currentAccountId: currentAccount.id,
                     currencySymbol:
                         context.watch<SettingsProvider>().currencySymbol,
                     isCreditCard: currentAccount.accountType
@@ -1100,6 +1129,7 @@ class _SummaryItem extends StatelessWidget {
 
 class _TransactionCard extends StatelessWidget {
   final Expense expense;
+  final String currentAccountId;
   final String currencySymbol;
   final bool isCreditCard;
   final VoidCallback? onEdit;
@@ -1107,6 +1137,7 @@ class _TransactionCard extends StatelessWidget {
 
   const _TransactionCard({
     required this.expense,
+    required this.currentAccountId,
     required this.currencySymbol,
     this.isCreditCard = false,
     this.onEdit,
@@ -1152,6 +1183,10 @@ class _TransactionCard extends StatelessWidget {
 
   String _getTransactionLabel() {
     final transactionType = expense.transactionType ?? 'expense';
+    final isDestinationSide =
+        expense.destinationAccountId == currentAccountId &&
+            expense.accountId != currentAccountId;
+
     if (transactionType == 'income' && isCreditCard) {
       return 'Refund';
     }
@@ -1160,7 +1195,7 @@ class _TransactionCard extends StatelessWidget {
       case 'income':
         return 'Income';
       case 'transfer':
-        return 'Transfer';
+        return isDestinationSide ? 'Transfer In' : 'Transfer Out';
       case 'payment':
         return 'Payment';
       default:
@@ -1171,8 +1206,7 @@ class _TransactionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final transactionType = expense.transactionType ?? 'expense';
-    final isDebit =
-        transactionType == 'expense' || transactionType == 'transfer';
+    final isDebit = isDebitTransactionForAccount(expense, currentAccountId);
 
     // Determine colors and icons based on transaction type
     Color color;

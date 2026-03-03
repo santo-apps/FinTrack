@@ -36,12 +36,12 @@ class AppTheme {
         brightness: Brightness.light,
       ),
       scaffoldBackgroundColor: backgroundColor,
-      textTheme: GoogleFonts.poppinsTextTheme(),
+      textTheme: const TextTheme(),
       appBarTheme: AppBarTheme(
         backgroundColor: surfaceColor,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.poppins(
+        titleTextStyle: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: textColor,
@@ -77,11 +77,11 @@ class AppTheme {
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        labelStyle: GoogleFonts.poppins(
+        labelStyle: const TextStyle(
           color: textSecondaryColor,
           fontSize: 14,
         ),
-        hintStyle: GoogleFonts.poppins(
+        hintStyle: const TextStyle(
           color: textSecondaryColor,
           fontSize: 14,
         ),
@@ -102,7 +102,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.poppins(
+          textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -112,7 +112,7 @@ class AppTheme {
         style: TextButton.styleFrom(
           foregroundColor: primaryColor,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          textStyle: GoogleFonts.poppins(
+          textStyle: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -126,7 +126,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.poppins(
+          textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -155,14 +155,12 @@ class AppTheme {
         brightness: Brightness.dark,
       ),
       scaffoldBackgroundColor: darkBackgroundColor,
-      textTheme: GoogleFonts.poppinsTextTheme(
-        ThemeData(brightness: Brightness.dark).textTheme,
-      ),
+      textTheme: const TextTheme(),
       appBarTheme: AppBarTheme(
         backgroundColor: darkSurfaceColor,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.poppins(
+        titleTextStyle: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: darkTextColor,
@@ -194,11 +192,11 @@ class AppTheme {
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        labelStyle: GoogleFonts.poppins(
+        labelStyle: const TextStyle(
           color: darkTextSecondaryColor,
           fontSize: 14,
         ),
-        hintStyle: GoogleFonts.poppins(
+        hintStyle: const TextStyle(
           color: darkTextSecondaryColor,
           fontSize: 14,
         ),

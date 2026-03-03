@@ -2,6 +2,8 @@ import 'package:hive/hive.dart';
 
 part 'budget_model.g.dart';
 
+enum BudgetRecurrenceType { oneTime, monthly }
+
 @HiveType(typeId: 2)
 class Budget extends HiveObject {
   @HiveField(0)
@@ -31,6 +33,15 @@ class Budget extends HiveObject {
   @HiveField(8)
   int year;
 
+  @HiveField(9)
+  String? recurrenceType; // 'oneTime' or 'monthly'
+
+  @HiveField(10)
+  DateTime? endDate; // Optional end date for recurring budgets
+
+  @HiveField(11)
+  String? baselineId; // ID of parent budget if this is a recurring instance
+
   Budget({
     required this.id,
     this.monthlyIncome = 0, // Deprecated
@@ -41,6 +52,9 @@ class Budget extends HiveObject {
     this.enableAlerts = true,
     required this.month,
     required this.year,
+    this.recurrenceType = 'oneTime',
+    this.endDate,
+    this.baselineId,
   });
 
   Budget copyWith({
@@ -53,6 +67,9 @@ class Budget extends HiveObject {
     bool? enableAlerts,
     int? month,
     int? year,
+    String? recurrenceType,
+    DateTime? endDate,
+    String? baselineId,
   }) {
     return Budget(
       id: id ?? this.id,
@@ -64,6 +81,9 @@ class Budget extends HiveObject {
       enableAlerts: enableAlerts ?? this.enableAlerts,
       month: month ?? this.month,
       year: year ?? this.year,
+      recurrenceType: recurrenceType ?? this.recurrenceType,
+      endDate: endDate ?? this.endDate,
+      baselineId: baselineId ?? this.baselineId,
     );
   }
 
@@ -77,20 +97,26 @@ class Budget extends HiveObject {
         'enableAlerts': enableAlerts,
         'month': month,
         'year': year,
+        'recurrenceType': recurrenceType,
+        'endDate': endDate?.toIso8601String(),
+        'baselineId': baselineId,
       };
 
   static Budget fromJson(Map<String, dynamic> json) {
     return Budget(
-      id: json['id'] as String,
+      id: json['id'],
       monthlyIncome: (json['monthlyIncome'] as num?)?.toDouble() ?? 0,
       categoryLimits:
           Map<String, double>.from(json['categoryLimits'] as Map? ?? {}),
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-      currency: json['currency'] as String? ?? 'USD',
-      enableAlerts: json['enableAlerts'] as bool? ?? true,
-      month: json['month'] as int? ?? DateTime.now().month,
-      year: json['year'] as int? ?? DateTime.now().year,
+      createdAt: DateTime.parse(json['createdAt']),
+      updatedAt: DateTime.parse(json['updatedAt']),
+      currency: json['currency'] ?? 'USD',
+      enableAlerts: json['enableAlerts'] ?? true,
+      month: json['month'],
+      year: json['year'],
+      recurrenceType: json['recurrenceType'] ?? 'oneTime',
+      endDate: json['endDate'] != null ? DateTime.parse(json['endDate']) : null,
+      baselineId: json['baselineId'],
     );
   }
 }

@@ -633,113 +633,148 @@ class _DashboardScreenState extends State<DashboardScreen>
                 const SizedBox(height: 8),
 
                 // Budget Progress
-                if (budget != null) ...[
-                  Text(
-                    'Budget Status',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textColor,
-                    ),
+                Text(
+                  'Budget Status',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textColor,
                   ),
-                  const SizedBox(height: 6),
-                  InkWell(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const BudgetPlannerScreen(
-                            showAppBar: true,
-                            showBackButton: true,
-                          ),
+                ),
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const BudgetPlannerScreen(
+                          showAppBar: true,
+                          showBackButton: true,
                         ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: budget != null
+                          ? Column(
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      'Budget Used',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 10,
-                                        color: AppTheme.textSecondaryColor,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Budget Used',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 10,
+                                            color: AppTheme.textSecondaryColor,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${(budgetUsage * 100).toStringAsFixed(1)}%',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            color: budgetUsage > 0.8
+                                                ? AppTheme.errorColor
+                                                : AppTheme.successColor,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    Text(
-                                      '${(budgetUsage * 100).toStringAsFixed(1)}%',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                        color: budgetUsage > 0.8
-                                            ? AppTheme.errorColor
-                                            : AppTheme.successColor,
+                                    SizedBox(
+                                      width: 50,
+                                      height: 50,
+                                      child: _CircularProgressIndicator(
+                                        value: budgetUsage.toDouble(),
+                                        size: 50,
+                                        strokeWidth: 3.5,
                                       ),
                                     ),
                                   ],
                                 ),
-                                SizedBox(
-                                  width: 50,
-                                  height: 50,
-                                  child: _CircularProgressIndicator(
-                                    value: budgetUsage.toDouble(),
-                                    size: 50,
-                                    strokeWidth: 3.5,
-                                  ),
+                                const SizedBox(height: 6),
+                                Divider(
+                                  color: AppTheme.borderColor,
+                                  height: 1,
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Spending: ${AppUtils.formatCurrency(monthlyExpense, currencySymbol: currencySymbol)}',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 10,
+                                        color: AppTheme.textSecondaryColor,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Budget: ${AppUtils.formatCurrency(totalBudget, currencySymbol: currencySymbol)}',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 10,
+                                        color: AppTheme.textSecondaryColor,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
-                            ),
-                            const SizedBox(height: 6),
-                            Divider(
-                              color: AppTheme.borderColor,
-                              height: 1,
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Spending: ${AppUtils.formatCurrency(monthlyExpense, currencySymbol: currencySymbol)}',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 10,
-                                    color: AppTheme.textSecondaryColor,
+                            )
+                          : SizedBox(
+                              width: double.infinity,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.pie_chart_outline,
+                                    size: 40,
+                                    color:
+                                        AppTheme.primaryColor.withOpacity(0.6),
                                   ),
-                                ),
-                                Text(
-                                  'Budget: ${AppUtils.formatCurrency(totalBudget, currencySymbol: currencySymbol)}',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 10,
-                                    color: AppTheme.textSecondaryColor,
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'No Budget Set',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.textColor,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Tap to create your monthly budget',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 10,
+                                      color: AppTheme.textSecondaryColor,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
-                        ),
-                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                ],
+                ),
+                const SizedBox(height: 4),
 
                 // Goals Section
                 if (goalProvider.activeGoals.isNotEmpty) ...[
@@ -770,9 +805,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                         color: Colors.white,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
@@ -929,8 +964,8 @@ class _OverviewCard extends StatelessWidget {
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
@@ -994,6 +1029,13 @@ class _OverviewListItem extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [

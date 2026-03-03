@@ -176,6 +176,10 @@ class HiveService {
     await _budgetBox.put(budget.id, budget);
   }
 
+  static Future<void> deleteBudget(String budgetId) async {
+    await _budgetBox.delete(budgetId);
+  }
+
   static Budget? getBudget() {
     final now = DateTime.now();
     return getBudgetForMonth(now.month, now.year);
@@ -192,6 +196,10 @@ class HiveService {
 
   static List<Budget> getAllBudgets() {
     return _budgetBox.values.toList();
+  }
+
+  static Future<void> clearAllBudgets() async {
+    await _budgetBox.clear();
   }
 
   // Subscription operations
@@ -539,6 +547,7 @@ class HiveService {
 
       final paymentAccounts =
           (data['paymentAccounts'] as List?)?.cast<Map<String, dynamic>>() ??
+              (data['accounts'] as List?)?.cast<Map<String, dynamic>>() ??
               [];
       for (var accountData in paymentAccounts) {
         final account = PaymentAccount(
@@ -566,6 +575,7 @@ class HiveService {
               : null,
           cardNetwork: accountData['cardNetwork'],
           linkedAccountId: accountData['linkedAccountId'],
+          billingCycleDay: accountData['billingCycleDay'] as int?,
         );
         await addPaymentAccount(account);
       }

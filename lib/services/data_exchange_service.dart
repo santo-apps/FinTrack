@@ -325,6 +325,7 @@ class DataExchangeService {
                 : null,
             cardNetwork: accountData['cardNetwork'],
             linkedAccountId: accountData['linkedAccountId'],
+            billingCycleDay: accountData['billingCycleDay'] as int?,
           );
           await HiveService.addPaymentAccount(account);
         }

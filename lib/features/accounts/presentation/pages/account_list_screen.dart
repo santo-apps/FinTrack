@@ -190,6 +190,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                             currencySymbol: currencySymbol,
                             onTap: () => _viewAccountTransactions(account),
                             onEdit: () => _editAccount(account),
+                            onDelete: () => _deleteAccount(account),
                           )),
                     ],
                     const SizedBox(height: 14),
@@ -313,12 +314,14 @@ class _AccountCard extends StatelessWidget {
   final String currencySymbol;
   final VoidCallback onTap;
   final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   const _AccountCard({
     required this.account,
     required this.currencySymbol,
     required this.onTap,
     required this.onEdit,
+    required this.onDelete,
   });
 
   @override
@@ -327,118 +330,139 @@ class _AccountCard extends StatelessWidget {
         ? Color(int.parse(account.color!.replaceFirst('#', '0xFF')))
         : AppTheme.primaryColor;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            children: [
-              // Icon
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
+    return Dismissible(
+      key: ValueKey(account.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: const Icon(Icons.delete_outline, color: Colors.white),
+      ),
+      onDismissed: (direction) => onDelete(),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 10),
+        elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                // Icon
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    _getIcon(),
+                    color: color,
+                    size: 22,
+                  ),
                 ),
-                child: Icon(
-                  _getIcon(),
-                  color: color,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
+                const SizedBox(width: 12),
 
-              // Account Info (expanded to fill available space)
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            account.name,
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.textColor,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                // Account Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        account.name,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textColor,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      account.typeLabel +
-                          (account.bankName != null
-                              ? ' • ${account.bankName}'
-                              : ''),
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: AppTheme.textSecondaryColor,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 3),
+                      Text(
+                        account.typeLabel +
+                            (account.bankName != null
+                                ? ' • ${account.bankName}'
+                                : ''),
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: AppTheme.textSecondaryColor,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                // Balance
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      account.accountType.toLowerCase().contains('credit')
+                          ? 'Outstanding'
+                          : 'Balance',
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        color: AppTheme.textSecondaryColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      AppUtils.formatCurrency(
+                        account.balance,
+                        currencySymbol: currencySymbol,
+                      ),
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color:
+                            account.accountType.toLowerCase().contains('credit')
+                                ? AppTheme.errorColor
+                                : AppTheme.textColor,
+                      ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
+                const SizedBox(width: 8),
 
-              // Balance
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    account.accountType.toLowerCase().contains('credit')
-                        ? 'Outstanding'
-                        : 'Balance',
-                    style: GoogleFonts.poppins(
-                      fontSize: 10,
-                      color: AppTheme.textSecondaryColor,
-                      fontWeight: FontWeight.w500,
-                    ),
+                // Action Buttons
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: Icon(Icons.edit,
+                        color: AppTheme.primaryColor, size: 18),
+                    onPressed: onEdit,
+                    tooltip: 'Edit',
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    AppUtils.formatCurrency(
-                      account.balance,
-                      currencySymbol: currencySymbol,
-                    ),
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color:
-                          account.accountType.toLowerCase().contains('credit')
-                              ? AppTheme.errorColor
-                              : AppTheme.textColor,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 8),
-
-              // Action Button (Edit)
-              SizedBox(
-                width: 28,
-                height: 28,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon:
-                      Icon(Icons.edit, color: AppTheme.primaryColor, size: 18),
-                  onPressed: onEdit,
-                  tooltip: 'Edit',
                 ),
-              ),
-            ],
+                const SizedBox(width: 4),
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.delete_outline,
+                        color: Colors.red, size: 18),
+                    onPressed: onDelete,
+                    tooltip: 'Delete',
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

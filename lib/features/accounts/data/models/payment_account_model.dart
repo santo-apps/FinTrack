@@ -59,6 +59,9 @@ class PaymentAccount extends HiveObject {
   String?
       linkedAccountId; // ID of linked parent account (e.g., debit card linked to bank account)
 
+  @HiveField(18)
+  int? billingCycleDay; // Day of month when credit card bill is due (1-31)
+
   PaymentAccount({
     required this.id,
     required this.name,
@@ -78,6 +81,7 @@ class PaymentAccount extends HiveObject {
     this.expiryDate,
     this.cardNetwork,
     this.linkedAccountId,
+    this.billingCycleDay,
   });
 
   PaymentAccount copyWith({
@@ -99,6 +103,7 @@ class PaymentAccount extends HiveObject {
     DateTime? expiryDate,
     String? cardNetwork,
     String? linkedAccountId,
+    int? billingCycleDay,
   }) {
     return PaymentAccount(
       id: id ?? this.id,
@@ -119,6 +124,7 @@ class PaymentAccount extends HiveObject {
       expiryDate: expiryDate ?? this.expiryDate,
       cardNetwork: cardNetwork ?? this.cardNetwork,
       linkedAccountId: linkedAccountId ?? this.linkedAccountId,
+      billingCycleDay: billingCycleDay ?? this.billingCycleDay,
     );
   }
 
@@ -145,6 +151,20 @@ class PaymentAccount extends HiveObject {
     return DateTime.now().isAfter(expiryDate!);
   }
 
+  DateTime? get nextBillingDate {
+    if (billingCycleDay == null) return null;
+
+    final now = DateTime.now();
+    var nextDate = DateTime(now.year, now.month, billingCycleDay!);
+
+    // If the billing date has already passed this month, get next month's date
+    if (nextDate.isBefore(now) || nextDate.isAtSameMomentAs(now)) {
+      nextDate = DateTime(now.year, now.month + 1, billingCycleDay!);
+    }
+
+    return nextDate;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -165,6 +185,7 @@ class PaymentAccount extends HiveObject {
       'expiryDate': expiryDate?.toIso8601String(),
       'cardNetwork': cardNetwork,
       'linkedAccountId': linkedAccountId,
+      'billingCycleDay': billingCycleDay,
     };
   }
 

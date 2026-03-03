@@ -71,9 +71,21 @@ class LoanProvider extends ChangeNotifier {
   Future<void> makePayment(String loanId, double amount) async {
     try {
       final loan = _loans.firstWhere((l) => l.id == loanId);
+      final now = DateTime.now();
       final updatedLoan = loan.copyWith(
         paidAmount: loan.paidAmount + amount,
+        lastPaymentDate: now, // Track when payment was made
       );
+
+      if (kDebugMode) {
+        print('💰 Making payment for loan: ${loan.lender} (${loan.id})');
+        print('  Amount: $amount');
+        print('  Previous paid amount: ${loan.paidAmount}');
+        print('  New paid amount: ${updatedLoan.paidAmount}');
+        print('  Last payment date: $now');
+        print('  Next EMI date: ${loan.nextEmiDate}');
+      }
+
       await updateLoan(updatedLoan);
     } catch (e) {
       rethrow;
