@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/features/goals/data/models/financial_goal_model.dart';
 import 'package:fintrack/features/goals/presentation/providers/goal_provider.dart';
@@ -215,6 +216,7 @@ class _GoalTrackerScreenState extends State<GoalTrackerScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'goal_tracker_fab_add',
         onPressed: () => _showAddEditDialog(context),
         tooltip: 'Add Goal',
         child: const Icon(Icons.add),
@@ -476,121 +478,135 @@ class _AddEditGoalScreenState extends State<AddEditGoalScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Container(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.goal != null ? 'Edit Goal' : 'Create Goal',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: 'Goal Name',
-                hintText: 'e.g., Save for Vacation',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+    return Material(
+      child: SingleChildScrollView(
+        child: Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            left: 16,
+            right: 16,
+            top: 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    widget.goal != null ? 'Edit Goal' : 'Create Goal',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 16),
-            InputDecorator(
-              decoration: InputDecoration(
-                labelText: 'Category',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedCategory,
-                  isExpanded: true,
-                  items: const [
-                    'Savings',
-                    'Travel',
-                    'Home',
-                    'Education',
-                    'Car',
-                    'Wedding',
-                    'Investment',
-                    'Other'
-                  ]
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
-                  onChanged: (value) =>
-                      setState(() => _selectedCategory = value ?? 'Savings'),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _targetController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: 'Target Amount',
-                hintText: '0.00',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _currentController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: 'Current Amount',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            InkWell(
-              onTap: () => _selectDate(context),
-              child: InputDecorator(
+              const SizedBox(height: 20),
+              TextField(
+                controller: _nameController,
                 decoration: InputDecoration(
-                  labelText: 'Target Date',
+                  labelText: 'Goal Name',
+                  hintText: 'e.g., Save for Vacation',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: Text(_formatDate(_selectedTargetDate)),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _descriptionController,
-              maxLines: 2,
-              decoration: InputDecoration(
-                labelText: 'Description (Optional)',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+              const SizedBox(height: 16),
+              InputDecorator(
+                decoration: InputDecoration(
+                  labelText: 'Category',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedCategory,
+                    isExpanded: true,
+                    items: const [
+                      'Savings',
+                      'Travel',
+                      'Home',
+                      'Education',
+                      'Car',
+                      'Wedding',
+                      'Investment',
+                      'Other'
+                    ]
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
+                    onChanged: (value) =>
+                        setState(() => _selectedCategory = value ?? 'Savings'),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => _saveGoal(context),
-                child:
-                    Text(widget.goal != null ? 'Update Goal' : 'Create Goal'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _targetController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: 'Target Amount',
+                  hintText: '0.00',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              TextField(
+                controller: _currentController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: 'Current Amount',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: () => _selectDate(context),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Target Date',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(_formatDate(_selectedTargetDate)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _descriptionController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  labelText: 'Description (Optional)',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => _saveGoal(context),
+                  child:
+                      Text(widget.goal != null ? 'Update Goal' : 'Create Goal'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

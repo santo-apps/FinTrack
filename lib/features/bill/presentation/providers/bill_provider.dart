@@ -151,33 +151,22 @@ class BillProvider extends ChangeNotifier {
   /// Get reminders filtered by month
   List<BillReminder> getRemindersForMonth(DateTime month) {
     final allReminders = getAllReminders();
-    final now = DateTime.now();
-    final isCurrentMonth = month.year == now.year && month.month == now.month;
 
     if (kDebugMode) {
       print('🗓️ Filtering for month: ${month.year}-${month.month}');
       print('🗓️ All reminders before filtering: ${allReminders.length}');
-      print('🗓️ Is current month: $isCurrentMonth');
     }
 
     final filtered = allReminders.where((reminder) {
-      // For credit cards with outstanding balance, show in current month regardless of due date
-      if (isCurrentMonth &&
-          reminder.type == BillReminderType.creditCard &&
-          reminder.amount > 0 &&
-          reminder.status != BillReminderStatus.completed) {
-        if (kDebugMode) {
-          print('  ✅ Including credit card in current month: ${reminder.name}');
-        }
-        return true;
-      }
-
-      // For all other reminders, match by due date month
+      // Match by due date month for all reminders
       final matches = reminder.dueDate.year == month.year &&
           reminder.dueDate.month == month.month;
 
       if (kDebugMode && !matches) {
-        print('  Filtered out: ${reminder.name} (${reminder.dueDate})');
+        print('  ❌ Filtered out: ${reminder.name} (${reminder.dueDate})');
+      }
+      if (kDebugMode && matches) {
+        print('  ✅ Including: ${reminder.name} (${reminder.dueDate})');
       }
 
       return matches;

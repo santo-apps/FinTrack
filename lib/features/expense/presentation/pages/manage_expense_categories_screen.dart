@@ -119,6 +119,7 @@ class _ManageExpenseCategoriesScreenState
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'manage_expense_categories_fab',
         onPressed: () => _showCategoryDialog(context),
         icon: const Icon(Icons.add),
         label: const Text('Add Category'),

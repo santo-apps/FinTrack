@@ -202,6 +202,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'account_list_fab_add',
         onPressed: _addAccount,
         icon: const Icon(Icons.add),
         label: const Text('Add Account'),

@@ -3,6 +3,13 @@ import 'package:fintrack/core/constants/app_constants.dart';
 import 'package:fintrack/database/hive_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
+  static const List<String> _supportedOverviewItems = [
+    'monthly_spending',
+    'subscriptions',
+    'portfolio_value',
+    'outstanding_loans',
+  ];
+
   bool _isDarkMode = false;
   bool _isBiometricEnabled = false;
   bool _isPINEnabled = false;
@@ -15,9 +22,7 @@ class SettingsProvider extends ChangeNotifier {
     'monthly_spending',
     'subscriptions',
     'portfolio_value',
-    'total_balance',
     'outstanding_loans',
-    'unpaid_bills'
   ];
   List<String> _customCurrencies = [];
   Map<String, String> _customCurrencySymbols = {};
@@ -79,12 +84,11 @@ class SettingsProvider extends ChangeNotifier {
           'monthly_spending',
           'subscriptions',
           'portfolio_value',
-          'total_balance',
           'outstanding_loans',
-          'unpaid_bills'
         ],
       ),
     );
+    _overviewItems = _normalizeOverviewItems(_overviewItems);
     _customCurrencies = List<String>.from(
       HiveService.getSetting('custom_currencies', defaultValue: <String>[]),
     );
@@ -216,9 +220,24 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> setOverviewItems(List<String> items) async {
-    _overviewItems = List<String>.from(items);
+    _overviewItems = _normalizeOverviewItems(items);
     await HiveService.saveSetting('overview_items', _overviewItems);
     notifyListeners();
+  }
+
+  List<String> _normalizeOverviewItems(List<String> items) {
+    final normalized = <String>[];
+    for (final id in items) {
+      if (_supportedOverviewItems.contains(id) && !normalized.contains(id)) {
+        normalized.add(id);
+      }
+    }
+
+    if (normalized.isEmpty) {
+      return ['monthly_spending'];
+    }
+
+    return normalized;
   }
 
   Future<void> refreshSettings() async {

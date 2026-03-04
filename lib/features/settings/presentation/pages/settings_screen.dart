@@ -208,9 +208,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildModuleCard(
                 context,
                 icon: Icons.navigation,
-                title: 'Navigation & Quick Actions',
-                description:
-                    'Customize bottom navigation and dashboard shortcuts',
+                title: 'Navigation & Home FAB',
+                description: 'Customize bottom navigation and Home FAB actions',
                 color: Colors.blue,
                 onTap: () {
                   Navigator.push(

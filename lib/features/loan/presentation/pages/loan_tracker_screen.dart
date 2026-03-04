@@ -224,6 +224,7 @@ class _LoanTrackerScreenState extends State<LoanTrackerScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'loan_tracker_fab_add',
         onPressed: () => _showAddLoanDialog(context),
         child: const Icon(Icons.add),
       ),

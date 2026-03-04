@@ -5,6 +5,17 @@ import 'package:fintrack/features/investment/data/models/investment_model.dart';
 class InvestmentProvider extends ChangeNotifier {
   List<Investment> _investments = [];
 
+  double _effectiveCurrentValue(Investment investment) {
+    final marketValue = investment.getCurrentValue();
+    final investedValue = investment.getTotalInvestmentValue();
+
+    if (marketValue <= 0 && investedValue > 0) {
+      return investedValue;
+    }
+
+    return marketValue;
+  }
+
   List<Investment> get investments => _investments;
 
   InvestmentProvider() {
@@ -54,11 +65,25 @@ class InvestmentProvider extends ChangeNotifier {
   }
 
   double getTotalPortfolioValue() {
-    return HiveService.getTotalPortfolioValue();
+    if (_investments.isEmpty) {
+      _loadInvestments();
+    }
+
+    return _investments.fold<double>(
+      0,
+      (sum, inv) => sum + _effectiveCurrentValue(inv),
+    );
   }
 
   double getTotalInvestmentCost() {
-    return HiveService.getTotalInvestmentCost();
+    if (_investments.isEmpty) {
+      _loadInvestments();
+    }
+
+    return _investments.fold<double>(
+      0,
+      (sum, inv) => sum + inv.getTotalInvestmentValue(),
+    );
   }
 
   double getTotalGainLoss() {
@@ -82,7 +107,7 @@ class InvestmentProvider extends ChangeNotifier {
     if (total == 0) return allocation;
 
     for (var investment in _investments) {
-      final value = investment.getCurrentValue();
+      final value = _effectiveCurrentValue(investment);
       final percentage = (value / total) * 100;
       allocation[investment.type] =
           (allocation[investment.type] ?? 0) + percentage;

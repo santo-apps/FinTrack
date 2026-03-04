@@ -3,792 +3,1216 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
+import 'package:fintrack/features/dashboard/presentation/providers/home_viewmodel.dart';
+import 'package:fintrack/features/dashboard/presentation/pages/asset_breakdown_screen.dart';
+import 'package:fintrack/features/dashboard/presentation/pages/networth_breakdown_screen.dart';
+import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
+import 'package:fintrack/features/loan/presentation/pages/loan_tracker_screen.dart';
+import 'package:fintrack/features/budget/presentation/pages/budget_planner_screen.dart';
+import 'package:fintrack/features/goals/presentation/pages/goal_tracker_screen.dart';
+import 'package:fintrack/features/bill/presentation/pages/bill_list_screen.dart';
+import 'package:fintrack/features/investment/presentation/pages/investment_portfolio_screen.dart';
+import 'package:fintrack/features/expense/presentation/pages/expense_list_screen.dart';
 import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
 import 'package:fintrack/features/budget/presentation/providers/budget_provider.dart';
-import 'package:fintrack/features/subscription/presentation/providers/subscription_provider.dart';
 import 'package:fintrack/features/investment/presentation/providers/investment_provider.dart';
-import 'package:fintrack/features/goals/presentation/providers/goal_provider.dart';
-import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
 import 'package:fintrack/features/loan/presentation/providers/loan_provider.dart';
-import 'package:fintrack/features/bill/presentation/providers/bill_provider.dart';
 import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
-import 'package:fintrack/services/analytics_service.dart';
-import 'package:fintrack/features/expense/presentation/pages/expense_list_screen.dart';
-import 'package:fintrack/features/budget/presentation/pages/budget_planner_screen.dart';
-import 'package:fintrack/features/subscription/presentation/pages/subscription_list_screen.dart';
-import 'package:fintrack/features/investment/presentation/pages/investment_portfolio_screen.dart';
-import 'package:fintrack/features/goals/presentation/pages/goal_tracker_screen.dart';
-import 'package:fintrack/features/loan/presentation/pages/loan_tracker_screen.dart';
-import 'package:fintrack/features/bill/presentation/pages/bill_list_screen.dart';
-import 'package:fintrack/features/accounts/presentation/pages/account_list_screen.dart';
-import 'package:fintrack/features/settings/presentation/pages/settings_navigation_screen.dart';
+import 'package:fintrack/features/goals/presentation/providers/goal_provider.dart';
+import 'package:fintrack/features/bill/presentation/providers/bill_provider.dart';
 
-class DashboardScreen extends StatefulWidget {
+/// DashboardScreen: Premium financial control center
+/// Clean, calm, structured – manual discipline MVP
+class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => HomeViewModel(
+        expenseProvider: Provider.of<ExpenseProvider>(context, listen: false),
+        budgetProvider: Provider.of<BudgetProvider>(context, listen: false),
+        investmentProvider: Provider.of<InvestmentProvider>(context, listen: false),
+        loanProvider: Provider.of<LoanProvider>(context, listen: false),
+        accountProvider: Provider.of<PaymentAccountProvider>(context, listen: false),
+        goalProvider: Provider.of<GoalProvider>(context, listen: false),
+        billProvider: Provider.of<BillProvider>(context, listen: false),
+      ),
+      child: const _DashboardScreenContent(),
+    );
+  }
 }
 
-class _DashboardScreenState extends State<DashboardScreen>
+class _DashboardScreenContent extends StatefulWidget {
+  const _DashboardScreenContent();
+
+  @override
+  State<_DashboardScreenContent> createState() => _DashboardScreenContentState();
+}
+
+class _DashboardScreenContentState extends State<_DashboardScreenContent>
     with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  bool _overviewCards = true;
+  late ScrollController _scrollController;
+  late AnimationController _netWorthAnimationController;
+  double _previousNetWorth = 0;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+    _scrollController = ScrollController();
+    _netWorthAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    _animationController.forward();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.jumpTo(0); // Reset to top
+    });
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _scrollController.dispose();
+    _netWorthAnimationController.dispose();
     super.dispose();
   }
 
-  Future<void> _refreshData() async {
-    if (mounted) {
-      _animationController.reset();
-      _animationController.forward();
-      context.read<ExpenseProvider>().refreshData();
-      context.read<BudgetProvider>().refreshData();
-      context.read<SubscriptionProvider>().refreshData();
-      context.read<InvestmentProvider>().refreshData();
-      context.read<GoalProvider>().refreshData();
-      await context.read<LoanProvider>().initLoans();
-      await context.read<BillProvider>().refreshData();
-      context.read<PaymentAccountProvider>().refreshData();
-    }
+  Future<void> _refresh() async {
+    final viewModel = context.read<HomeViewModel>();
+    await viewModel.refresh();
   }
 
   @override
   Widget build(BuildContext context) {
-    final currencySymbol = context.watch<SettingsProvider>().currencySymbol;
-    final loanProvider = context.watch<LoanProvider>();
-    final billProvider = context.watch<BillProvider>();
-    final accountProvider = context.watch<PaymentAccountProvider>();
-    return RefreshIndicator(
-      onRefresh: _refreshData,
-      child: Consumer5<ExpenseProvider, BudgetProvider, SubscriptionProvider,
-          InvestmentProvider, GoalProvider>(
-        builder: (context, expenseProvider, budgetProvider,
-            subscriptionProvider, investmentProvider, goalProvider, _) {
-          final monthlyExpense = expenseProvider.getTotalMonthlyExpense();
-          final now = DateTime.now();
-          final budget = budgetProvider.getBudgetForMonth(now.month, now.year);
-          final totalBudget = budget?.categoryLimits.values
-                  .fold<double>(0, (sum, amount) => sum + amount) ??
-              0;
-          final portfolioValue = investmentProvider.getTotalPortfolioValue();
-          final totalAccountBalance = accountProvider.getTotalBalance();
-          final totalCreditCardBalance =
-              accountProvider.getTotalCreditCardBalance();
-          final totalLoansOutstanding =
-              loanProvider.getTotalOutstandingAmount();
-          final totalUnpaidBillsAmount =
-              billProvider.getTotalUnpaidBillsAmount();
-          final netWorth = AnalyticsService.calculateDetailedNetWorth(
-            portfolioValue,
-            totalAccountBalance,
-            totalLoansOutstanding,
-            totalCreditCardBalance,
-            totalUnpaidBillsAmount,
-          );
-          final monthlySubscriptions =
-              subscriptionProvider.getMonthlySubscriptionTotal();
-          final budgetUsage = budget != null && totalBudget > 0
-              ? (monthlyExpense / totalBudget).clamp(0, 1)
-              : 0.0;
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _refresh,
+          child: Consumer2<HomeViewModel, SettingsProvider>(
+            builder: (context, viewModel, settings, _) {
+              // Animate net worth if changed
+              if (viewModel.netWorth != _previousNetWorth) {
+                _netWorthAnimationController.forward(from: 0);
+                _previousNetWorth = viewModel.netWorth;
+              }
 
-          // All available overview items
-          final allOverviewItems = <String, _OverviewItem>{
-            'monthly_spending': _OverviewItem(
-              icon: Icons.trending_down,
-              label: 'Monthly Spending',
-              value: AppUtils.formatCurrency(
-                monthlyExpense,
-                currencySymbol: currencySymbol,
-              ),
-              accentColor: const Color(0xFFD64545),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const ExpenseListScreen(
-                      showAppBar: true,
-                      showBackButton: true,
+              return SingleChildScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 1️⃣ Snapshot Card
+                    _SnapshotCard(
+                      assets: viewModel.assets,
+                      investmentAsset: viewModel.assetInvestmentComponent,
+                      accountAsset: viewModel.assetAccountComponent,
+                      loans: viewModel.loans,
+                      netWorth: viewModel.netWorth,
+                      todaySpend: viewModel.todaySpend,
+                      remainingBudget: viewModel.remainingBudget,
+                      savingsRate: viewModel.savingsRate,
+                      currencySymbol: settings.currencySymbol,
+                      animation: _netWorthAnimationController,
                     ),
-                  ),
-                );
-              },
-            ),
-            'subscriptions': _OverviewItem(
-              icon: Icons.subscriptions,
-              label: 'Subscriptions',
-              value: AppUtils.formatCurrency(
-                monthlySubscriptions,
-                currencySymbol: currencySymbol,
-              ),
-              accentColor: const Color(0xFF1C5D99),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const SubscriptionListScreen(
-                      showAppBar: true,
-                      showBackButton: true,
-                    ),
-                  ),
-                );
-              },
-            ),
-            'portfolio_value': _OverviewItem(
-              icon: Icons.trending_up,
-              label: 'Portfolio Value',
-              value: AppUtils.formatCurrency(
-                portfolioValue,
-                currencySymbol: currencySymbol,
-              ),
-              accentColor: const Color(0xFFB95000),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const InvestmentPortfolioScreen(
-                      showAppBar: true,
-                      showBackButton: true,
-                    ),
-                  ),
-                );
-              },
-            ),
-            'total_balance': _OverviewItem(
-              icon: Icons.account_balance_wallet,
-              label: 'Total Balance',
-              value: AppUtils.formatCurrency(
-                totalAccountBalance,
-                currencySymbol: currencySymbol,
-              ),
-              accentColor: const Color(0xFF2E7D32),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        const AccountListScreen(showBackButton: true),
-                  ),
-                );
-              },
-            ),
-            'outstanding_loans': _OverviewItem(
-              icon: Icons.account_balance,
-              label: 'Outstanding Loans',
-              value: AppUtils.formatCurrency(
-                totalLoansOutstanding,
-                currencySymbol: currencySymbol,
-              ),
-              accentColor: const Color(0xFF7B1E3A),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const LoanTrackerScreen(
-                      showAppBar: true,
-                      showBackButton: true,
-                    ),
-                  ),
-                );
-              },
-            ),
-            'unpaid_bills': _OverviewItem(
-              icon: Icons.calendar_today,
-              label: 'Unpaid Bills',
-              value: AppUtils.formatCurrency(
-                totalUnpaidBillsAmount,
-                currencySymbol: currencySymbol,
-              ),
-              accentColor: const Color(0xFF9A6B00),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const BillListScreen(
-                      showAppBar: true,
-                      showBackButton: true,
-                    ),
-                  ),
-                );
-              },
-            ),
-          };
+                    const SizedBox(height: 16),
 
-          // Get settings provider for user preferences
-          final settingsProvider = context.watch<SettingsProvider>();
-
-          // Filter and order overview items based on user preferences
-          final overviewItems = settingsProvider.overviewItems
-              .where((id) => allOverviewItems.containsKey(id))
-              .map((id) => allOverviewItems[id]!)
-              .toList();
-
-          // All available quick actions
-          final allQuickActions = <String, _QuickActionItem>{
-            'expenses': _QuickActionItem(
-              icon: Icons.receipt_long,
-              label: 'Expenses',
-              color: const Color(0xFF2D2A4A),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const ExpenseListScreen(
-                      showAppBar: true,
-                      showBackButton: true,
-                    ),
-                  ),
-                );
-              },
-            ),
-            'accounts': _QuickActionItem(
-              icon: Icons.account_balance_wallet,
-              label: 'Accounts',
-              color: const Color(0xFF0C6E62),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        const AccountListScreen(showBackButton: true),
-                  ),
-                );
-              },
-            ),
-            'budget': _QuickActionItem(
-              icon: Icons.pie_chart,
-              label: 'Budget',
-              color: const Color(0xFF5E2B97),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const BudgetPlannerScreen(
-                      showAppBar: true,
-                      showBackButton: true,
-                    ),
-                  ),
-                );
-              },
-            ),
-            'bills': _QuickActionItem(
-              icon: Icons.calendar_today,
-              label: 'Bills',
-              color: const Color(0xFFB95C00),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const BillListScreen(
-                      showAppBar: true,
-                      showBackButton: true,
-                    ),
-                  ),
-                );
-              },
-            ),
-            'subscriptions': _QuickActionItem(
-              icon: Icons.subscriptions,
-              label: 'Subscriptions',
-              color: const Color(0xFF6A1B9A),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const SubscriptionListScreen(
-                      showAppBar: true,
-                      showBackButton: true,
-                    ),
-                  ),
-                );
-              },
-            ),
-            'investments': _QuickActionItem(
-              icon: Icons.trending_up,
-              label: 'Investments',
-              color: const Color(0xFF00796B),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const InvestmentPortfolioScreen(
-                      showAppBar: true,
-                      showBackButton: true,
-                    ),
-                  ),
-                );
-              },
-            ),
-            'goals': _QuickActionItem(
-              icon: Icons.flag_outlined,
-              label: 'Goals',
-              color: const Color(0xFFC62828),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const GoalTrackerScreen(
-                      showAppBar: true,
-                      showBackButton: true,
-                    ),
-                  ),
-                );
-              },
-            ),
-            'loans': _QuickActionItem(
-              icon: Icons.account_balance,
-              label: 'Loans',
-              color: const Color(0xFF4527A0),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const LoanTrackerScreen(
-                      showAppBar: true,
-                      showBackButton: true,
-                    ),
-                  ),
-                );
-              },
-            ),
-          };
-
-          // Get selected quick actions from settings
-          final quickActions = <_QuickActionItem>[];
-          for (final actionId in settingsProvider.quickActionItems) {
-            if (allQuickActions.containsKey(actionId)) {
-              quickActions.add(allQuickActions[actionId]!);
-            }
-          }
-
-          return SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Animated Header
-                SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, -0.2),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: _animationController,
-                    curve: Curves.easeOut,
-                  )),
-                  child: Text(
-                    'Welcome Back!',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-
-                // Hero Net Worth Card
-                ScaleTransition(
-                  scale: Tween<double>(begin: 0.8, end: 1.0).animate(
-                    CurvedAnimation(
-                      parent: _animationController,
-                      curve: Curves.easeOut,
-                    ),
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppTheme.primaryColor,
-                          AppTheme.accentColor,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                    // 1.5️⃣ Investment Summary (if have investments)
+                    if (viewModel.investmentValue > 0) ...[
+                      _InvestmentSummaryCard(
+                        portfolioValue: viewModel.investmentValue,
+                        investmentCost: viewModel.investmentCost,
+                        gainLoss: viewModel.investmentGainLoss,
+                        gainLossPercent: viewModel.investmentGainLossPercent,
+                        currencySymbol: settings.currencySymbol,
                       ),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryColor.withOpacity(0.25),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
+                      const SizedBox(height: 16),
+                    ],
+
+                    // 2️⃣ Welcome Back Banner (conditional)
+                    if (viewModel.isInactive) ...[
+                      const _WelcomeBackBanner(),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // 3️⃣ Budget Overview Card
+                    _BudgetOverviewCard(
+                      hasBudget: viewModel.hasBudget,
+                      budgetUsagePercent: viewModel.budgetUsagePercent,
+                      remainingBudget: viewModel.remainingBudget,
+                      monthlyBudget: viewModel.monthlyBudget,
+                      overspentCategories: viewModel.overspentCategories,
+                      currencySymbol: settings.currencySymbol,
                     ),
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: -20,
-                          right: -20,
-                          child: Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.12),
+                    const SizedBox(height: 16),
+
+                    // 4️⃣ Top Spending Categories
+                    if (viewModel.topCategories.isNotEmpty) ...[
+                      _TopCategoriesCard(
+                        categories: viewModel.topCategories,
+                        currencySymbol: settings.currencySymbol,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // 5️⃣ Streak Card
+                    _StreakCard(streak: viewModel.streak),
+                    const SizedBox(height: 16),
+
+                    // 6️⃣ Pending Bills Alert Card
+                    if (viewModel.pendingBillReminderCount > 0) ...[
+                      _AlertsStrip(pendingBillCount: viewModel.pendingBillReminderCount),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // 7️⃣ Goals Section
+                    const _GoalsSection(),
+                    const SizedBox(height: 24), // Padding at bottom
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 1️⃣ SNAPSHOT CARD
+// ═══════════════════════════════════════════════════════════════
+
+class _SnapshotCard extends StatelessWidget {
+  final double assets;
+  final double investmentAsset;
+  final double accountAsset;
+  final double loans;
+  final double netWorth;
+  final double todaySpend;
+  final double remainingBudget;
+  final double savingsRate;
+  final String currencySymbol;
+  final AnimationController animation;
+
+  const _SnapshotCard({
+    required this.assets,
+    required this.investmentAsset,
+    required this.accountAsset,
+    required this.loans,
+    required this.netWorth,
+    required this.todaySpend,
+    required this.remainingBudget,
+    required this.savingsRate,
+    required this.currencySymbol,
+    required this.animation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isNegative = netWorth < 0;
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            // Assets & Loans Row
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const AssetBreakdownScreen(),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Assets',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade600,
                             ),
                           ),
-                        ),
-                        Positioned(
-                          bottom: -10,
-                          left: -10,
-                          child: Container(
-                            width: 70,
-                            height: 70,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.08),
+                          const SizedBox(height: 4),
+                          Text(
+                            AppUtils.formatCurrency(assets,
+                                currencySymbol: currencySymbol),
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.green.shade700,
                             ),
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Financial Summary',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 1,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      'Net Worth',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 7,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white70,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 3),
-                              FadeTransition(
-                                opacity: Tween<double>(begin: 0, end: 1)
-                                    .animate(CurvedAnimation(
-                                  parent: _animationController,
-                                  curve: const Interval(0.3, 0.8),
-                                )),
-                                child: Text(
-                                  AppUtils.formatCurrency(
-                                    netWorth['netWorth'] ?? 0,
-                                    currencySymbol: currencySymbol,
-                                  ),
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  _NetWorthItem(
-                                    label: 'Assets',
-                                    value: AppUtils.formatCurrency(
-                                      netWorth['assets'] ?? 0,
-                                      currencySymbol: currencySymbol,
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 0.5,
-                                    height: 28,
-                                    color: Colors.white.withOpacity(0.2),
-                                  ),
-                                  _NetWorthItem(
-                                    label: 'Liabilities',
-                                    value: AppUtils.formatCurrency(
-                                      netWorth['liabilities'] ?? 0,
-                                      currencySymbol: currencySymbol,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const LoanTrackerScreen(
+                            showAppBar: true,
+                            showBackButton: true,
+                          ),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Loans',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            AppUtils.formatCurrency(loans,
+                                currencySymbol: currencySymbol),
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.red.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Divider(height: 1, color: Colors.grey.shade300),
+            const SizedBox(height: 20),
 
-                // Financial Overview
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Net Worth
+            InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => NetWorthBreakdownScreen(
+                      assets: assets,
+                      loans: loans,
+                      netWorth: netWorth,
+                    ),
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Column(
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Financial Overview',
+                          'Net Worth',
                           style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade600,
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        IconButton(
-                          icon: const Icon(Icons.edit, size: 16),
-                          tooltip: 'Customize financial overview',
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 24,
-                            minHeight: 24,
+                        if (isNegative) ...[
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            size: 16,
+                            color: Colors.red.shade700,
                           ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const SettingsNavigationScreen(
-                                  initialTab: 2,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                        ],
                       ],
                     ),
-                    ToggleButtons(
-                      isSelected: [_overviewCards, !_overviewCards],
-                      onPressed: (index) {
-                        setState(() {
-                          _overviewCards = index == 0;
-                        });
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      constraints:
-                          const BoxConstraints(minHeight: 32, minWidth: 36),
-                      children: const [
-                        Icon(Icons.view_module, size: 18),
-                        Icon(Icons.view_list, size: 18),
-                      ],
+                    const SizedBox(height: 8),
+                    FadeTransition(
+                      opacity: animation,
+                      child: Text(
+                        AppUtils.formatCurrency(netWorth,
+                            currencySymbol: currencySymbol),
+                        style: GoogleFonts.poppins(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w800,
+                          color: isNegative
+                              ? Colors.red.shade700
+                              : AppTheme.primaryColor,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF7F7F7),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: _overviewCards
-                      ? _buildOverviewCards(overviewItems)
-                      : _buildOverviewList(overviewItems),
-                ),
-                const SizedBox(height: 12),
+              ),
+            ),
+            const SizedBox(height: 20),
 
-                // Quick Actions
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Quick Actions',
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textColor,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.edit, size: 18),
-                      tooltip: 'Customize quick actions',
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const SettingsNavigationScreen(
-                              initialTab: 1,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+            // Compact Metrics Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _CompactMetric(
+                  label: 'Today',
+                  value: AppUtils.formatCurrency(todaySpend,
+                      currencySymbol: currencySymbol),
+                  color: Colors.orange,
                 ),
-                const SizedBox(height: 8),
-                _buildQuickActions(quickActions),
-                const SizedBox(height: 8),
+                _CompactMetric(
+                  label: 'Budget Left',
+                  value: AppUtils.formatCurrency(remainingBudget,
+                      currencySymbol: currencySymbol),
+                  color: Colors.blue,
+                ),
+                _CompactMetric(
+                  label: 'Savings',
+                  value: '${savingsRate.toStringAsFixed(0)}%',
+                  color: Colors.green,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-                // Budget Progress
-                Text(
-                  'Budget Status',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textColor,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                InkWell(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const BudgetPlannerScreen(
-                          showAppBar: true,
-                          showBackButton: true,
-                        ),
-                      ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: budget != null
-                          ? Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Budget Used',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 10,
-                                            color: AppTheme.textSecondaryColor,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        Text(
-                                          '${(budgetUsage * 100).toStringAsFixed(1)}%',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w700,
-                                            color: budgetUsage > 0.8
-                                                ? AppTheme.errorColor
-                                                : AppTheme.successColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(
-                                      width: 50,
-                                      height: 50,
-                                      child: _CircularProgressIndicator(
-                                        value: budgetUsage.toDouble(),
-                                        size: 50,
-                                        strokeWidth: 3.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Divider(
-                                  color: AppTheme.borderColor,
-                                  height: 1,
-                                ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Spending: ${AppUtils.formatCurrency(monthlyExpense, currencySymbol: currencySymbol)}',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 10,
-                                        color: AppTheme.textSecondaryColor,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Budget: ${AppUtils.formatCurrency(totalBudget, currencySymbol: currencySymbol)}',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 10,
-                                        color: AppTheme.textSecondaryColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            )
-                          : SizedBox(
-                              width: double.infinity,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.pie_chart_outline,
-                                    size: 40,
-                                    color:
-                                        AppTheme.primaryColor.withOpacity(0.6),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'No Budget Set',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppTheme.textColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Tap to create your monthly budget',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 10,
-                                      color: AppTheme.textSecondaryColor,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
+class _CompactMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
 
-                // Goals Section
-                if (goalProvider.activeGoals.isNotEmpty) ...[
+  const _CompactMetric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 1.5️⃣ INVESTMENT SUMMARY CARD
+// ═══════════════════════════════════════════════════════════════
+
+class _InvestmentSummaryCard extends StatelessWidget {
+  final double portfolioValue;
+  final double investmentCost;
+  final double gainLoss;
+  final double gainLossPercent;
+  final String currencySymbol;
+
+  const _InvestmentSummaryCard({
+    required this.portfolioValue,
+    required this.investmentCost,
+    required this.gainLoss,
+    required this.gainLossPercent,
+    required this.currencySymbol,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isPositive = gainLoss >= 0;
+
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const InvestmentPortfolioScreen(
+              showAppBar: true,
+              showBackButton: true,
+            ),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
                   Text(
-                    'Financial Goals',
+                    'Investment Portfolio',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isPositive
+                          ? Colors.green.withOpacity(0.1)
+                          : Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${isPositive ? '+' : ''}${gainLossPercent.toStringAsFixed(1)}%',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isPositive
+                            ? Colors.green.shade700
+                            : Colors.red.shade700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Current Value',
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        AppUtils.formatCurrency(portfolioValue,
+                            currencySymbol: currencySymbol),
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    height: 40,
+                    width: 1,
+                    color: Colors.grey.shade300,
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Gain / Loss',
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        AppUtils.formatCurrency(gainLoss,
+                            currencySymbol: currencySymbol),
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: isPositive
+                              ? Colors.green.shade700
+                              : Colors.red.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 2️⃣ WELCOME BACK BANNER
+// ═══════════════════════════════════════════════════════════════
+
+class _WelcomeBackBanner extends StatelessWidget {
+  const _WelcomeBackBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.waving_hand, color: Colors.blue.shade700, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Welcome back! Let\'s get your finances back on track.',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Colors.blue.shade900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 3️⃣ BUDGET OVERVIEW CARD
+// ═══════════════════════════════════════════════════════════════
+
+class _BudgetOverviewCard extends StatelessWidget {
+  final bool hasBudget;
+  final double budgetUsagePercent;
+  final double remainingBudget;
+  final double monthlyBudget;
+  final List<String> overspentCategories;
+  final String currencySymbol;
+
+  const _BudgetOverviewCard({
+    required this.hasBudget,
+    required this.budgetUsagePercent,
+    required this.remainingBudget,
+    required this.monthlyBudget,
+    required this.overspentCategories,
+    required this.currencySymbol,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!hasBudget) {
+      return Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Icon(Icons.pie_chart_outline,
+                  size: 48, color: AppTheme.primaryColor.withOpacity(0.6)),
+              const SizedBox(height: 12),
+              Text(
+                'No Budget Set',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Create a budget to track your spending',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const BudgetPlannerScreen(
+                        showAppBar: true,
+                        showBackButton: true,
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Set Budget'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final isWarning = budgetUsagePercent >= 0.8;
+    final isExceeded = budgetUsagePercent > 1.0;
+    final usageColor = isExceeded
+        ? Colors.red
+        : isWarning
+            ? Colors.orange
+            : Colors.green;
+
+    // Compute spent amount for display
+    final spentAmount = monthlyBudget - remainingBudget;
+
+    // Determine status label and icon
+    String statusLabel;
+    IconData statusIcon;
+    if (isExceeded) {
+      statusLabel = 'Overspent';
+      statusIcon = Icons.warning_rounded;
+    } else if (isWarning) {
+      statusLabel = 'Approaching Limit';
+      statusIcon = Icons.info_rounded;
+    } else {
+      statusLabel = 'On Track';
+      statusIcon = Icons.check_circle_rounded;
+    }
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const BudgetPlannerScreen(
+                showAppBar: true,
+                showBackButton: true,
+              ),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: Title + Status Badge
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Monthly Budget',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: usageColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: usageColor.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(statusIcon, size: 14, color: usageColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          statusLabel,
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: usageColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Progress Bar with Label
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Spent',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textColor,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade700,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  InkWell(
-                    onTap: () {
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${(budgetUsagePercent * 100).toStringAsFixed(0)}% of ${AppUtils.formatCurrency(monthlyBudget, currencySymbol: currencySymbol)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: usageColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: budgetUsagePercent.clamp(0.0, 1.0),
+                  backgroundColor: Colors.grey.shade200,
+                  valueColor: AlwaysStoppedAnimation(usageColor),
+                  minHeight: 10,
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Amount Details Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'You spent',
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      Text(
+                        AppUtils.formatCurrency(spentAmount,
+                            currencySymbol: currencySymbol),
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    height: 40,
+                    width: 1,
+                    color: Colors.grey.shade300,
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        isExceeded ? 'Overspent by' : 'You have left',
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      Text(
+                        AppUtils.formatCurrency(remainingBudget.abs(),
+                            currencySymbol: currencySymbol),
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: isExceeded ? Colors.red.shade700 : Colors.green.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              if (overspentCategories.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Divider(height: 1, color: Colors.grey.shade300),
+                const SizedBox(height: 12),
+                Text(
+                  '⚠️ Categories Over Limit',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red.shade700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: overspentCategories.take(3).map((cat) {
+                    return Chip(
+                      label: Text(
+                        cat,
+                        style: GoogleFonts.poppins(fontSize: 10),
+                      ),
+                      backgroundColor: Colors.red.shade50,
+                      side: BorderSide(color: Colors.red.shade200),
+                      avatar: Icon(Icons.trending_up,
+                          size: 12, color: Colors.red.shade700),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 4️⃣ TOP SPENDING CATEGORIES
+// ═══════════════════════════════════════════════════════════════
+
+class _TopCategoriesCard extends StatelessWidget {
+  final List<CategorySpending> categories;
+  final String currencySymbol;
+
+  const _TopCategoriesCard({
+    required this.categories,
+    required this.currencySymbol,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const ExpenseListScreen(
+              showAppBar: true,
+              showBackButton: true,
+            ),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Top Spending',
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ...categories.map((cat) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              cat.category,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            AppUtils.formatCurrency(cat.amount,
+                                currencySymbol: currencySymbol),
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: cat.percentage,
+                          backgroundColor: Colors.grey.shade200,
+                          valueColor: AlwaysStoppedAnimation(
+                            cat.percentage > 1.0
+                                ? Colors.red
+                                : cat.percentage > 0.8
+                                    ? Colors.orange
+                                    : AppTheme.primaryColor,
+                          ),
+                          minHeight: 6,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 5️⃣ STREAK CARD
+// ═══════════════════════════════════════════════════════════════
+
+class _StreakCard extends StatelessWidget {
+  final int streak;
+
+  const _StreakCard({required this.streak});
+
+  String _getStreakMessage(int days) {
+    if (days == 0) return 'Start your tracking streak today!';
+    if (days <= 2) return 'Great start! Keep tracking.';
+    if (days <= 6) return 'Streak building! Keep it up.';
+    if (days < 30) return '${days} days strong! You\'re on fire 🔥';
+    return '${days} days! You\'re a tracking master 🏆';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryColor,
+                    AppTheme.primaryColor.withOpacity(0.7),
+                  ],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  '$streak',
+                  style: GoogleFonts.poppins(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tracking Streak',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _getStreakMessage(streak),
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 6️⃣ ALERTS STRIP
+// ═══════════════════════════════════════════════════════════════
+
+class _AlertsStrip extends StatelessWidget {
+  final int pendingBillCount;
+
+  const _AlertsStrip({required this.pendingBillCount});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const BillListScreen(
+            showAppBar: true,
+            showBackButton: true,
+          ),
+        ),
+      ),
+      borderRadius: BorderRadius.circular(12),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.red.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.red.withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.receipt_long,
+                color: Colors.red,
+                size: 32,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pending Bills',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$pendingBillCount reminder${pendingBillCount != 1 ? 's' : ''} pending',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.red.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.red.shade400,
+                size: 18,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 7️⃣ GOALS SECTION
+// ═══════════════════════════════════════════════════════════════
+
+class _GoalsSection extends StatelessWidget {
+  const _GoalsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer2<GoalProvider, SettingsProvider>(
+      builder: (context, goalProvider, settingsProvider, _) {
+        final activeGoals = goalProvider.activeGoals;
+        final completedGoalsCount =
+            goalProvider.goals.where((g) => g.isCompleted).length;
+        final hasGoals = activeGoals.isNotEmpty;
+
+        if (!hasGoals) {
+          return Card(
+            elevation: 2,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Icon(Icons.flag_outlined,
+                      size: 48, color: AppTheme.primaryColor.withOpacity(0.6)),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No Goals Set',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Set financial goals to track progress',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => const GoalTrackerScreen(
@@ -798,563 +1222,104 @@ class _DashboardScreenState extends State<DashboardScreen>
                         ),
                       );
                     },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Overall Progress',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 10,
-                                        color: AppTheme.textSecondaryColor,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${goalProvider.getOverallProgressPercentage().toStringAsFixed(1)}%',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppTheme.primaryColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(
-                                  width: 50,
-                                  height: 50,
-                                  child: _CircularProgressIndicator(
-                                    value: goalProvider
-                                            .getOverallProgressPercentage() /
-                                        100,
-                                    size: 50,
-                                    strokeWidth: 3.5,
-                                    color: AppTheme.primaryColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Divider(
-                              color: AppTheme.borderColor,
-                              height: 1,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              '${goalProvider.activeGoals.length} active goal${goalProvider.activeGoals.length > 1 ? 's' : ''}',
-                              style: GoogleFonts.poppins(
-                                fontSize: 10,
-                                color: AppTheme.textSecondaryColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    child: const Text('Create Goal'),
                   ),
-                  const SizedBox(height: 8),
                 ],
-              ],
+              ),
             ),
           );
-        },
-      ),
-    );
-  }
+        }
 
-  Widget _buildOverviewCards(List<_OverviewItem> items) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cardWidth = (constraints.maxWidth - 12) / 2;
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: items
-              .map(
-                (item) => SizedBox(
-                  width: cardWidth,
-                  child: _OverviewCard(item: item),
+        final totalTarget = goalProvider.getTotalGoalAmount();
+        final totalSaved = goalProvider.getTotalSavedAmount();
+        final progressPercent = goalProvider.getOverallProgressPercentage();
+
+        return Card(
+          elevation: 2,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const GoalTrackerScreen(
+                    showAppBar: true,
+                    showBackButton: true,
+                  ),
                 ),
-              )
-              .toList(),
+              );
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Financial Goals',
+                        style: GoogleFonts.poppins(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_ios,
+                          size: 16, color: Colors.grey.shade600),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    '${activeGoals.length} active goal${activeGoals.length == 1 ? '' : 's'}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${AppUtils.formatCurrency(totalSaved, currencySymbol: settingsProvider.currencySymbol)} saved of ${AppUtils.formatCurrency(totalTarget, currencySymbol: settingsProvider.currencySymbol)}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '$completedGoalsCount completed goal${completedGoalsCount == 1 ? '' : 's'}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: (progressPercent / 100).clamp(0.0, 1.0),
+                      minHeight: 8,
+                      backgroundColor: Colors.grey.shade200,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${progressPercent.toStringAsFixed(1)}% complete',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         );
       },
-    );
-  }
-
-  Widget _buildOverviewList(List<_OverviewItem> items) {
-    return Column(
-      children: items
-          .map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _OverviewListItem(item: item),
-            ),
-          )
-          .toList(),
-    );
-  }
-
-  Widget _buildQuickActions(List<_QuickActionItem> actions) {
-    return SizedBox(
-      height: 86,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: actions.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          return _QuickActionTile(item: actions[index]);
-        },
-      ),
-    );
-  }
-}
-
-class _OverviewItem {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color accentColor;
-  final VoidCallback onTap;
-
-  const _OverviewItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.accentColor,
-    required this.onTap,
-  });
-}
-
-class _OverviewCard extends StatelessWidget {
-  final _OverviewItem item;
-
-  const _OverviewCard({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: item.onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: item.accentColor.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                item.icon,
-                color: item.accentColor,
-                size: 18,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              item.label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textColor,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              item.value,
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: item.accentColor,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OverviewListItem extends StatelessWidget {
-  final _OverviewItem item;
-
-  const _OverviewListItem({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: item.onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: item.accentColor.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                item.icon,
-                color: item.accentColor,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                item.label,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textColor,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              item.value,
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: item.accentColor,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _QuickActionItem {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _QuickActionItem({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-}
-
-class _QuickActionTile extends StatelessWidget {
-  final _QuickActionItem item;
-
-  const _QuickActionTile({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: item.onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: 120,
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: item.color.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: item.color.withOpacity(0.25)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: item.color,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                item.icon,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              item.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textColor,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NetWorthItem extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _NetWorthItem({
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 8,
-            color: Colors.white70,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 1),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _FeatureCard extends StatelessWidget {
-  final AnimationController animationController;
-  final int index;
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color1;
-  final Color color2;
-  final VoidCallback? onTap;
-
-  const _FeatureCard({
-    required this.animationController,
-    required this.index,
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color1,
-    required this.color2,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final Animation<Offset> slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: animationController,
-        curve: Interval(0.1 * index, 0.1 * index + 0.4, curve: Curves.easeOut),
-      ),
-    );
-
-    return SlideTransition(
-      position: slideAnimation,
-      child: FadeTransition(
-        opacity: Tween<double>(begin: 0, end: 1).animate(
-          CurvedAnimation(
-            parent: animationController,
-            curve: Interval(0.1 * index, 0.1 * index + 0.4),
-          ),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [color1, color2],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: color1.withOpacity(0.25),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    top: -20,
-                    right: -20,
-                    child: Container(
-                      width: 70,
-                      height: 70,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.15),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.25),
-                            borderRadius: BorderRadius.circular(7),
-                          ),
-                          child: Icon(
-                            icon,
-                            color: Colors.white,
-                            size: 14,
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              label,
-                              style: GoogleFonts.poppins(
-                                fontSize: 8,
-                                color: Colors.white70,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              value,
-                              style: GoogleFonts.poppins(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CircularProgressIndicator extends StatelessWidget {
-  final double value;
-  final double size;
-  final double strokeWidth;
-  final Color? color;
-
-  const _CircularProgressIndicator({
-    required this.value,
-    required this.size,
-    required this.strokeWidth,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final Color progressColor = color ?? AppTheme.accentColor;
-
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: progressColor.withOpacity(0.1),
-          ),
-        ),
-        SizedBox(
-          width: size,
-          height: size,
-          child: CircularProgressIndicator(
-            value: value.clamp(0, 1),
-            strokeWidth: strokeWidth,
-            backgroundColor: progressColor.withOpacity(0.15),
-            valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-          ),
-        ),
-      ],
     );
   }
 }

@@ -1,0 +1,2273 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:fintrack/core/theme/app_theme.dart';
+import 'package:fintrack/core/constants/app_constants.dart';
+import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
+import 'package:fintrack/features/budget/presentation/providers/budget_provider.dart';
+import 'package:fintrack/features/subscription/presentation/providers/subscription_provider.dart';
+import 'package:fintrack/features/investment/presentation/providers/investment_provider.dart';
+import 'package:fintrack/features/goals/presentation/providers/goal_provider.dart';
+import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
+import 'package:fintrack/features/loan/presentation/providers/loan_provider.dart';
+import 'package:fintrack/features/bill/presentation/providers/bill_provider.dart';
+import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
+import 'package:fintrack/services/analytics_service.dart';
+import 'package:fintrack/database/hive_service.dart';
+import 'package:fintrack/features/expense/presentation/pages/expense_list_screen.dart';
+import 'package:fintrack/features/budget/presentation/pages/budget_planner_screen.dart';
+import 'package:fintrack/features/subscription/presentation/pages/subscription_list_screen.dart';
+import 'package:fintrack/features/investment/presentation/pages/investment_portfolio_screen.dart';
+import 'package:fintrack/features/goals/presentation/pages/goal_tracker_screen.dart';
+import 'package:fintrack/features/loan/presentation/pages/loan_tracker_screen.dart';
+import 'package:fintrack/features/bill/presentation/pages/bill_list_screen.dart';
+import 'package:fintrack/features/accounts/presentation/pages/account_list_screen.dart';
+import 'package:fintrack/features/settings/presentation/pages/settings_navigation_screen.dart';
+
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late PageController _chartsPageController;
+  int _currentChartPage = 0;
+  late DateTime _selectedExpenseMonth;
+  late DateTime _selectedBudgetMonth;
+  int? _touchedExpenseCategoryIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedExpenseMonth = DateTime.now();
+    _selectedBudgetMonth = DateTime.now();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _animationController.forward();
+    _chartsPageController = PageController(initialPage: 0);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeProviders();
+    });
+  }
+
+  Future<void> _initializeProviders() async {
+    if (mounted) {
+      await context.read<BillProvider>().refreshData();
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _chartsPageController.dispose();
+    super.dispose();
+  }
+
+  String _getMonthName(int month) {
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return monthNames[month - 1];
+  }
+
+  Future<void> _refreshData() async {
+    if (mounted) {
+      _animationController.reset();
+      _animationController.forward();
+      context.read<ExpenseProvider>().refreshData();
+      context.read<BudgetProvider>().refreshData();
+      context.read<SubscriptionProvider>().refreshData();
+      context.read<InvestmentProvider>().refreshData();
+      context.read<GoalProvider>().refreshData();
+      await context.read<LoanProvider>().initLoans();
+      await context.read<BillProvider>().refreshData();
+      context.read<PaymentAccountProvider>().refreshData();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currencySymbol = context.watch<SettingsProvider>().currencySymbol;
+    final loanProvider = context.watch<LoanProvider>();
+    return RefreshIndicator(
+      onRefresh: _refreshData,
+      child: Consumer5<ExpenseProvider, BudgetProvider, SubscriptionProvider,
+          InvestmentProvider, GoalProvider>(
+        builder: (context, expenseProvider, budgetProvider,
+            subscriptionProvider, investmentProvider, goalProvider, _) {
+          final monthlyExpense = expenseProvider.getTotalMonthlyExpense();
+          final now = DateTime.now();
+          final budget = budgetProvider.getBudgetForMonth(now.month, now.year);
+          final totalBudget = budget?.categoryLimits.values
+                  .fold<double>(0, (sum, amount) => sum + amount) ??
+              0;
+          final portfolioValue = investmentProvider.getTotalPortfolioValue();
+          final totalLoansOutstanding =
+              loanProvider.getTotalOutstandingAmount();
+          final monthlySubscriptions =
+              subscriptionProvider.getMonthlySubscriptionTotal();
+          final budgetUsage = budget != null && totalBudget > 0
+              ? (monthlyExpense / totalBudget).clamp(0, 1)
+              : 0.0;
+
+          // All available overview items
+          final allOverviewItems = <String, _OverviewItem>{
+            'monthly_spending': _OverviewItem(
+              icon: Icons.trending_down,
+              label: 'Monthly Spending',
+              value: AppUtils.formatCurrency(
+                monthlyExpense,
+                currencySymbol: currencySymbol,
+              ),
+              accentColor: const Color(0xFFD64545),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const ExpenseListScreen(
+                      showAppBar: true,
+                      showBackButton: true,
+                    ),
+                  ),
+                );
+              },
+            ),
+            'subscriptions': _OverviewItem(
+              icon: Icons.subscriptions,
+              label: 'Subscriptions',
+              value: AppUtils.formatCurrency(
+                monthlySubscriptions,
+                currencySymbol: currencySymbol,
+              ),
+              accentColor: const Color(0xFF1C5D99),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const SubscriptionListScreen(
+                      showAppBar: true,
+                      showBackButton: true,
+                    ),
+                  ),
+                );
+              },
+            ),
+            'portfolio_value': _OverviewItem(
+              icon: Icons.trending_up,
+              label: 'Portfolio Value',
+              value: AppUtils.formatCurrency(
+                portfolioValue,
+                currencySymbol: currencySymbol,
+              ),
+              accentColor: const Color(0xFFB95000),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const InvestmentPortfolioScreen(
+                      showAppBar: true,
+                      showBackButton: true,
+                    ),
+                  ),
+                );
+              },
+            ),
+            'outstanding_loans': _OverviewItem(
+              icon: Icons.account_balance,
+              label: 'Outstanding Loans',
+              value: AppUtils.formatCurrency(
+                totalLoansOutstanding,
+                currencySymbol: currencySymbol,
+              ),
+              accentColor: const Color(0xFF7B1E3A),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const LoanTrackerScreen(
+                      showAppBar: true,
+                      showBackButton: true,
+                    ),
+                  ),
+                );
+              },
+            ),
+          };
+
+          // Get settings provider for user preferences
+          final settingsProvider = context.watch<SettingsProvider>();
+
+          // Financial overview is fixed and not user-configurable
+          final overviewOrder = [
+            'monthly_spending',
+            'subscriptions',
+            'portfolio_value',
+            'outstanding_loans',
+          ];
+          final overviewItems = overviewOrder
+              .where((id) => allOverviewItems.containsKey(id))
+              .map((id) => allOverviewItems[id]!)
+              .toList();
+
+          // All available quick actions
+          final allQuickActions = <String, _QuickActionItem>{
+            'expenses': _QuickActionItem(
+              icon: Icons.receipt_long,
+              label: 'Expenses',
+              color: const Color(0xFF2D2A4A),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const ExpenseListScreen(
+                      showAppBar: true,
+                      showBackButton: true,
+                    ),
+                  ),
+                );
+              },
+            ),
+            'accounts': _QuickActionItem(
+              icon: Icons.account_balance_wallet,
+              label: 'Accounts',
+              color: const Color(0xFF0C6E62),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const AccountListScreen(showBackButton: true),
+                  ),
+                );
+              },
+            ),
+            'budget': _QuickActionItem(
+              icon: Icons.pie_chart,
+              label: 'Budget',
+              color: const Color(0xFF5E2B97),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const BudgetPlannerScreen(
+                      showAppBar: true,
+                      showBackButton: true,
+                    ),
+                  ),
+                );
+              },
+            ),
+            'bills': _QuickActionItem(
+              icon: Icons.calendar_today,
+              label: 'Bills',
+              color: const Color(0xFFB95C00),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const BillListScreen(
+                      showAppBar: true,
+                      showBackButton: true,
+                    ),
+                  ),
+                );
+              },
+            ),
+            'subscriptions': _QuickActionItem(
+              icon: Icons.subscriptions,
+              label: 'Subscriptions',
+              color: const Color(0xFF6A1B9A),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const SubscriptionListScreen(
+                      showAppBar: true,
+                      showBackButton: true,
+                    ),
+                  ),
+                );
+              },
+            ),
+            'investments': _QuickActionItem(
+              icon: Icons.trending_up,
+              label: 'Investments',
+              color: const Color(0xFF00796B),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const InvestmentPortfolioScreen(
+                      showAppBar: true,
+                      showBackButton: true,
+                    ),
+                  ),
+                );
+              },
+            ),
+            'goals': _QuickActionItem(
+              icon: Icons.flag_outlined,
+              label: 'Goals',
+              color: const Color(0xFFC62828),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const GoalTrackerScreen(
+                      showAppBar: true,
+                      showBackButton: true,
+                    ),
+                  ),
+                );
+              },
+            ),
+            'loans': _QuickActionItem(
+              icon: Icons.account_balance,
+              label: 'Loans',
+              color: const Color(0xFF4527A0),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const LoanTrackerScreen(
+                      showAppBar: true,
+                      showBackButton: true,
+                    ),
+                  ),
+                );
+              },
+            ),
+          };
+
+          // Get selected quick actions from settings
+          final quickActions = <_QuickActionItem>[];
+          for (final actionId in settingsProvider.quickActionItems) {
+            if (allQuickActions.containsKey(actionId)) {
+              quickActions.add(allQuickActions[actionId]!);
+            }
+          }
+
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Animated Header
+                SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, -0.2),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: _animationController,
+                    curve: Curves.easeOut,
+                  )),
+                  child: Text(
+                    'Welcome Back!',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+
+                // Hero Net Worth Card
+                const SizedBox(height: 12),
+
+                // Interactive Charts Carousel
+                Column(
+                  children: [
+                    SizedBox(
+                      height: 280,
+                      child: PageView(
+                        controller: _chartsPageController,
+                        onPageChanged: (index) {
+                          setState(() => _currentChartPage = index);
+                        },
+                        children: [
+                          _buildExpenseCategoryChart(
+                            expenseProvider,
+                            currencySymbol,
+                          ),
+                          _buildInvestmentCategoryChart(
+                            currencySymbol,
+                          ),
+                          _buildMonthlySpendingChart(currencySymbol),
+                          _buildBudgetVsActualChart(
+                            currencySymbol,
+                            _selectedBudgetMonth,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    // Chart indicator dots
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        4,
+                        (index) => Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: _currentChartPage == index ? 24 : 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(4),
+                            color: _currentChartPage == index
+                                ? AppTheme.primaryColor
+                                : AppTheme.primaryColor.withOpacity(0.3),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Financial Overview
+                Text(
+                  'Financial Overview',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Monthly snapshot of your key financial metrics',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textSecondaryColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildFinancialOverviewPanel(overviewItems),
+                const SizedBox(height: 12),
+
+                // Quick Actions
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Quick Actions',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textColor,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 18),
+                      tooltip: 'Customize quick actions',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const SettingsNavigationScreen(
+                              initialTab: 1,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _buildQuickActions(quickActions),
+                const SizedBox(height: 8),
+
+                // Budget Progress
+                Text(
+                  'Budget Status',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textColor,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const BudgetPlannerScreen(
+                          showAppBar: true,
+                          showBackButton: true,
+                        ),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: budget != null
+                          ? Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Budget Used',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 10,
+                                            color: AppTheme.textSecondaryColor,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${(budgetUsage * 100).toStringAsFixed(1)}%',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            color: budgetUsage > 0.8
+                                                ? AppTheme.errorColor
+                                                : AppTheme.successColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(
+                                      width: 50,
+                                      height: 50,
+                                      child: _CircularProgressIndicator(
+                                        value: budgetUsage.toDouble(),
+                                        size: 50,
+                                        strokeWidth: 3.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Divider(
+                                  color: AppTheme.borderColor,
+                                  height: 1,
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Spending: ${AppUtils.formatCurrency(monthlyExpense, currencySymbol: currencySymbol)}',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 10,
+                                        color: AppTheme.textSecondaryColor,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Budget: ${AppUtils.formatCurrency(totalBudget, currencySymbol: currencySymbol)}',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 10,
+                                        color: AppTheme.textSecondaryColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            )
+                          : SizedBox(
+                              width: double.infinity,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.pie_chart_outline,
+                                    size: 40,
+                                    color:
+                                        AppTheme.primaryColor.withOpacity(0.6),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'No Budget Set',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.textColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Tap to create your monthly budget',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 10,
+                                      color: AppTheme.textSecondaryColor,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+
+                // Goals Section
+                if (goalProvider.activeGoals.isNotEmpty) ...[
+                  Text(
+                    'Financial Goals',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const GoalTrackerScreen(
+                            showAppBar: true,
+                            showBackButton: true,
+                          ),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Overall Progress',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 10,
+                                        color: AppTheme.textSecondaryColor,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${goalProvider.getOverallProgressPercentage().toStringAsFixed(1)}%',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppTheme.primaryColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(
+                                  width: 50,
+                                  height: 50,
+                                  child: _CircularProgressIndicator(
+                                    value: goalProvider
+                                            .getOverallProgressPercentage() /
+                                        100,
+                                    size: 50,
+                                    strokeWidth: 3.5,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Divider(
+                              color: AppTheme.borderColor,
+                              height: 1,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '${goalProvider.activeGoals.length} active goal${goalProvider.activeGoals.length > 1 ? 's' : ''}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                color: AppTheme.textSecondaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildOverviewCards(List<_OverviewItem> items) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = (constraints.maxWidth - 12) / 2;
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: items
+              .map(
+                (item) => SizedBox(
+                  width: cardWidth,
+                  child: _OverviewCard(item: item),
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildFinancialOverviewPanel(List<_OverviewItem> items) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F7F7),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: _buildOverviewCards(items),
+    );
+  }
+
+  Widget _buildOverviewList(List<_OverviewItem> items) {
+    return Column(
+      children: items
+          .map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _OverviewListItem(item: item),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Widget _buildQuickActions(List<_QuickActionItem> actions) {
+    return SizedBox(
+      height: 86,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: actions.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          return _QuickActionTile(item: actions[index]);
+        },
+      ),
+    );
+  }
+
+  Widget _buildExpenseCategoryChart(
+    ExpenseProvider expenseProvider,
+    String currencySymbol,
+  ) {
+    final categoryBreakdown = AnalyticsService.getCategoryBreakdownForMonth(
+      _selectedExpenseMonth.month,
+      _selectedExpenseMonth.year,
+    );
+
+    // Build the common header with month selector
+    final headerRow = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Expense by Category',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textColor,
+          ),
+        ),
+        // Month Selector Dropdown
+        DropdownButton<int>(
+          value: _selectedExpenseMonth.month,
+          underline: const SizedBox(),
+          isDense: true,
+          style: GoogleFonts.poppins(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textColor,
+          ),
+          items: List.generate(12, (index) {
+            final month = index + 1;
+            final monthName = _getMonthName(month);
+            return DropdownMenuItem<int>(
+              value: month,
+              child: Text(monthName),
+            );
+          }),
+          onChanged: (newMonth) {
+            if (newMonth != null) {
+              setState(() {
+                _selectedExpenseMonth = DateTime(
+                  _selectedExpenseMonth.year,
+                  newMonth,
+                );
+              });
+            }
+          },
+        ),
+      ],
+    );
+
+    if (categoryBreakdown.isEmpty) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              headerRow,
+              const SizedBox(height: 12),
+              Expanded(
+                child: Center(
+                  child: Text(
+                    'No expenses this month',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final List<PieChartSectionData> sections = [];
+    // Modern color palette with vibrant gradients
+    final colors = [
+      const Color(0xFF5B9EE1), // Modern Blue
+      const Color(0xFF4EBA6F), // Modern Green
+      const Color(0xFFF18F45), // Modern Orange
+      const Color(0xFFE84C3D), // Modern Red
+      const Color(0xFF9B59B6), // Modern Purple
+      const Color(0xFF1ABC9C), // Modern Teal
+      const Color(0xFFF39C12), // Modern Amber
+      const Color(0xFF34495E), // Modern Dark Blue
+      const Color(0xFFE55039), // Modern Coral
+      const Color(0xFF6C5CE7), // Modern Indigo
+    ];
+
+    double totalAmount =
+        categoryBreakdown.values.fold(0, (sum, val) => sum + val);
+
+    final List<MapEntry<String, double>> sortedEntries =
+        categoryBreakdown.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+
+    int colorIndex = 0;
+    for (final entry in sortedEntries) {
+      final percentage = (entry.value / totalAmount * 100);
+      final isTouched = colorIndex == _touchedExpenseCategoryIndex;
+      final radius = isTouched ? 42.0 : 35.0;
+      final titleFontSize = isTouched ? 11.0 : 10.0;
+
+      sections.add(
+        PieChartSectionData(
+          color: colors[colorIndex % colors.length],
+          value: entry.value,
+          title: '${percentage.toStringAsFixed(1)}%',
+          radius: radius,
+          titleStyle: GoogleFonts.poppins(
+            fontSize: titleFontSize,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 2,
+                offset: const Offset(1, 1),
+              ),
+            ],
+          ),
+        ),
+      );
+      colorIndex++;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            headerRow,
+            const SizedBox(height: 12),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Pie Chart on the left
+                  SizedBox(
+                    width: 140,
+                    child: GestureDetector(
+                      onTap: () => setState(
+                        () => _touchedExpenseCategoryIndex = null,
+                      ),
+                      child: PieChart(
+                        PieChartData(
+                          sections: sections,
+                          centerSpaceRadius: 40,
+                          sectionsSpace: 2,
+                          pieTouchData: PieTouchData(
+                            touchCallback:
+                                (FlTouchEvent event, pieTouchResponse) {
+                              setState(() {
+                                if (pieTouchResponse == null ||
+                                    pieTouchResponse.touchedSection == null) {
+                                  _touchedExpenseCategoryIndex = null;
+                                  return;
+                                }
+                                _touchedExpenseCategoryIndex = pieTouchResponse
+                                    .touchedSection?.touchedSectionIndex;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Legend on the right
+                  Flexible(
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      children: List.generate(
+                        sortedEntries.length,
+                        (index) {
+                          final entry = sortedEntries[index];
+                          final isTouched =
+                              index == _touchedExpenseCategoryIndex;
+                          return MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 2,
+                                horizontal: 0,
+                              ),
+                              child: AnimatedContainer(
+                                duration: const Duration(
+                                  milliseconds: 200,
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isTouched ? 6 : 4,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: isTouched
+                                      ? LinearGradient(
+                                          colors: [
+                                            colors[index % colors.length]
+                                                .withOpacity(0.1),
+                                            colors[index % colors.length]
+                                                .withOpacity(0.05),
+                                          ],
+                                        )
+                                      : null,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    // Modern color indicator with shadow
+                                    Container(
+                                      width: 14,
+                                      height: 14,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: colors[index % colors.length],
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: colors[index % colors.length]
+                                                .withOpacity(0.4),
+                                            blurRadius: 4,
+                                            spreadRadius: 1,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            entry.key,
+                                            style: GoogleFonts.poppins(
+                                              fontSize: isTouched ? 10 : 9,
+                                              fontWeight: isTouched
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w600,
+                                              color: AppTheme.textColor,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            AppUtils.formatCurrency(
+                                              entry.value,
+                                              currencySymbol: currencySymbol,
+                                            ),
+                                            style: GoogleFonts.poppins(
+                                              fontSize: isTouched ? 10 : 9,
+                                              fontWeight: isTouched
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w600,
+                                              color:
+                                                  AppTheme.textSecondaryColor,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInvestmentCategoryChart(String currencySymbol) {
+    final investmentBreakdown = AnalyticsService.getInvestmentBreakdownByType();
+
+    if (investmentBreakdown.isEmpty) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Center(
+            child: Text(
+              'No investments yet',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: AppTheme.textSecondaryColor,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Modern color palette for investments
+    final investmentColors = [
+      const Color(0xFF2E86AB),
+      const Color(0xFFA23B72),
+      const Color(0xFFF18F01),
+      const Color(0xFFC73E1D),
+      const Color(0xFF6A994E),
+      const Color(0xFF2F5233),
+      const Color(0xFF7209B7),
+      const Color(0xFF3A86FF),
+      const Color(0xFF8338EC),
+      const Color(0xFF00D9FF),
+    ];
+
+    final sortedEntries = investmentBreakdown.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    final maxY = sortedEntries.isEmpty
+        ? 100.0
+        : sortedEntries.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+
+    final barGroups = <BarChartGroupData>[];
+    for (int i = 0; i < sortedEntries.length; i++) {
+      barGroups.add(
+        BarChartGroupData(
+          x: i,
+          barRods: [
+            BarChartRodData(
+              toY: sortedEntries[i].value,
+              color: investmentColors[i % investmentColors.length],
+              width: 16,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(4)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 16, 8, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Investment by Category',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textColor,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Expanded(
+              child: BarChart(
+                BarChartData(
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: maxY > 0 ? maxY / 3 : 1,
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: Colors.grey.withOpacity(0.2),
+                        strokeWidth: 1,
+                      );
+                    },
+                  ),
+                  titlesData: FlTitlesData(
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index >= 0 && index < sortedEntries.length) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                sortedEntries[index].key,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.textSecondaryColor,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            );
+                          }
+                          return const SizedBox();
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            '$currencySymbol${(value / 1000).toStringAsFixed(1)}K',
+                            style: GoogleFonts.poppins(
+                              fontSize: 9,
+                              color: AppTheme.textSecondaryColor,
+                            ),
+                          );
+                        },
+                        reservedSize: 50,
+                      ),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  barGroups: barGroups,
+                  alignment: BarChartAlignment.spaceAround,
+                  minY: 0,
+                  maxY: maxY * 1.1,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: ListView(
+                shrinkWrap: true,
+                children: List.generate(sortedEntries.length, (index) {
+                  final entry = sortedEntries[index];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: investmentColors[
+                                      index % investmentColors.length],
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  entry.key,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppTheme.textColor,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: Text(
+                            AppUtils.formatCurrency(
+                              entry.value,
+                              currencySymbol: currencySymbol,
+                            ),
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.textSecondaryColor,
+                            ),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNetWorthPieChart(
+    Map<String, dynamic> netWorth,
+    String currencySymbol,
+  ) {
+    final assets = (netWorth['assets'] as num?)?.toDouble() ?? 0.0;
+    final liabilities = (netWorth['liabilities'] as num?)?.toDouble() ?? 0.0;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Net Worth Breakdown',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textColor,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: PieChart(
+                PieChartData(
+                  sections: [
+                    PieChartSectionData(
+                      color: const Color(0xFF4CAF50),
+                      value: assets,
+                      title: 'Assets',
+                      radius: 50,
+                      titleStyle: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    if (liabilities > 0)
+                      PieChartSectionData(
+                        color: const Color(0xFFF44336),
+                        value: liabilities,
+                        title: 'Liabilities',
+                        radius: 50,
+                        titleStyle: GoogleFonts.poppins(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                  ],
+                  centerSpaceRadius: 30,
+                  sectionsSpace: 2,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _LegendItem(
+                  color: const Color(0xFF4CAF50),
+                  label: 'Assets',
+                  value: AppUtils.formatCurrency(assets,
+                      currencySymbol: currencySymbol),
+                ),
+                _LegendItem(
+                  color: const Color(0xFFF44336),
+                  label: 'Liabilities',
+                  value: AppUtils.formatCurrency(liabilities,
+                      currencySymbol: currencySymbol),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMonthlySpendingChart(String currencySymbol) {
+    final spendingTrend = AnalyticsService.getMonthlySpendingTrend(6);
+
+    final barGroups = <BarChartGroupData>[];
+    final List<String> monthLabels = [];
+    final now = DateTime.now();
+
+    for (int i = 5; i >= 0; i--) {
+      final month = now.month - i;
+      final adjustedMonth = month > 0 ? month : month + 12;
+
+      barGroups.add(
+        BarChartGroupData(
+          x: (5 - i),
+          barRods: [
+            BarChartRodData(
+              toY: spendingTrend[adjustedMonth] ?? 0.0,
+              color: AppTheme.primaryColor,
+              width: 12,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(4)),
+            ),
+          ],
+        ),
+      );
+
+      const monthNames = [
+        '',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ];
+      monthLabels.add(monthNames[adjustedMonth]);
+    }
+
+    final maxY = barGroups.isEmpty
+        ? 100
+        : barGroups
+            .map((group) => group.barRods.first.toY)
+            .reduce((a, b) => a > b ? a : b);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 16, 8, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Monthly Spending Trend',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textColor,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Expanded(
+              child: BarChart(
+                BarChartData(
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: maxY > 0 ? maxY / 3 : 1,
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: Colors.grey.withOpacity(0.2),
+                        strokeWidth: 1,
+                      );
+                    },
+                  ),
+                  titlesData: FlTitlesData(
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 28,
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index >= 0 && index < monthLabels.length) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                monthLabels[index],
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.textSecondaryColor,
+                                ),
+                              ),
+                            );
+                          }
+                          return const SizedBox();
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            '$currencySymbol${value.toInt()}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 9,
+                              color: AppTheme.textSecondaryColor,
+                            ),
+                          );
+                        },
+                        reservedSize: 50,
+                      ),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  borderData: FlBorderData(
+                    show: false,
+                  ),
+                  minY: 0,
+                  maxY: maxY * 1.1,
+                  barGroups: barGroups,
+                  alignment: BarChartAlignment.spaceAround,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBudgetVsActualChart(
+    String currencySymbol,
+    DateTime selectedMonth,
+  ) {
+    // Calculate spending for selected month
+    final expenses = HiveService.getAllExpenses();
+    final monthStart = DateTime(selectedMonth.year, selectedMonth.month, 1);
+    final monthEnd = DateTime(selectedMonth.year, selectedMonth.month + 1, 0);
+
+    double monthlySpent = 0;
+    for (var expense in expenses) {
+      if (expense.date.isAfter(monthStart) && expense.date.isBefore(monthEnd)) {
+        monthlySpent += expense.amount;
+      }
+    }
+
+    // Get budget for selected month
+    final budgetData =
+        HiveService.getBudgetForMonth(selectedMonth.month, selectedMonth.year);
+    final monthlyBudget = budgetData?.categoryLimits.values
+            .fold<double>(0, (sum, amount) => sum + amount) ??
+        0;
+
+    final remaining =
+        (monthlyBudget - monthlySpent).clamp(0.0, double.infinity);
+
+    // Build the header with month selector
+    final headerRow = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Budget vs Actual',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textColor,
+          ),
+        ),
+        // Month Selector Dropdown
+        DropdownButton<int>(
+          value: selectedMonth.month,
+          underline: const SizedBox(),
+          isDense: true,
+          style: GoogleFonts.poppins(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textColor,
+          ),
+          items: List.generate(12, (index) {
+            final month = index + 1;
+            final monthName = _getMonthName(month);
+            return DropdownMenuItem<int>(
+              value: month,
+              child: Text(monthName),
+            );
+          }),
+          onChanged: (newMonth) {
+            if (newMonth != null) {
+              setState(() {
+                _selectedBudgetMonth = DateTime(
+                  _selectedBudgetMonth.year,
+                  newMonth,
+                );
+              });
+            }
+          },
+        ),
+      ],
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 16, 8, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            headerRow,
+            const SizedBox(height: 14),
+            Expanded(
+              child: monthlyBudget > 0
+                  ? BarChart(
+                      BarChartData(
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine: false,
+                          horizontalInterval:
+                              monthlyBudget > 0 ? monthlyBudget / 3 : 1,
+                          getDrawingHorizontalLine: (value) {
+                            return FlLine(
+                              color: Colors.grey.withOpacity(0.2),
+                              strokeWidth: 1,
+                            );
+                          },
+                        ),
+                        titlesData: FlTitlesData(
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 28,
+                              getTitlesWidget: (value, meta) {
+                                final labels = ['Spent', 'Remaining'];
+                                final index = value.toInt();
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    labels[index],
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.textColor,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                return Text(
+                                  '$currencySymbol${(value / 1000).toStringAsFixed(1)}K',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppTheme.textSecondaryColor,
+                                  ),
+                                );
+                              },
+                              reservedSize: 48,
+                            ),
+                          ),
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                        ),
+                        borderData: FlBorderData(show: false),
+                        barGroups: [
+                          BarChartGroupData(
+                            x: 0,
+                            barRods: [
+                              BarChartRodData(
+                                toY: monthlySpent,
+                                color: const Color(0xFFF44336),
+                                width: 24,
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(6),
+                                ),
+                              ),
+                            ],
+                          ),
+                          BarChartGroupData(
+                            x: 1,
+                            barRods: [
+                              BarChartRodData(
+                                toY: remaining,
+                                color: const Color(0xFF4CAF50),
+                                width: 24,
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(6),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        minY: 0,
+                        maxY: (monthlySpent > monthlyBudget ? monthlySpent : monthlyBudget) * 1.2,
+                      ),
+                    )
+                  : Center(
+                      child: Text(
+                        'No budget set for this month',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: AppTheme.textSecondaryColor,
+                        ),
+                      ),
+                    ),
+            ),
+            const SizedBox(height: 12),
+            if (monthlyBudget > 0)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _LegendItem(
+                    color: const Color(0xFFF44336),
+                    label: 'Spent',
+                    value: AppUtils.formatCurrency(monthlySpent,
+                        currencySymbol: currencySymbol),
+                  ),
+                  _LegendItem(
+                    color: const Color(0xFF4CAF50),
+                    label: 'Remaining',
+                    value: AppUtils.formatCurrency(remaining,
+                        currencySymbol: currencySymbol),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LegendItem extends StatelessWidget {
+  final Color color;
+  final String label;
+  final String value;
+
+  const _LegendItem({
+    required this.color,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 9,
+            color: AppTheme.textSecondaryColor,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textColor,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OverviewItem {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  const _OverviewItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.accentColor,
+    required this.onTap,
+  });
+}
+
+class _OverviewCard extends StatelessWidget {
+  final _OverviewItem item;
+
+  const _OverviewCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: item.onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: item.accentColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                item.icon,
+                color: item.accentColor,
+                size: 18,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              item.label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textColor,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              item.value,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: item.accentColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OverviewListItem extends StatelessWidget {
+  final _OverviewItem item;
+
+  const _OverviewListItem({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: item.onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: item.accentColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                item.icon,
+                color: item.accentColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                item.label,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              item.value,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: item.accentColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickActionItem {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionItem({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+}
+
+class _QuickActionTile extends StatelessWidget {
+  final _QuickActionItem item;
+
+  const _QuickActionTile({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: item.onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 120,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: item.color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: item.color.withOpacity(0.25)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: item.color,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                item.icon,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              item.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NetWorthItem extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _NetWorthItem({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 8,
+            color: Colors.white70,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 1),
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FeatureCard extends StatelessWidget {
+  final AnimationController animationController;
+  final int index;
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color1;
+  final Color color2;
+  final VoidCallback? onTap;
+
+  const _FeatureCard({
+    required this.animationController,
+    required this.index,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color1,
+    required this.color2,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Animation<Offset> slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: animationController,
+        curve: Interval(0.1 * index, 0.1 * index + 0.4, curve: Curves.easeOut),
+      ),
+    );
+
+    return SlideTransition(
+      position: slideAnimation,
+      child: FadeTransition(
+        opacity: Tween<double>(begin: 0, end: 1).animate(
+          CurvedAnimation(
+            parent: animationController,
+            curve: Interval(0.1 * index, 0.1 * index + 0.4),
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [color1, color2],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: color1.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: -20,
+                    right: -20,
+                    child: Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.15),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.25),
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: Icon(
+                            icon,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              label,
+                              style: GoogleFonts.poppins(
+                                fontSize: 8,
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              value,
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CircularProgressIndicator extends StatelessWidget {
+  final double value;
+  final double size;
+  final double strokeWidth;
+  final Color? color;
+
+  const _CircularProgressIndicator({
+    required this.value,
+    required this.size,
+    required this.strokeWidth,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color progressColor = color ?? AppTheme.accentColor;
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: progressColor.withOpacity(0.1),
+          ),
+        ),
+        SizedBox(
+          width: size,
+          height: size,
+          child: CircularProgressIndicator(
+            value: value.clamp(0, 1),
+            strokeWidth: strokeWidth,
+            backgroundColor: progressColor.withOpacity(0.15),
+            valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+          ),
+        ),
+      ],
+    );
+  }
+}

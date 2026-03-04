@@ -15,7 +15,8 @@ class ManageAccountTypeModelsScreen extends StatefulWidget {
       _ManageAccountTypeModelsScreenState();
 }
 
-class _ManageAccountTypeModelsScreenState extends State<ManageAccountTypeModelsScreen> {
+class _ManageAccountTypeModelsScreenState
+    extends State<ManageAccountTypeModelsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -136,6 +137,7 @@ class _ManageAccountTypeModelsScreenState extends State<ManageAccountTypeModelsS
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'manage_account_types_fab',
         onPressed: () => _showAddEditDialog(),
         child: const Icon(Icons.add),
       ),

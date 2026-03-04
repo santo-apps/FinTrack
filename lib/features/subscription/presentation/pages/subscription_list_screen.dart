@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/features/subscription/data/models/subscription_model.dart';
 import 'package:fintrack/features/subscription/presentation/providers/subscription_provider.dart';
@@ -120,6 +121,7 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'subscription_list_fab_add',
         onPressed: () => _showAddEditDialog(context),
         child: const Icon(Icons.add),
       ),
@@ -349,104 +351,118 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Container(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.subscription != null
-                  ? 'Edit Subscription'
-                  : 'Add Subscription',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: 'Service Name',
-                hintText: 'e.g., Netflix, Spotify',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _costController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(
-                      labelText: 'Cost',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+    return Material(
+      child: SingleChildScrollView(
+        child: Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            left: 16,
+            right: 16,
+            top: 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    widget.subscription != null
+                        ? 'Edit Subscription'
+                        : 'Add Subscription',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                DropdownButton<String>(
-                  value: _selectedBillingCycle,
-                  items: const ['weekly', 'monthly', 'quarterly', 'yearly']
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
-                  onChanged: (value) => setState(
-                      () => _selectedBillingCycle = value ?? 'monthly'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            InkWell(
-              onTap: () => _selectDate(context),
-              child: InputDecorator(
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _nameController,
                 decoration: InputDecoration(
-                  labelText: 'Next Renewal Date',
+                  labelText: 'Service Name',
+                  hintText: 'e.g., Netflix, Spotify',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: Text(_formatDate(_selectedRenewalDate)),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _notesController,
-              maxLines: 2,
-              decoration: InputDecoration(
-                labelText: 'Notes (Optional)',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _costController,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: 'Cost',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  DropdownButton<String>(
+                    value: _selectedBillingCycle,
+                    items: const ['weekly', 'monthly', 'quarterly', 'yearly']
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
+                    onChanged: (value) => setState(
+                        () => _selectedBillingCycle = value ?? 'monthly'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: () => _selectDate(context),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Next Renewal Date',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(_formatDate(_selectedRenewalDate)),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            CheckboxListTile(
-              title: const Text('Auto Renewal'),
-              value: _autoRenewal,
-              onChanged: (value) =>
-                  setState(() => _autoRenewal = value ?? true),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => _saveSubscription(context),
-                child: Text(widget.subscription != null
-                    ? 'Update Subscription'
-                    : 'Add Subscription'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _notesController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  labelText: 'Notes (Optional)',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              CheckboxListTile(
+                title: const Text('Auto Renewal'),
+                value: _autoRenewal,
+                onChanged: (value) =>
+                    setState(() => _autoRenewal = value ?? true),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => _saveSubscription(context),
+                  child: Text(widget.subscription != null
+                      ? 'Update Subscription'
+                      : 'Add Subscription'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

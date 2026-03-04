@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/features/investment/data/models/investment_model.dart';
 import 'package:fintrack/features/investment/presentation/providers/investment_provider.dart';
@@ -217,6 +218,7 @@ class _InvestmentPortfolioScreenState extends State<InvestmentPortfolioScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'investment_portfolio_fab_add',
         onPressed: () => _showAddEditDialog(context),
         child: const Icon(Icons.add),
       ),
@@ -505,24 +507,35 @@ class _AddEditInvestmentScreenState extends State<AddEditInvestmentScreen> {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
       child: SingleChildScrollView(
         child: Container(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom + 16,
             left: 16,
             right: 16,
-            top: 16,
+            top: 24,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                widget.investment != null
-                    ? 'Edit Investment'
-                    : 'Add Investment',
-                style: Theme.of(context).textTheme.titleLarge,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    widget.investment != null
+                        ? 'Edit Investment'
+                        : 'Add Investment',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
               ),
               const SizedBox(height: 20),
               TextField(

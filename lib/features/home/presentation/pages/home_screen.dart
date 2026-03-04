@@ -180,103 +180,115 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildExpandableFab(BuildContext context) {
-    return Stack(
-      alignment: Alignment.bottomRight,
-      children: [
-        // Semi-transparent overlay when expanded
-        if (_isFabExpanded)
-          GestureDetector(
-            onTap: () => setState(() => _isFabExpanded = false),
-            child: Container(
-              color: Colors.black.withOpacity(0.3),
-            ),
-          ),
-        // Mini FABs
-        if (_isFabExpanded) ...[
+  List<_FabActionConfig> _buildFabActions(SettingsProvider settingsProvider) {
+    final actionMap = <String, _FabActionConfig>{
+      'expenses': _FabActionConfig(
+        id: 'expenses',
+        icon: Icons.receipt_long,
+        label: 'Expense',
+        onPressed: _showExpenseDialog,
+      ),
+      'subscriptions': _FabActionConfig(
+        id: 'subscriptions',
+        icon: Icons.subscriptions,
+        label: 'Subscription',
+        onPressed: _showSubscriptionDialog,
+      ),
+      'investments': _FabActionConfig(
+        id: 'investments',
+        icon: Icons.trending_up,
+        label: 'Investment',
+        onPressed: _showInvestmentDialog,
+      ),
+      'accounts': _FabActionConfig(
+        id: 'accounts',
+        icon: Icons.account_balance_wallet,
+        label: 'Account',
+        onPressed: _showAccountDialog,
+      ),
+      'goals': _FabActionConfig(
+        id: 'goals',
+        icon: Icons.flag_outlined,
+        label: 'Goal',
+        onPressed: _showGoalDialog,
+      ),
+      'loans': _FabActionConfig(
+        id: 'loans',
+        icon: Icons.account_balance,
+        label: 'Loan',
+        onPressed: _showLoanDialog,
+      ),
+      'budget': _FabActionConfig(
+        id: 'budget',
+        icon: Icons.pie_chart,
+        label: 'Budget',
+        onPressed: _showBudgetDialog,
+      ),
+      'bills': _FabActionConfig(
+        id: 'bills',
+        icon: Icons.calendar_today,
+        label: 'Bill',
+        onPressed: _showBillDialog,
+      ),
+    };
+
+    final configuredActions = settingsProvider.quickActionItems
+        .where((id) => actionMap.containsKey(id))
+        .map((id) => actionMap[id]!)
+        .toList();
+
+    if (configuredActions.isNotEmpty) {
+      return configuredActions;
+    }
+
+    return [
+      actionMap['expenses']!,
+      actionMap['accounts']!,
+      actionMap['budget']!,
+      actionMap['bills']!,
+    ];
+  }
+
+  Widget _buildExpandableFab(
+      BuildContext context, SettingsProvider settingsProvider) {
+    final fabActions = _buildFabActions(settingsProvider);
+    final stackHeight =
+        _isFabExpanded ? 70.0 + (fabActions.length * 55.0) : 56.0;
+
+    return SizedBox(
+      width: 220,
+      height: stackHeight,
+      child: Stack(
+        alignment: Alignment.bottomRight,
+        children: [
+          // Mini FABs
+          if (_isFabExpanded)
+            ...fabActions.asMap().entries.map((entry) {
+              final index = entry.key;
+              final action = entry.value;
+
+              return Positioned(
+                bottom: 70 + (index * 55),
+                right: 0,
+                child: _MiniFloatingActionButton(
+                  icon: action.icon,
+                  label: action.label,
+                  onPressed: action.onPressed,
+                ),
+              );
+            }),
+          // Main FAB
           Positioned(
-            bottom: 70,
+            bottom: 0,
             right: 0,
-            child: _MiniFloatingActionButton(
-              icon: Icons.receipt_long,
-              label: 'Expense',
-              onPressed: _showExpenseDialog,
-            ),
-          ),
-          Positioned(
-            bottom: 125,
-            right: 0,
-            child: _MiniFloatingActionButton(
-              icon: Icons.subscriptions,
-              label: 'Subscription',
-              onPressed: _showSubscriptionDialog,
-            ),
-          ),
-          Positioned(
-            bottom: 180,
-            right: 0,
-            child: _MiniFloatingActionButton(
-              icon: Icons.trending_up,
-              label: 'Investment',
-              onPressed: _showInvestmentDialog,
-            ),
-          ),
-          Positioned(
-            bottom: 235,
-            right: 0,
-            child: _MiniFloatingActionButton(
-              icon: Icons.account_balance_wallet,
-              label: 'Account',
-              onPressed: _showAccountDialog,
-            ),
-          ),
-          Positioned(
-            bottom: 290,
-            right: 0,
-            child: _MiniFloatingActionButton(
-              icon: Icons.flag_outlined,
-              label: 'Goal',
-              onPressed: _showGoalDialog,
-            ),
-          ),
-          Positioned(
-            bottom: 345,
-            right: 0,
-            child: _MiniFloatingActionButton(
-              icon: Icons.account_balance,
-              label: 'Loan',
-              onPressed: _showLoanDialog,
-            ),
-          ),
-          Positioned(
-            bottom: 400,
-            right: 0,
-            child: _MiniFloatingActionButton(
-              icon: Icons.pie_chart,
-              label: 'Budget',
-              onPressed: _showBudgetDialog,
-            ),
-          ),
-          Positioned(
-            bottom: 455,
-            right: 0,
-            child: _MiniFloatingActionButton(
-              icon: Icons.calendar_today,
-              label: 'Bill',
-              onPressed: _showBillDialog,
+            child: FloatingActionButton(
+              heroTag: 'home_main_fab_expand',
+              onPressed: () => setState(() => _isFabExpanded = !_isFabExpanded),
+              child: Icon(_isFabExpanded ? Icons.close : Icons.add),
             ),
           ),
         ],
-        // Main FAB
-        Positioned(
-          bottom: 0,
-          right: 0,
-          child: FloatingActionButton(
-            onPressed: () => setState(() => _isFabExpanded = !_isFabExpanded),
-            child: Icon(_isFabExpanded ? Icons.close : Icons.add),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -320,39 +332,61 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final currentModule = bottomModules[_currentIndex];
 
-        return Scaffold(
-          appBar: AppBar(
-            title: currentModule.id == _homeModule.id
-                ? const Text('FinTrack')
-                : Text(currentModule.label),
-            elevation: 0,
-            automaticallyImplyLeading: true,
-          ),
-          drawer: _buildDrawer(context, bottomModules),
-          body: bottomModules[_currentIndex].screen,
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            type: bottomModules.length > 3
-                ? BottomNavigationBarType.fixed
-                : BottomNavigationBarType.shifting,
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            elevation: 8,
-            onTap: (index) {
-              setState(() => _currentIndex = index);
-            },
-            items: bottomModules
-                .map(
-                  (module) => BottomNavigationBarItem(
-                    icon: Icon(module.icon),
-                    label: module.label,
+        final isHomeModule = currentModule.id == _homeModule.id;
+
+        return Stack(
+          children: [
+            Scaffold(
+              appBar: AppBar(
+                title: isHomeModule
+                    ? const Text('FinTrack')
+                    : Text(currentModule.label),
+                elevation: 0,
+                automaticallyImplyLeading: true,
+              ),
+              drawer: _buildDrawer(context, bottomModules),
+              body: bottomModules[_currentIndex].screen,
+              bottomNavigationBar: BottomNavigationBar(
+                currentIndex: _currentIndex,
+                type: bottomModules.length > 3
+                    ? BottomNavigationBarType.fixed
+                    : BottomNavigationBarType.shifting,
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                elevation: 8,
+                onTap: (index) {
+                  setState(() => _currentIndex = index);
+                },
+                items: bottomModules
+                    .map(
+                      (module) => BottomNavigationBarItem(
+                        icon: Icon(module.icon),
+                        label: module.label,
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+            if (isHomeModule && _isFabExpanded)
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () => setState(() => _isFabExpanded = false),
+                  child: Container(
+                    color: Colors.black.withOpacity(0.3),
                   ),
-                )
-                .toList(),
-          ),
-          // Show expandable FAB only on home screen
-          floatingActionButton: currentModule.id == _homeModule.id
-              ? _buildExpandableFab(context)
-              : null,
+                ),
+              ),
+            if (isHomeModule)
+              Positioned(
+                right: 16,
+                bottom: MediaQuery.of(context).padding.bottom +
+                    kBottomNavigationBarHeight +
+                    16,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: _buildExpandableFab(context, settingsProvider),
+                ),
+              ),
+          ],
         );
       },
     );
@@ -641,6 +675,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+class _FabActionConfig {
+  final String id;
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  const _FabActionConfig({
+    required this.id,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+}
+
 class _NavModule {
   final String id;
   final String label;
@@ -668,34 +716,41 @@ class _MiniFloatingActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 16, bottom: 8),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Text(
-                label,
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
+    return SizedBox(
+      width: 164,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 16, bottom: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Flexible(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          FloatingActionButton(
-            mini: true,
-            onPressed: onPressed,
-            child: Icon(icon),
-          ),
-        ],
+            const SizedBox(width: 8),
+            FloatingActionButton(
+              heroTag: 'home_mini_fab_${icon.codePoint}',
+              mini: true,
+              onPressed: onPressed,
+              child: Icon(icon),
+            ),
+          ],
+        ),
       ),
     );
   }

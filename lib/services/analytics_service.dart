@@ -156,6 +156,36 @@ class AnalyticsService {
 
     return breakdown;
   }
+
+  // Category spending breakdown for a specific month
+  static Map<String, double> getCategoryBreakdownForMonth(int month, int year) {
+    final expenses = HiveService.getAllExpenses();
+    final monthStart = DateTime(year, month, 1);
+    final monthEnd = DateTime(year, month + 1, 0);
+
+    final breakdown = <String, double>{};
+    for (var expense in expenses) {
+      if (expense.date.isAfter(monthStart) && expense.date.isBefore(monthEnd)) {
+        breakdown[expense.category] =
+            (breakdown[expense.category] ?? 0) + expense.amount;
+      }
+    }
+
+    return breakdown;
+  }
+
+  // Investment breakdown by type
+  static Map<String, double> getInvestmentBreakdownByType() {
+    final investments = HiveService.getAllInvestments();
+    final breakdown = <String, double>{};
+
+    for (var investment in investments) {
+      final value = investment.getCurrentValue();
+      breakdown[investment.type] = (breakdown[investment.type] ?? 0.0) + value;
+    }
+
+    return breakdown;
+  }
 }
 
 class OverspendingAlert {
