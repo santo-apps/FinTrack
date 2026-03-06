@@ -384,7 +384,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 child: Center(
                   child: Text(
                     categoryIcon,
-                    style: const TextStyle(fontSize: 18),
+                    style: GoogleFonts.poppins(fontSize: 18),
                   ),
                 ),
               ),
@@ -1322,7 +1322,7 @@ class ExpenseCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   categoryIcon,
-                  style: const TextStyle(fontSize: 24),
+                  style: GoogleFonts.poppins(fontSize: 24),
                 ),
               ),
             ),
@@ -1926,7 +1926,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                             child: Row(
                               children: [
                                 Text(category.icon,
-                                    style: const TextStyle(fontSize: 18)),
+                                    style: GoogleFonts.poppins(fontSize: 18)),
                                 const SizedBox(width: 8),
                                 Text(category.name),
                               ],
@@ -1967,7 +1967,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                           child: Row(
                             children: [
                               Text(type.icon ?? '📌',
-                                  style: const TextStyle(fontSize: 18)),
+                                  style: GoogleFonts.poppins(fontSize: 18)),
                               const SizedBox(width: 8),
                               Text(type.name),
                             ],
@@ -2017,7 +2017,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                                   children: [
                                     if (account.icon != null)
                                       Text('${account.icon} ',
-                                          style: const TextStyle(fontSize: 18)),
+                                          style: GoogleFonts.poppins(fontSize: 18)),
                                     Flexible(
                                       child: Text(
                                         account.name,
@@ -2155,7 +2155,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                               children: [
                                 if (account.icon != null)
                                   Text('${account.icon} ',
-                                      style: const TextStyle(fontSize: 18)),
+                                      style: GoogleFonts.poppins(fontSize: 18)),
                                 Flexible(
                                   child: Text(
                                     account.name,

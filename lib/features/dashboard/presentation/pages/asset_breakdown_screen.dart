@@ -65,7 +65,7 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -77,23 +77,23 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Text(
                         AppUtils.formatCurrency(
                           totalAssets,
                           currencySymbol: currencySymbol,
                         ),
                         style: GoogleFonts.poppins(
-                          fontSize: 30,
+                          fontSize: 26,
                           fontWeight: FontWeight.w800,
                           color: colorScheme.primary,
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 10),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: SizedBox(
-                          height: 8,
+                          height: 6,
                           child: Row(
                             children: [
                               Expanded(
@@ -112,74 +112,148 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _SummaryMetric(
-                              title: 'Accounts',
-                              value: AppUtils.formatCurrency(
-                                accountTotal,
-                                currencySymbol: currencySymbol,
-                              ),
-                              icon: Icons.account_balance_wallet_outlined,
-                              color: Colors.green.shade700,
+                      const SizedBox(height: 10),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final accountMetric = _SummaryMetric(
+                            title: 'Accounts',
+                            value: AppUtils.formatCurrency(
+                              accountTotal,
+                              currencySymbol: currencySymbol,
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _SummaryMetric(
-                              title: 'Investments',
-                              value: AppUtils.formatCurrency(
-                                investmentTotal,
-                                currencySymbol: currencySymbol,
-                              ),
-                              icon: Icons.trending_up_outlined,
-                              color: colorScheme.primary,
+                            icon: Icons.account_balance_wallet_outlined,
+                            color: Colors.green.shade700,
+                          );
+
+                          final investmentMetric = _SummaryMetric(
+                            title: 'Investments',
+                            value: AppUtils.formatCurrency(
+                              investmentTotal,
+                              currencySymbol: currencySymbol,
                             ),
-                          ),
-                        ],
+                            icon: Icons.trending_up_outlined,
+                            color: colorScheme.primary,
+                          );
+
+                          if (constraints.maxWidth < 380) {
+                            return Column(
+                              children: [
+                                accountMetric,
+                                const SizedBox(height: 6),
+                                investmentMetric,
+                              ],
+                            );
+                          }
+
+                          return Row(
+                            children: [
+                              Expanded(child: accountMetric),
+                              const SizedBox(width: 10),
+                              Expanded(child: investmentMetric),
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const AccountListScreen(showBackButton: true),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.account_balance_wallet_outlined),
-                      label: const Text('Accounts'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const InvestmentPortfolioScreen(
-                              showAppBar: true,
-                              showBackButton: true,
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 420;
+                  final buttonTextStyle = GoogleFonts.poppins(
+                    fontSize: isCompact ? 11 : 13,
+                    fontWeight: FontWeight.w600,
+                  );
+
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 10,
+                            shadowColor: colorScheme.primary.withOpacity(0.6),
+                            surfaceTintColor: colorScheme.primary,
+                            disabledBackgroundColor:
+                                colorScheme.primary.withOpacity(0.5),
+                            minimumSize: Size.fromHeight(isCompact ? 40 : 44),
+                            visualDensity: isCompact
+                                ? VisualDensity.compact
+                                : VisualDensity.standard,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isCompact ? 8 : 12,
+                              vertical: isCompact ? 10 : 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.trending_up_outlined),
-                      label: const Text('Investments'),
-                    ),
-                  ),
-                ],
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const AccountListScreen(
+                                    showBackButton: true),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            isCompact ? 'Accounts' : 'View Accounts',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: buttonTextStyle,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 10,
+                            shadowColor: colorScheme.primary.withOpacity(0.6),
+                            surfaceTintColor: colorScheme.primary,
+                            disabledBackgroundColor:
+                                colorScheme.primary.withOpacity(0.5),
+                            minimumSize: Size.fromHeight(isCompact ? 40 : 44),
+                            visualDensity: isCompact
+                                ? VisualDensity.compact
+                                : VisualDensity.standard,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isCompact ? 8 : 12,
+                              vertical: isCompact ? 10 : 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const InvestmentPortfolioScreen(
+                                  showAppBar: true,
+                                  showBackButton: true,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            isCompact ? 'Investments' : 'View Investments',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: buttonTextStyle,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 16),
               Card(
@@ -326,7 +400,7 @@ class _SummaryMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.7),
@@ -341,6 +415,8 @@ class _SummaryMetric extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -350,15 +426,24 @@ class _SummaryMetric extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: color,
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 20,
+            width: double.infinity,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+              ),
             ),
           ),
         ],

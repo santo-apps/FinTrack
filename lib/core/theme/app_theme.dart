@@ -3,9 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Colors
-  static const Color primaryColor = Color(0xFF6366F1);
-  static const Color secondaryColor = Color(0xFF10B981);
-  static const Color accentColor = Color(0xFFF59E0B);
+  static const Color primaryColor = Color(0xFFFF0A67);
+  static const Color secondaryColor = Color(0xFFFF4D5A);
+  static const Color accentColor = Color(0xFFFF7A59);
   static const Color errorColor = Color(0xFFEF4444);
   static const Color warningColor = Color(0xFFF97316);
   static const Color successColor = Color(0xFF22C55E);
@@ -90,7 +90,7 @@ class AppTheme {
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: const Color(0xBF6366F1),
+        backgroundColor: primaryColor.withOpacity(0.75),
         foregroundColor: Colors.white,
         elevation: 4,
         shape: const CircleBorder(),
@@ -206,7 +206,7 @@ class AppTheme {
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: Color(0xBF6366F1),
+        backgroundColor: Color(0xBFFF0A67),
         foregroundColor: Colors.white,
         elevation: 4,
         shape: CircleBorder(),

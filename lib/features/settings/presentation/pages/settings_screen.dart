@@ -204,19 +204,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       }
                                     }
                                   } else {
-                                    // Disable biometric
-                                    await BiometricService.disableBiometric();
-                                    settingsProvider.setBiometricEnabled(false);
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Biometric authentication disabled',
+                                    // Disable biometric - require verification
+                                    final verified =
+                                        await _verifyBeforeDisableSecurity(
+                                      context,
+                                      settingsProvider,
+                                      useBiometric: true,
+                                    );
+
+                                    if (verified && mounted) {
+                                      await BiometricService.disableBiometric();
+                                      settingsProvider
+                                          .setBiometricEnabled(false);
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Biometric authentication disabled',
+                                            ),
+                                            duration: Duration(seconds: 2),
                                           ),
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
+                                        );
+                                      }
                                     }
                                   }
                                 }
@@ -234,16 +244,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             : 'No PIN protection',
                         trailing: Switch(
                           value: settingsProvider.pinEnabled,
-                          onChanged: (value) {
+                          onChanged: (value) async {
                             if (value) {
                               _showPINDialog(context, settingsProvider, true);
                             } else {
-                              settingsProvider.setPinEnabled(false);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('PIN protection disabled'),
-                                ),
+                              // Disable PIN - require verification
+                              final verified =
+                                  await _verifyBeforeDisableSecurity(
+                                context,
+                                settingsProvider,
+                                useBiometric: false,
                               );
+
+                              if (verified && mounted) {
+                                settingsProvider.setPinEnabled(false);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('PIN protection disabled'),
+                                  ),
+                                );
+                              }
                             }
                           },
                         ),
@@ -710,6 +730,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Verify authentication before disabling security features
+  /// Returns true if verification succeeded
+  Future<bool> _verifyBeforeDisableSecurity(
+    BuildContext context,
+    SettingsProvider settingsProvider, {
+    required bool useBiometric,
+  }) async {
+    // First try biometric if enabled and requested
+    if (useBiometric && settingsProvider.biometricEnabled) {
+      try {
+        final authenticated = await BiometricService.authenticate();
+        if (authenticated) {
+          return true;
+        }
+      } catch (e) {
+        // Biometric failed, fall through to PIN
+      }
+    }
+
+    // If biometric failed or not available, try PIN
+    if (settingsProvider.pinEnabled) {
+      return await _showPINVerificationDialog(context);
+    }
+
+    // Try biometric for PIN disable if available
+    if (!useBiometric && settingsProvider.biometricEnabled) {
+      try {
+        final authenticated = await BiometricService.authenticate();
+        if (authenticated) {
+          return true;
+        }
+      } catch (e) {
+        // Failed
+      }
+    }
+
+    // No authentication method available or all failed
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Authentication failed'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+    return false;
+  }
+
+  /// Show PIN verification dialog
+  /// Returns true if PIN was verified successfully
+  Future<bool> _showPINVerificationDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => const _PINVerificationDialog(),
+    );
+    return result ?? false;
+  }
+
   Future<void> _showPINDialog(BuildContext context,
       SettingsProvider settingsProvider, bool isSetup) async {
     return showDialog(
@@ -796,6 +874,100 @@ class _PINDialogState extends State<_PINDialog> {
             }
           },
           child: Text(widget.isSetup ? 'Set' : 'Disable'),
+        ),
+      ],
+    );
+  }
+}
+
+class _PINVerificationDialog extends StatefulWidget {
+  const _PINVerificationDialog();
+
+  @override
+  State<_PINVerificationDialog> createState() => _PINVerificationDialogState();
+}
+
+class _PINVerificationDialogState extends State<_PINVerificationDialog> {
+  final _pinController = TextEditingController();
+  String? _errorMessage;
+  bool _isVerifying = false;
+
+  @override
+  void dispose() {
+    _pinController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _verifyPIN() async {
+    setState(() {
+      _isVerifying = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final isValid = await PINService.verifyPIN(_pinController.text);
+
+      if (isValid && mounted) {
+        Navigator.pop(context, true); // Return true for successful verification
+      } else if (mounted) {
+        setState(() {
+          _errorMessage = 'Incorrect PIN';
+          _pinController.clear();
+          _isVerifying = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error verifying PIN';
+          _isVerifying = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Verify PIN'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Enter your current PIN to disable security',
+            style: TextStyle(fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _pinController,
+            enabled: !_isVerifying,
+            obscureText: true,
+            keyboardType: TextInputType.number,
+            maxLength: 6,
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: 'Enter PIN',
+              border: const OutlineInputBorder(),
+              errorText: _errorMessage,
+            ),
+            onSubmitted: (_) => !_isVerifying ? _verifyPIN() : null,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isVerifying ? null : () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: _isVerifying ? null : _verifyPIN,
+          child: _isVerifying
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Verify'),
         ),
       ],
     );

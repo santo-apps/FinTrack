@@ -120,11 +120,11 @@ class _BillListScreenState extends State<BillListScreen> {
                 indicatorColor: Colors.blue,
                 indicatorWeight: 3,
                 labelPadding: const EdgeInsets.symmetric(horizontal: 12.0),
-                labelStyle: const TextStyle(
+                labelStyle: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                 ),
-                unselectedLabelStyle: const TextStyle(
+                unselectedLabelStyle: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                 ),

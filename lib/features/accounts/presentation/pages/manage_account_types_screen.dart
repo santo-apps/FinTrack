@@ -93,7 +93,7 @@ class _ManageAccountTypeModelsScreenState
                     child: Center(
                       child: Text(
                         type.icon ?? '💳',
-                        style: const TextStyle(fontSize: 24),
+                        style: GoogleFonts.poppins(fontSize: 24),
                       ),
                     ),
                   ),
@@ -229,7 +229,7 @@ class _ManageAccountTypeModelsScreenState
                         ),
                         child: Center(
                           child:
-                              Text(emoji, style: const TextStyle(fontSize: 24)),
+                              Text(emoji, style: GoogleFonts.poppins(fontSize: 24)),
                         ),
                       ),
                     );

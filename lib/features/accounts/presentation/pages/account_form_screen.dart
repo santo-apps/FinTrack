@@ -183,7 +183,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                             if (item.icon != null)
                               Text(
                                 item.icon!,
-                                style: const TextStyle(fontSize: 20),
+                                style: GoogleFonts.poppins(fontSize: 20),
                               )
                             else
                               Icon(

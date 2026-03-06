@@ -84,7 +84,7 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -96,37 +96,43 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              AppUtils.formatCurrency(
-                                totalNetWorth,
-                                currencySymbol: currencySymbol,
-                              ),
-                              style: GoogleFonts.poppins(
-                                fontSize: 30,
-                                fontWeight: FontWeight.w800,
-                                color: isNegative
-                                    ? Colors.red.shade700
-                                    : colorScheme.primary,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                AppUtils.formatCurrency(
+                                  totalNetWorth,
+                                  currencySymbol: currencySymbol,
+                                ),
+                                style: GoogleFonts.poppins(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w800,
+                                  color: isNegative
+                                      ? Colors.red.shade700
+                                      : colorScheme.primary,
+                                ),
                               ),
                             ),
                           ),
-                          if (isNegative)
+                          if (isNegative) ...[
+                            const SizedBox(width: 8),
                             Icon(
                               Icons.warning_amber_rounded,
                               size: 22,
                               color: Colors.red.shade700,
                             ),
+                          ],
                         ],
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 10),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: SizedBox(
-                          height: 8,
+                          height: 6,
                           child: Row(
                             children: [
                               Expanded(
@@ -142,33 +148,47 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _MetricBox(
-                              label: 'Assets',
-                              value: AppUtils.formatCurrency(
-                                totalAssets,
-                                currencySymbol: currencySymbol,
-                              ),
-                              color: Colors.green.shade700,
-                              icon: Icons.trending_up,
+                      const SizedBox(height: 10),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final assetsMetric = _MetricBox(
+                            label: 'Assets',
+                            value: AppUtils.formatCurrency(
+                              totalAssets,
+                              currencySymbol: currencySymbol,
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _MetricBox(
-                              label: 'Loans',
-                              value: AppUtils.formatCurrency(
-                                totalLoans,
-                                currencySymbol: currencySymbol,
-                              ),
-                              color: Colors.red.shade700,
-                              icon: Icons.account_balance,
+                            color: Colors.green.shade700,
+                            icon: Icons.trending_up,
+                          );
+
+                          final loansMetric = _MetricBox(
+                            label: 'Loans',
+                            value: AppUtils.formatCurrency(
+                              totalLoans,
+                              currencySymbol: currencySymbol,
                             ),
-                          ),
-                        ],
+                            color: Colors.red.shade700,
+                            icon: Icons.account_balance,
+                          );
+
+                          if (constraints.maxWidth < 380) {
+                            return Column(
+                              children: [
+                                assetsMetric,
+                                const SizedBox(height: 6),
+                                loansMetric,
+                              ],
+                            );
+                          }
+
+                          return Row(
+                            children: [
+                              Expanded(child: assetsMetric),
+                              const SizedBox(width: 10),
+                              Expanded(child: loansMetric),
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -355,7 +375,7 @@ class _MetricBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.7),
@@ -370,6 +390,8 @@ class _MetricBox extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -379,16 +401,25 @@ class _MetricBox extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: color,
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 20,
+            width: double.infinity,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+              ),
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

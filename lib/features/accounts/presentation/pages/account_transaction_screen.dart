@@ -270,7 +270,7 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                 children: [
                   Text(
                     tab.$3,
-                    style: const TextStyle(fontSize: 20),
+                    style: GoogleFonts.poppins(fontSize: 20),
                   ),
                   const SizedBox(height: 4),
                   Text(

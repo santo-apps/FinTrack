@@ -330,7 +330,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                     ),
                     child: Text(
                       DateFormat('MMM dd, yyyy').format(_startDate),
-                      style: const TextStyle(fontSize: 16),
+                      style: GoogleFonts.poppins(fontSize: 16),
                     ),
                   ),
                 ),

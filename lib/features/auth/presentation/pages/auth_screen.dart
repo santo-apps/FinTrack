@@ -129,83 +129,96 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 48),
 
-              // PIN Input
-              TextField(
-                controller: _pinController,
-                enabled: !_isLoading,
-                obscureText: true,
-                keyboardType: TextInputType.number,
-                maxLength: 6,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 24,
-                  letterSpacing: 8,
-                  fontWeight: FontWeight.w600,
-                ),
-                decoration: InputDecoration(
-                  hintText: '••••••',
-                  hintStyle: GoogleFonts.poppins(
-                    fontSize: 24,
-                    color: Colors.grey[400],
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                ),
-                onSubmitted: (_) => !_isLoading ? _verifyPIN() : null,
-              ),
-              const SizedBox(height: 16),
+              // PIN Input Section (only if PIN is enabled)
+              Consumer<SettingsProvider>(
+                builder: (context, settingsProvider, _) {
+                  if (!settingsProvider.pinEnabled) {
+                    return const SizedBox.shrink();
+                  }
 
-              // Error Message
-              if (_errorMessage != null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    _errorMessage!,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.red[700],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 24),
-
-              // Unlock Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _verifyPIN,
-                  child: _isLoading
-                      ? SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(
-                              Theme.of(context).primaryColor,
-                            ),
+                  return Column(
+                    children: [
+                      // PIN Input
+                      TextField(
+                        controller: _pinController,
+                        enabled: !_isLoading,
+                        obscureText: true,
+                        keyboardType: TextInputType.number,
+                        maxLength: 6,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 24,
+                          letterSpacing: 8,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: '••••••',
+                          hintStyle: GoogleFonts.poppins(
+                            fontSize: 24,
+                            color: Colors.grey[400],
                           ),
-                        )
-                      : Text(
-                          'Unlock',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
                           ),
                         ),
-                ),
+                        onSubmitted: (_) => !_isLoading ? _verifyPIN() : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Error Message
+                      if (_errorMessage != null)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red[100],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _errorMessage!,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: Colors.red[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 24),
+
+                      // Unlock Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _verifyPIN,
+                          child: _isLoading
+                              ? SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation(
+                                      Theme.of(context).primaryColor,
+                                    ),
+                                  ),
+                                )
+                              : Text(
+                                  'Unlock',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                },
               ),
-              const SizedBox(height: 16),
 
               // Biometric Button (if enabled)
               Consumer<SettingsProvider>(

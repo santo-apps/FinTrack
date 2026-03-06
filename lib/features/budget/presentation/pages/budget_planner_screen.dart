@@ -610,7 +610,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                     child: Center(
                       child: Text(
                         icon,
-                        style: const TextStyle(fontSize: 18),
+                        style: GoogleFonts.poppins(fontSize: 18),
                       ),
                     ),
                   ),
@@ -837,7 +837,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                       leading: cat == null
                           ? null
                           : Text(cat.icon,
-                              style: const TextStyle(fontSize: 20)),
+                              style: GoogleFonts.poppins(fontSize: 20)),
                       title: Text(item),
                     );
                   },
@@ -858,7 +858,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                   }
                   return Row(
                     children: [
-                      Text(cat.icon, style: const TextStyle(fontSize: 18)),
+                      Text(cat.icon, style: GoogleFonts.poppins(fontSize: 18)),
                       const SizedBox(width: 8),
                       Text(cat.name),
                     ],
@@ -898,7 +898,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                       title: const Text('One-Time'),
                       subtitle: Text(
                         'Budget for ${_getMonthYearString(_selectedMonth)} only',
-                        style: const TextStyle(fontSize: 12),
+                        style: GoogleFonts.poppins(fontSize: 12),
                       ),
                       value: 'oneTime',
                       groupValue: recurrenceType,
@@ -915,9 +915,9 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                     ),
                     RadioListTile<String>(
                       title: const Text('Monthly Recurring'),
-                      subtitle: const Text(
+                      subtitle: Text(
                         'Repeat every month from now onwards',
-                        style: TextStyle(fontSize: 12),
+                        style: GoogleFonts.poppins(fontSize: 12),
                       ),
                       value: 'monthly',
                       groupValue: recurrenceType,
@@ -1088,7 +1088,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                     title: const Text('One-Time'),
                     subtitle: Text(
                       'Budget for ${_getMonthYearString(_selectedMonth)} only',
-                      style: const TextStyle(fontSize: 12),
+                      style: GoogleFonts.poppins(fontSize: 12),
                     ),
                     value: 'oneTime',
                     groupValue: recurrenceType,
@@ -1512,8 +1512,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Center(
-                          child:
-                              Text(icon, style: const TextStyle(fontSize: 24)),
+                          child: Text(icon,
+                              style: GoogleFonts.poppins(fontSize: 24)),
                         ),
                       ),
                       const SizedBox(width: 12),

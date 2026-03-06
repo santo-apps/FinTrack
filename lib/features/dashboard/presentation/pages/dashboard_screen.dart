@@ -219,7 +219,7 @@ class _SnapshotCard extends StatelessWidget {
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             // Assets & Loans Row
@@ -236,30 +236,61 @@ class _SnapshotCard extends StatelessWidget {
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF10B981).withOpacity(0.4),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF10B981).withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Assets',
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade600,
-                            ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.trending_up,
+                                size: 14,
+                                color: const Color(0xFF059669),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Assets',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                              const Spacer(),
+                              Icon(
+                                Icons.chevron_right,
+                                size: 16,
+                                color: Colors.grey.shade400,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            AppUtils.formatCurrency(assets,
-                                currencySymbol: currencySymbol),
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.green.shade700,
+                          const SizedBox(height: 6),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              AppUtils.formatCurrency(assets,
+                                  currencySymbol: currencySymbol),
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF047857),
+                              ),
                             ),
                           ),
                         ],
@@ -267,7 +298,7 @@ class _SnapshotCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: InkWell(
                     onTap: () {
@@ -282,30 +313,61 @@ class _SnapshotCard extends StatelessWidget {
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFFF59E0B).withOpacity(0.4),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFF59E0B).withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Loans',
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade600,
-                            ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.account_balance,
+                                size: 14,
+                                color: const Color(0xFFD97706),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Loans',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                              const Spacer(),
+                              Icon(
+                                Icons.chevron_right,
+                                size: 16,
+                                color: Colors.grey.shade400,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            AppUtils.formatCurrency(loans,
-                                currencySymbol: currencySymbol),
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.red.shade700,
+                          const SizedBox(height: 6),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              AppUtils.formatCurrency(loans,
+                                  currencySymbol: currencySymbol),
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFFB45309),
+                              ),
                             ),
                           ),
                         ],
@@ -315,7 +377,7 @@ class _SnapshotCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
             // Net Worth
             InkWell(
@@ -331,43 +393,79 @@ class _SnapshotCard extends StatelessWidget {
                 );
               },
               borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isNegative
+                        ? const Color(0xFFEF4444).withOpacity(0.4)
+                        : const Color(0xFF8B5CF6).withOpacity(0.5),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isNegative
+                          ? const Color(0xFFEF4444).withOpacity(0.12)
+                          : const Color(0xFF8B5CF6).withOpacity(0.15),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
                 child: Column(
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        Icon(
+                          Icons.account_balance_wallet,
+                          size: 14,
+                          color: isNegative
+                              ? const Color(0xFFDC2626)
+                              : const Color(0xFF7C3AED),
+                        ),
+                        const SizedBox(width: 6),
                         Text(
                           'Net Worth',
                           style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade700,
                           ),
                         ),
                         if (isNegative) ...[
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           Icon(
                             Icons.warning_amber_rounded,
-                            size: 16,
-                            color: Colors.red.shade700,
+                            size: 14,
+                            color: const Color(0xFFDC2626),
                           ),
                         ],
+                        const SizedBox(width: 6),
+                        Icon(
+                          Icons.open_in_new,
+                          size: 14,
+                          color: Colors.grey.shade400,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     FadeTransition(
                       opacity: animation,
-                      child: Text(
-                        AppUtils.formatCurrency(netWorth,
-                            currencySymbol: currencySymbol),
-                        style: GoogleFonts.poppins(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w800,
-                          color: isNegative
-                              ? Colors.red.shade700
-                              : AppTheme.primaryColor,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          AppUtils.formatCurrency(netWorth,
+                              currencySymbol: currencySymbol),
+                          style: GoogleFonts.poppins(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: isNegative
+                                ? const Color(0xFFDC2626)
+                                : const Color(0xFF7C3AED),
+                          ),
                         ),
                       ),
                     ),
@@ -375,7 +473,7 @@ class _SnapshotCard extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
 
             // Compact Metrics Row
             Row(
@@ -385,18 +483,18 @@ class _SnapshotCard extends StatelessWidget {
                   label: 'Today',
                   value: AppUtils.formatCurrency(todaySpend,
                       currencySymbol: currencySymbol),
-                  color: Colors.orange,
+                  color: const Color(0xFFF59E0B),
                 ),
                 _CompactMetric(
                   label: 'Budget Left',
                   value: AppUtils.formatCurrency(remainingBudget,
                       currencySymbol: currencySymbol),
-                  color: Colors.blue,
+                  color: const Color(0xFF3B82F6),
                 ),
                 _CompactMetric(
                   label: 'Savings',
                   value: '${savingsRate.toStringAsFixed(0)}%',
-                  color: Colors.green,
+                  color: const Color(0xFF10B981),
                 ),
               ],
             ),
@@ -431,12 +529,15 @@ class _CompactMetric extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: color,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
           ),
         ),
       ],

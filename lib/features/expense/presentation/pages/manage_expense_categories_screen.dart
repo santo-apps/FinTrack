@@ -76,7 +76,7 @@ class _ManageExpenseCategoriesScreenState
                     child: Center(
                       child: Text(
                         category.icon,
-                        style: const TextStyle(fontSize: 24),
+                        style: GoogleFonts.poppins(fontSize: 24),
                       ),
                     ),
                   ),
