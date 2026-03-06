@@ -118,11 +118,12 @@ class _ManageExpenseCategoriesScreenState
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
+        mini: true,
         heroTag: 'manage_expense_categories_fab',
         onPressed: () => _showCategoryDialog(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Category'),
+        tooltip: 'Add Category',
+        child: const Icon(Icons.add),
       ),
     );
   }

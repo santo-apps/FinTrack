@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>We need Face ID permission to authenticate and secure your financial data in FinTrack</string>
+	<key>NSLocalizedDescription</key>
+	<string>FinTrack requests access to biometric authentication (Face ID or Touch ID) to secure your financial information.</string>
 </dict>
 </plist>

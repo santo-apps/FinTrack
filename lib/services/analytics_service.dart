@@ -1,6 +1,11 @@
 import '../database/hive_service.dart';
 
 class AnalyticsService {
+  static bool _isSpendingTransaction(dynamic expense) {
+    final transactionType = expense.transactionType ?? 'expense';
+    return transactionType == 'expense' || transactionType == 'payment';
+  }
+
   // Calculate monthly spending trend
   static Map<int, double> getMonthlySpendingTrend(int months) {
     final trend = <int, double>{};
@@ -14,7 +19,9 @@ class AnalyticsService {
 
       double monthTotal = 0;
       for (var expense in expenses) {
-        if (expense.date.month == adjustedMonth && expense.date.year == year) {
+        if (expense.date.month == adjustedMonth &&
+            expense.date.year == year &&
+            _isSpendingTransaction(expense)) {
           monthTotal += expense.amount;
         }
       }
@@ -38,7 +45,9 @@ class AnalyticsService {
 
     final categorySpending = <String, double>{};
     for (var expense in expenses) {
-      if (expense.date.isAfter(monthStart) && expense.date.isBefore(monthEnd)) {
+      if (expense.date.isAfter(monthStart) &&
+          expense.date.isBefore(monthEnd) &&
+          _isSpendingTransaction(expense)) {
         categorySpending[expense.category] =
             (categorySpending[expense.category] ?? 0) + expense.amount;
       }
@@ -127,7 +136,9 @@ class AnalyticsService {
 
     double monthTotal = 0;
     for (var expense in expenses) {
-      if (expense.date.isAfter(monthStart) && expense.date.isBefore(monthEnd)) {
+      if (expense.date.isAfter(monthStart) &&
+          expense.date.isBefore(monthEnd) &&
+          _isSpendingTransaction(expense)) {
         monthTotal += expense.amount;
       }
     }
@@ -148,7 +159,9 @@ class AnalyticsService {
 
     final breakdown = <String, double>{};
     for (var expense in expenses) {
-      if (expense.date.isAfter(monthStart) && expense.date.isBefore(monthEnd)) {
+      if (expense.date.isAfter(monthStart) &&
+          expense.date.isBefore(monthEnd) &&
+          _isSpendingTransaction(expense)) {
         breakdown[expense.category] =
             (breakdown[expense.category] ?? 0) + expense.amount;
       }
@@ -165,7 +178,9 @@ class AnalyticsService {
 
     final breakdown = <String, double>{};
     for (var expense in expenses) {
-      if (expense.date.isAfter(monthStart) && expense.date.isBefore(monthEnd)) {
+      if (expense.date.isAfter(monthStart) &&
+          expense.date.isBefore(monthEnd) &&
+          _isSpendingTransaction(expense)) {
         breakdown[expense.category] =
             (breakdown[expense.category] ?? 0) + expense.amount;
       }

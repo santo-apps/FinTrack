@@ -101,14 +101,20 @@ class ExpenseProvider extends ChangeNotifier {
   double getTotalMonthlyExpense() {
     final period = AppUtils.calculateMonthPeriod();
     final monthlyExpenses =
-        getExpensesInDateRange(period['start'], period['end']);
+        getExpensesInDateRange(period['start'], period['end']).where((e) {
+      final transactionType = e.transactionType ?? 'expense';
+      return transactionType == 'expense' || transactionType == 'payment';
+    });
     return monthlyExpenses.fold<double>(0, (sum, e) => sum + e.amount);
   }
 
   Map<String, double> getMonthlyCategoryBreakdown() {
     final period = AppUtils.calculateMonthPeriod();
     final monthlyExpenses =
-        getExpensesInDateRange(period['start'], period['end']);
+        getExpensesInDateRange(period['start'], period['end']).where((e) {
+      final transactionType = e.transactionType ?? 'expense';
+      return transactionType == 'expense' || transactionType == 'payment';
+    });
     final breakdown = <String, double>{};
     for (var expense in monthlyExpenses) {
       breakdown[expense.category] =

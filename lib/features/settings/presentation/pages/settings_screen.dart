@@ -7,6 +7,7 @@ import 'package:fintrack/features/settings/presentation/pages/settings_content_m
 import 'package:fintrack/features/settings/presentation/pages/settings_data_management_screen.dart';
 import 'package:fintrack/features/settings/presentation/pages/settings_about_screen.dart';
 import 'package:fintrack/services/security_service.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 
 class SettingsScreen extends StatefulWidget {
   final String? scrollToSection;
@@ -58,22 +59,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    DropdownButton<String>(
-                      value: settingsProvider.currency,
-                      underline: const SizedBox(),
-                      items: settingsProvider.availableCurrencies
-                          .map(
-                            (c) => DropdownMenuItem(
-                              value: c,
-                              child: Text(c),
+                    SizedBox(
+                      width: 120,
+                      child: DropdownSearch<String>(
+                        items: settingsProvider.availableCurrencies,
+                        selectedItem: settingsProvider.currency,
+                        dropdownBuilder: (context, selectedItem) {
+                          return Text(selectedItem ?? 'Select currency');
+                        },
+                        dropdownDecoratorProps: const DropDownDecoratorProps(
+                          baseStyle: TextStyle(),
+                        ),
+                        popupProps: PopupProps.menu(
+                          title: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Text('Select Currency'),
+                          ),
+                          showSearchBox: true,
+                          searchFieldProps: const TextFieldProps(
+                            decoration: InputDecoration(
+                              hintText: 'Search currency...',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.all(8),
                             ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          settingsProvider.setCurrency(value);
-                        }
-                      },
+                          ),
+                          fit: FlexFit.loose,
+                        ),
+                        onChanged: (value) {
+                          if (value != null) {
+                            settingsProvider.setCurrency(value);
+                          }
+                        },
+                      ),
                     ),
                     IconButton(
                       icon: Icon(Icons.add,
@@ -112,10 +129,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Security Section
               _buildSectionHeader(context, 'Security', Icons.security),
-              FutureBuilder<bool>(
-                future: BiometricService.canUseBiometrics(),
+              FutureBuilder<(bool, String)>(
+                future: BiometricService.getBiometricStatusForSettings(),
                 builder: (context, snapshot) {
-                  final canUseBiometrics = snapshot.data ?? false;
+                  final status = snapshot.data;
+                  final canUseBiometrics = status?.$1 ?? false;
+                  final biometricSubtitle =
+                      status?.$2 ?? 'Checking biometric availability...';
                   return Column(
                     children: [
                       _buildSettingCard(
@@ -125,9 +145,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ? Theme.of(context).primaryColor
                                 : Colors.grey),
                         title: 'Biometric Authentication',
-                        subtitle: canUseBiometrics
-                            ? 'Use fingerprint or face ID'
-                            : 'Not available on this device',
+                        subtitle: biometricSubtitle,
                         enabled: canUseBiometrics,
                         trailing: Switch(
                           value: settingsProvider.biometricEnabled &&
@@ -135,20 +153,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onChanged: canUseBiometrics
                               ? (value) async {
                                   if (value) {
-                                    final authenticated =
-                                        await BiometricService.authenticate();
-                                    if (authenticated && mounted) {
-                                      settingsProvider
-                                          .setBiometricEnabled(true);
+                                    // Request permission and enable biometric
+                                    final (
+                                      enabled,
+                                      errorMessage,
+                                      shouldOpenSettings
+                                    ) = await BiometricService
+                                        .enableBiometric();
+
+                                    if (mounted) {
+                                      if (enabled) {
+                                        settingsProvider
+                                            .setBiometricEnabled(true);
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                '✓ Biometric authentication enabled',
+                                              ),
+                                              duration: Duration(seconds: 2),
+                                            ),
+                                          );
+                                        }
+                                      } else {
+                                        // Failed to enable - show error
+                                        settingsProvider
+                                            .setBiometricEnabled(false);
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                '✗ ${errorMessage ?? 'Failed to enable biometric. Please check permissions.'}',
+                                              ),
+                                              duration:
+                                                  const Duration(seconds: 3),
+                                              action: shouldOpenSettings
+                                                  ? SnackBarAction(
+                                                      label: 'Open Settings',
+                                                      onPressed: () {
+                                                        BiometricService
+                                                            .openBiometricSettings();
+                                                      },
+                                                    )
+                                                  : null,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    }
+                                  } else {
+                                    // Disable biometric
+                                    await BiometricService.disableBiometric();
+                                    settingsProvider.setBiometricEnabled(false);
+                                    if (mounted) {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         const SnackBar(
-                                          content: Text('Biometric enabled'),
+                                          content: Text(
+                                            'Biometric authentication disabled',
+                                          ),
+                                          duration: Duration(seconds: 2),
                                         ),
                                       );
                                     }
-                                  } else {
-                                    settingsProvider.setBiometricEnabled(false);
                                   }
                                 }
                               : null,

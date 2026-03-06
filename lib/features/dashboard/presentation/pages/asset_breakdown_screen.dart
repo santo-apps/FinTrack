@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
-import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/features/accounts/presentation/pages/account_list_screen.dart';
 import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
 import 'package:fintrack/features/investment/data/models/investment_model.dart';
@@ -18,9 +17,6 @@ class AssetBreakdownScreen extends StatefulWidget {
 }
 
 class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
-  bool _accountsExpanded = false;
-  bool _investmentsExpanded = false;
-
   double _effectiveInvestmentValue(Investment investment) {
     final marketValue = investment.getCurrentValue();
     final investedCost = investment.getTotalInvestmentValue();
@@ -29,6 +25,8 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Asset Breakdown'),
@@ -52,17 +50,22 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
             (sum, investment) => sum + _effectiveInvestmentValue(investment),
           );
           final totalAssets = accountTotal + investmentTotal;
+          final accountShare =
+              totalAssets > 0 ? (accountTotal / totalAssets) : 0.0;
+          final investmentShare =
+              totalAssets > 0 ? (investmentTotal / totalAssets) : 0.0;
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
             children: [
               Card(
-                elevation: 2,
+                elevation: 3,
+                color: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(18),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -70,41 +73,82 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
                         'Total Assets',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       Text(
                         AppUtils.formatCurrency(
                           totalAssets,
                           currencySymbol: currencySymbol,
                         ),
                         style: GoogleFonts.poppins(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.primaryColor,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
+                          color: colorScheme.primary,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Accounts: ${AppUtils.formatCurrency(accountTotal, currencySymbol: currencySymbol)}',
-                        style: GoogleFonts.poppins(fontSize: 12),
+                      const SizedBox(height: 14),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: SizedBox(
+                          height: 8,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: (accountShare * 1000)
+                                    .round()
+                                    .clamp(0, 1000),
+                                child: Container(color: Colors.green.shade500),
+                              ),
+                              Expanded(
+                                flex: (investmentShare * 1000)
+                                    .round()
+                                    .clamp(0, 1000),
+                                child: Container(color: colorScheme.primary),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Investments: ${AppUtils.formatCurrency(investmentTotal, currencySymbol: currencySymbol)}',
-                        style: GoogleFonts.poppins(fontSize: 12),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _SummaryMetric(
+                              title: 'Accounts',
+                              value: AppUtils.formatCurrency(
+                                accountTotal,
+                                currencySymbol: currencySymbol,
+                              ),
+                              icon: Icons.account_balance_wallet_outlined,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _SummaryMetric(
+                              title: 'Investments',
+                              value: AppUtils.formatCurrency(
+                                investmentTotal,
+                                currencySymbol: currencySymbol,
+                              ),
+                              icon: Icons.trending_up_outlined,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: FilledButton.icon(
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
@@ -114,12 +158,12 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
                         );
                       },
                       icon: const Icon(Icons.account_balance_wallet_outlined),
-                      label: const Text('Manage Accounts'),
+                      label: const Text('Accounts'),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: FilledButton.icon(
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
@@ -132,27 +176,22 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
                         );
                       },
                       icon: const Icon(Icons.trending_up_outlined),
-                      label: const Text('Manage Investments'),
+                      label: const Text('Investments'),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
               Card(
-                elevation: _accountsExpanded ? 6 : 2,
+                elevation: 1,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Theme(
-                  data: Theme.of(context).copyWith(
-                    dividerColor: Colors.transparent,
-                  ),
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
-                    onExpansionChanged: (expanded) {
-                      setState(() {
-                        _accountsExpanded = expanded;
-                      });
-                    },
+                    initiallyExpanded: false,
                     title: Text(
                       'Accounts',
                       style: GoogleFonts.poppins(
@@ -172,64 +211,43 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
                       ),
                     ),
                     children: [
-                      if (accounts.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: _EmptySection(
-                            message: 'No asset accounts found',
-                          ),
-                        )
-                      else
-                        ...accounts.map((account) {
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
-                            ),
-                            title: Text(
-                              account.name,
-                              style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            subtitle: Text(
-                              account.accountType,
-                              style: GoogleFonts.poppins(fontSize: 11),
-                            ),
-                            trailing: Text(
-                              AppUtils.formatCurrency(
-                                account.balance,
-                                currencySymbol: currencySymbol,
-                              ),
-                              style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.green.shade700,
-                              ),
-                            ),
-                          );
-                        }),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                        child: Column(
+                          children: [
+                            if (accounts.isEmpty)
+                              const _EmptySection(
+                                  message: 'No asset accounts found')
+                            else
+                              ...accounts.map((account) {
+                                return _DataRowItem(
+                                  title: account.name,
+                                  subtitle: account.accountType,
+                                  value: AppUtils.formatCurrency(
+                                    account.balance,
+                                    currencySymbol: currencySymbol,
+                                  ),
+                                  valueColor: Colors.green.shade700,
+                                );
+                              }),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 12),
               Card(
-                elevation: _investmentsExpanded ? 6 : 2,
+                elevation: 1,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Theme(
-                  data: Theme.of(context).copyWith(
-                    dividerColor: Colors.transparent,
-                  ),
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
-                    onExpansionChanged: (expanded) {
-                      setState(() {
-                        _investmentsExpanded = expanded;
-                      });
-                    },
+                    initiallyExpanded: false,
                     title: Text(
                       'Investments',
                       style: GoogleFonts.poppins(
@@ -245,53 +263,41 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.primaryColor,
+                        color: colorScheme.primary,
                       ),
                     ),
                     children: [
-                      if (investments.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: _EmptySection(message: 'No investments found'),
-                        )
-                      else
-                        ...investments.map((investment) {
-                          final effectiveValue =
-                              _effectiveInvestmentValue(investment);
-                          final invested = investment.getTotalInvestmentValue();
-                          final gain = effectiveValue - invested;
-                          final gainPercent =
-                              invested > 0 ? (gain / invested) * 100 : 0;
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                        child: Column(
+                          children: [
+                            if (investments.isEmpty)
+                              const _EmptySection(
+                                  message: 'No investments found')
+                            else
+                              ...investments.map((investment) {
+                                final effectiveValue =
+                                    _effectiveInvestmentValue(investment);
+                                final invested =
+                                    investment.getTotalInvestmentValue();
+                                final gain = effectiveValue - invested;
+                                final gainPercent =
+                                    invested > 0 ? (gain / invested) * 100 : 0;
 
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
-                            ),
-                            title: Text(
-                              investment.name,
-                              style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '${investment.type} • Gain/Loss: ${AppUtils.formatCurrency(gain, currencySymbol: currencySymbol)} (${gainPercent.toStringAsFixed(1)}%)',
-                              style: GoogleFonts.poppins(fontSize: 11),
-                            ),
-                            trailing: Text(
-                              AppUtils.formatCurrency(
-                                effectiveValue,
-                                currencySymbol: currencySymbol,
-                              ),
-                              style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.primaryColor,
-                              ),
-                            ),
-                          );
-                        }),
+                                return _DataRowItem(
+                                  title: investment.name,
+                                  subtitle:
+                                      '${investment.type} • ${gain >= 0 ? 'Gain' : 'Loss'}: ${AppUtils.formatCurrency(gain, currencySymbol: currencySymbol)} (${gainPercent.toStringAsFixed(1)}%)',
+                                  value: AppUtils.formatCurrency(
+                                    effectiveValue,
+                                    currencySymbol: currencySymbol,
+                                  ),
+                                  valueColor: colorScheme.primary,
+                                );
+                              }),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -299,6 +305,177 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _SummaryMetric extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _SummaryMetric({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.7),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String total;
+  final Color totalColor;
+
+  const _SectionHeader({
+    required this.icon,
+    required this.title,
+    required this.total,
+    required this.totalColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon,
+              size: 18, color: Theme.of(context).colorScheme.primary),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        Text(
+          total,
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: totalColor,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DataRowItem extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final String value;
+  final Color valueColor;
+
+  const _DataRowItem({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).colorScheme.surface,
+        border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.12)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            value,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: valueColor,
+            ),
+          ),
+        ],
       ),
     );
   }

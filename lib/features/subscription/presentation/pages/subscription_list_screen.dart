@@ -121,6 +121,7 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        mini: true,
         heroTag: 'subscription_list_fab_add',
         onPressed: () => _showAddEditDialog(context),
         child: const Icon(Icons.add),

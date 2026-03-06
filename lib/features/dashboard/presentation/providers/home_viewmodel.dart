@@ -145,9 +145,11 @@ class HomeViewModel extends ChangeNotifier {
     // Today's spend
     final now = DateTime.now();
     final todayExpenses = HiveService.getAllExpenses().where((expense) {
+      final transactionType = expense.transactionType ?? 'expense';
       return expense.date.year == now.year &&
           expense.date.month == now.month &&
-          expense.date.day == now.day;
+          expense.date.day == now.day &&
+          (transactionType == 'expense' || transactionType == 'payment');
     });
     _todaySpend = todayExpenses.fold<double>(0, (sum, e) => sum + e.amount);
   }
@@ -212,6 +214,9 @@ class HomeViewModel extends ChangeNotifier {
       final now = DateTime.now();
       final monthExpenses = HiveService.getAllExpenses().where((e) {
         return e.date.year == now.year && e.date.month == now.month;
+      }).where((e) {
+        final transactionType = e.transactionType ?? 'expense';
+        return transactionType == 'expense' || transactionType == 'payment';
       }).toList();
 
       budget.categoryLimits.forEach((category, limit) {
@@ -232,6 +237,9 @@ class HomeViewModel extends ChangeNotifier {
     final now = DateTime.now();
     final monthExpenses = HiveService.getAllExpenses().where((e) {
       return e.date.year == now.year && e.date.month == now.month;
+    }).where((e) {
+      final transactionType = e.transactionType ?? 'expense';
+      return transactionType == 'expense' || transactionType == 'payment';
     }).toList();
 
     final categoryTotals = <String, double>{};

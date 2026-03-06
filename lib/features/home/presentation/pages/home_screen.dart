@@ -42,6 +42,12 @@ class _HomeScreenState extends State<HomeScreen> {
       screen: ExpenseListScreen(showAppBar: false),
     ),
     _NavModule(
+      id: 'accounts',
+      label: 'Accounts',
+      icon: Icons.account_balance_wallet,
+      screen: AccountListScreen(showAppBar: false),
+    ),
+    _NavModule(
       id: 'budget',
       label: 'Budget',
       icon: Icons.pie_chart,
@@ -282,6 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
             bottom: 0,
             right: 0,
             child: FloatingActionButton(
+              mini: true,
               heroTag: 'home_main_fab_expand',
               onPressed: () => setState(() => _isFabExpanded = !_isFabExpanded),
               child: Icon(_isFabExpanded ? Icons.close : Icons.add),
@@ -312,6 +319,8 @@ class _HomeScreenState extends State<HomeScreen> {
         return const GoalTrackerScreen(showAppBar: true, showBackButton: true);
       case 'expenses':
         return const ExpenseListScreen(showAppBar: true, showBackButton: true);
+      case 'accounts':
+        return const AccountListScreen(showAppBar: true, showBackButton: true);
       default:
         return const Placeholder();
     }
@@ -517,13 +526,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   letterSpacing: 0.5,
                 ),
               ),
-            ),
-            _buildModernDrawerItem(
-              context,
-              icon: Icons.account_balance_wallet,
-              label: 'Payment Accounts',
-              onTap: () => _navigateToScreen(
-                  const AccountListScreen(showBackButton: true)),
             ),
             ..._allModules
                 .where(

@@ -12,8 +12,13 @@ import 'package:fintrack/features/settings/presentation/providers/settings_provi
 
 class AccountListScreen extends StatefulWidget {
   final bool showBackButton;
+  final bool showAppBar;
 
-  const AccountListScreen({super.key, this.showBackButton = false});
+  const AccountListScreen({
+    super.key,
+    this.showBackButton = false,
+    this.showAppBar = true,
+  });
 
   @override
   State<AccountListScreen> createState() => _AccountListScreenState();
@@ -52,10 +57,12 @@ class _AccountListScreenState extends State<AccountListScreen> {
     final currencySymbol = context.watch<SettingsProvider>().currencySymbol;
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Payment Accounts',
-        showBackButton: widget.showBackButton,
-      ),
+      appBar: widget.showAppBar
+          ? CustomAppBar(
+              title: 'Payment Accounts',
+              showBackButton: widget.showBackButton,
+            )
+          : null,
       body: Consumer<PaymentAccountProvider>(
         builder: (context, provider, _) {
           final accounts = provider.accounts;
@@ -201,12 +208,12 @@ class _AccountListScreenState extends State<AccountListScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
+        mini: true,
         heroTag: 'account_list_fab_add',
         onPressed: _addAccount,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Account'),
-        backgroundColor: AppTheme.primaryColor,
+        tooltip: 'Add Account',
+        child: const Icon(Icons.add),
       ),
     );
   }

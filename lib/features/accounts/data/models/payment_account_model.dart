@@ -204,18 +204,6 @@ class PaymentAccount extends HiveObject {
         isActive: true,
         createdAt: now,
       ),
-      PaymentAccount(
-        id: 'default_bank',
-        name: 'Bank Account',
-        accountType: 'Bank Account',
-        balance: 0.0,
-        currency: 'USD',
-        color: '#2196F3',
-        icon: 'account_balance',
-        isDefault: false,
-        isActive: true,
-        createdAt: now,
-      ),
     ];
   }
 }

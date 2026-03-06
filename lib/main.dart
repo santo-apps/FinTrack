@@ -16,6 +16,7 @@ import 'features/accounts/presentation/providers/account_type_provider.dart';
 import 'features/loan/presentation/providers/loan_provider.dart';
 import 'features/home/presentation/pages/home_screen.dart';
 import 'features/auth/presentation/pages/auth_screen.dart';
+import 'features/onboarding/presentation/pages/onboarding_screen.dart';
 import 'services/notification_service.dart';
 
 void main() async {
@@ -36,6 +37,22 @@ void main() async {
 
   // Initialize notifications
   await NotificationService.init();
+
+  final settings = HiveService.getAllSettings();
+  if (!settings.containsKey('onboarding_completed')) {
+    final hasExistingData = HiveService.getAllExpenses().isNotEmpty ||
+        HiveService.getAllBudgets().isNotEmpty ||
+        HiveService.getAllSubscriptions().isNotEmpty ||
+        HiveService.getAllInvestments().isNotEmpty ||
+        HiveService.getAllGoals().isNotEmpty ||
+        HiveService.getAllLoans().isNotEmpty ||
+        HiveService.getAllBills().isNotEmpty ||
+        HiveService.getAllDebts().isNotEmpty;
+
+    if (hasExistingData) {
+      await HiveService.saveSetting('onboarding_completed', true);
+    }
+  }
 
   runApp(const FinTrack());
 }
@@ -77,6 +94,12 @@ class FinTrack extends StatelessWidget {
   }
 
   Widget _getHomeScreen(SettingsProvider settingsProvider) {
+    final onboardingCompleted =
+        HiveService.getSetting('onboarding_completed', defaultValue: false);
+    if (!onboardingCompleted) {
+      return const OnboardingScreen();
+    }
+
     final isPINEnabled = settingsProvider.pinEnabled;
     final isBiometricEnabled = settingsProvider.biometricEnabled;
 

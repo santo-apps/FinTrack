@@ -165,6 +165,7 @@ class _BillListScreenState extends State<BillListScreen> {
           ],
         ),
         floatingActionButton: FloatingActionButton(
+          mini: true,
           heroTag: 'bill_list_fab_add',
           onPressed: () => _showAddManualBillDialog(context),
           tooltip: 'Add Manual Bill',

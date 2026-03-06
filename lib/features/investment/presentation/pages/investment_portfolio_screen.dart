@@ -218,6 +218,7 @@ class _InvestmentPortfolioScreenState extends State<InvestmentPortfolioScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        mini: true,
         heroTag: 'investment_portfolio_fab_add',
         onPressed: () => _showAddEditDialog(context),
         child: const Icon(Icons.add),

@@ -222,6 +222,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
         },
       ),
       floatingActionButton: FloatingActionButton(
+        mini: true,
         heroTag: 'budget_planner_fab_add',
         onPressed: () {
           final categories = context.read<ExpenseProvider>().categories;

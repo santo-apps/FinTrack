@@ -216,6 +216,7 @@ class _GoalTrackerScreenState extends State<GoalTrackerScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        mini: true,
         heroTag: 'goal_tracker_fab_add',
         onPressed: () => _showAddEditDialog(context),
         tooltip: 'Add Goal',

@@ -54,7 +54,7 @@ class _DashboardScreenContentState extends State<_DashboardScreenContent>
     with SingleTickerProviderStateMixin {
   late ScrollController _scrollController;
   late AnimationController _netWorthAnimationController;
-  double _previousNetWorth = 0;
+  double _previousNetWorth = -1; // Initialize to -1 to trigger animation on first load
 
   @override
   void initState() {
@@ -120,15 +120,9 @@ class _DashboardScreenContentState extends State<_DashboardScreenContent>
                     ),
                     const SizedBox(height: 16),
 
-                    // 1.5️⃣ Investment Summary (if have investments)
-                    if (viewModel.investmentValue > 0) ...[
-                      _InvestmentSummaryCard(
-                        portfolioValue: viewModel.investmentValue,
-                        investmentCost: viewModel.investmentCost,
-                        gainLoss: viewModel.investmentGainLoss,
-                        gainLossPercent: viewModel.investmentGainLossPercent,
-                        currencySymbol: settings.currencySymbol,
-                      ),
+                    // 1.5️⃣ Pending Bills Alert Card
+                    if (viewModel.pendingBillReminderCount > 0) ...[
+                      _AlertsStrip(pendingBillCount: viewModel.pendingBillReminderCount),
                       const SizedBox(height: 16),
                     ],
 
@@ -162,9 +156,15 @@ class _DashboardScreenContentState extends State<_DashboardScreenContent>
                     _StreakCard(streak: viewModel.streak),
                     const SizedBox(height: 16),
 
-                    // 6️⃣ Pending Bills Alert Card
-                    if (viewModel.pendingBillReminderCount > 0) ...[
-                      _AlertsStrip(pendingBillCount: viewModel.pendingBillReminderCount),
+                    // 6️⃣ Investment Summary (if have investments)
+                    if (viewModel.investmentValue > 0) ...[
+                      _InvestmentSummaryCard(
+                        portfolioValue: viewModel.investmentValue,
+                        investmentCost: viewModel.investmentCost,
+                        gainLoss: viewModel.investmentGainLoss,
+                        gainLossPercent: viewModel.investmentGainLossPercent,
+                        currencySymbol: settings.currencySymbol,
+                      ),
                       const SizedBox(height: 16),
                     ],
 
@@ -315,9 +315,7 @@ class _SnapshotCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            Divider(height: 1, color: Colors.grey.shade300),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             // Net Worth
             InkWell(
@@ -648,44 +646,48 @@ class _BudgetOverviewCard extends StatelessWidget {
       return Card(
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Icon(Icons.pie_chart_outline,
-                  size: 48, color: AppTheme.primaryColor.withOpacity(0.6)),
-              const SizedBox(height: 12),
-              Text(
-                'No Budget Set',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+        child: SizedBox(
+          width: double.infinity,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.pie_chart_outline,
+                    size: 48, color: AppTheme.primaryColor.withOpacity(0.6)),
+                const SizedBox(height: 12),
+                Text(
+                  'No Budget Set',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Create a budget to track your spending',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
+                const SizedBox(height: 8),
+                Text(
+                  'Create a budget to track your spending',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const BudgetPlannerScreen(
-                        showAppBar: true,
-                        showBackButton: true,
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const BudgetPlannerScreen(
+                          showAppBar: true,
+                          showBackButton: true,
+                        ),
                       ),
-                    ),
-                  );
-                },
-                child: const Text('Set Budget'),
-              ),
-            ],
+                    );
+                  },
+                  child: const Text('Set Budget'),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -1187,44 +1189,48 @@ class _GoalsSection extends StatelessWidget {
             elevation: 2,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Icon(Icons.flag_outlined,
-                      size: 48, color: AppTheme.primaryColor.withOpacity(0.6)),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No Goals Set',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+            child: SizedBox(
+              width: double.infinity,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.flag_outlined,
+                        size: 48, color: AppTheme.primaryColor.withOpacity(0.6)),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No Goals Set',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Set financial goals to track progress',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
+                    const SizedBox(height: 8),
+                    Text(
+                      'Set financial goals to track progress',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const GoalTrackerScreen(
-                            showAppBar: true,
-                            showBackButton: true,
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const GoalTrackerScreen(
+                              showAppBar: true,
+                              showBackButton: true,
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                    child: const Text('Create Goal'),
-                  ),
-                ],
+                        );
+                      },
+                      child: const Text('Create Goal'),
+                    ),
+                  ],
+                ),
               ),
             ),
           );

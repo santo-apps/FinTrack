@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
-import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
 import 'package:fintrack/features/investment/presentation/providers/investment_provider.dart';
 import 'package:fintrack/features/loan/presentation/providers/loan_provider.dart';
@@ -26,9 +25,6 @@ class NetWorthBreakdownScreen extends StatefulWidget {
 }
 
 class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
-  bool _assetsExpanded = false;
-  bool _loansExpanded = false;
-
   double _effectiveInvestmentValue(dynamic investment) {
     final marketValue = investment.getCurrentValue();
     final investedCost = investment.getTotalInvestmentValue();
@@ -37,6 +33,8 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Net Worth Breakdown'),
@@ -69,78 +67,105 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
           final totalNetWorth = totalAssets - totalLoans;
 
           final isNegative = totalNetWorth < 0;
+          final assetShare = totalAssets + totalLoans > 0
+              ? (totalAssets / (totalAssets + totalLoans))
+              : 0.0;
+          final loanShare = totalAssets + totalLoans > 0
+              ? (totalLoans / (totalAssets + totalLoans))
+              : 0.0;
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
             children: [
-              // Net Worth Summary Card
               Card(
-                elevation: 4,
+                elevation: 3,
+                color: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(18),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Net Worth',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            AppUtils.formatCurrency(
-                              totalNetWorth,
-                              currencySymbol: currencySymbol,
-                            ),
-                            style: GoogleFonts.poppins(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w800,
-                              color: isNegative
-                                  ? Colors.red.shade700
-                                  : AppTheme.primaryColor,
+                          Expanded(
+                            child: Text(
+                              AppUtils.formatCurrency(
+                                totalNetWorth,
+                                currencySymbol: currencySymbol,
+                              ),
+                              style: GoogleFonts.poppins(
+                                fontSize: 30,
+                                fontWeight: FontWeight.w800,
+                                color: isNegative
+                                    ? Colors.red.shade700
+                                    : colorScheme.primary,
+                              ),
                             ),
                           ),
-                          if (isNegative) ...[
-                            const SizedBox(width: 8),
+                          if (isNegative)
                             Icon(
                               Icons.warning_amber_rounded,
-                              size: 24,
+                              size: 22,
                               color: Colors.red.shade700,
                             ),
-                          ],
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: SizedBox(
+                          height: 8,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex:
+                                    (assetShare * 1000).round().clamp(0, 1000),
+                                child: Container(color: Colors.green.shade500),
+                              ),
+                              Expanded(
+                                flex: (loanShare * 1000).round().clamp(0, 1000),
+                                child: Container(color: Colors.red.shade500),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
                       Row(
                         children: [
                           Expanded(
                             child: _MetricBox(
-                              label: 'Total Assets',
+                              label: 'Assets',
                               value: AppUtils.formatCurrency(
                                 totalAssets,
                                 currencySymbol: currencySymbol,
                               ),
-                              color: Colors.green,
+                              color: Colors.green.shade700,
+                              icon: Icons.trending_up,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: _MetricBox(
-                              label: 'Total Loans',
+                              label: 'Loans',
                               value: AppUtils.formatCurrency(
                                 totalLoans,
                                 currencySymbol: currencySymbol,
                               ),
-                              color: Colors.red,
+                              color: Colors.red.shade700,
+                              icon: Icons.account_balance,
                             ),
                           ),
                         ],
@@ -150,23 +175,16 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Assets Section
               Card(
-                elevation: _assetsExpanded ? 6 : 2,
+                elevation: 1,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Theme(
-                  data: Theme.of(context).copyWith(
-                    dividerColor: Colors.transparent,
-                  ),
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
-                    onExpansionChanged: (expanded) {
-                      setState(() {
-                        _assetsExpanded = expanded;
-                      });
-                    },
+                    initiallyExpanded: false,
                     title: Text(
                       'Assets',
                       style: GoogleFonts.poppins(
@@ -187,81 +205,47 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                     ),
                     children: [
                       Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Accounts subsection
                             Text(
                               'Accounts',
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.grey.shade700,
+                                color: colorScheme.onSurfaceVariant,
                               ),
                             ),
                             const SizedBox(height: 8),
                             if (accounts.isEmpty)
-                              _EmptySection(message: 'No asset accounts found')
+                              const _EmptySection(
+                                  message: 'No asset accounts found')
                             else
                               ...accounts.map((account) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              account.name,
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            Text(
-                                              account.accountType,
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 11,
-                                                color: Colors.grey.shade600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Text(
-                                        AppUtils.formatCurrency(
-                                          account.balance,
-                                          currencySymbol: currencySymbol,
-                                        ),
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.green.shade700,
-                                        ),
-                                      ),
-                                    ],
+                                return _DataRowItem(
+                                  title: account.name,
+                                  subtitle: account.accountType,
+                                  value: AppUtils.formatCurrency(
+                                    account.balance,
+                                    currencySymbol: currencySymbol,
                                   ),
+                                  valueColor: Colors.green.shade700,
                                 );
                               }),
-                            const SizedBox(height: 16),
-                            Divider(color: Colors.grey.shade300),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 10),
                             Text(
                               'Investments',
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.grey.shade700,
+                                color: colorScheme.onSurfaceVariant,
                               ),
                             ),
                             const SizedBox(height: 8),
                             if (investments.isEmpty)
-                              _EmptySection(message: 'No investments found')
+                              const _EmptySection(
+                                  message: 'No investments found')
                             else
                               ...investments.map((investment) {
                                 final effectiveValue =
@@ -272,47 +256,15 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                                 final gainPercent =
                                     invested > 0 ? (gain / invested) * 100 : 0;
 
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              investment.name,
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            Text(
-                                              '${investment.type} • Gain/Loss: ${AppUtils.formatCurrency(gain, currencySymbol: currencySymbol)} (${gainPercent.toStringAsFixed(1)}%)',
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 11,
-                                                color: Colors.grey.shade600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Text(
-                                        AppUtils.formatCurrency(
-                                          effectiveValue,
-                                          currencySymbol: currencySymbol,
-                                        ),
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.green.shade700,
-                                        ),
-                                      ),
-                                    ],
+                                return _DataRowItem(
+                                  title: investment.name,
+                                  subtitle:
+                                      '${investment.type} • ${gain >= 0 ? 'Gain' : 'Loss'}: ${AppUtils.formatCurrency(gain, currencySymbol: currencySymbol)} (${gainPercent.toStringAsFixed(1)}%)',
+                                  value: AppUtils.formatCurrency(
+                                    effectiveValue,
+                                    currencySymbol: currencySymbol,
                                   ),
+                                  valueColor: Colors.green.shade700,
                                 );
                               }),
                           ],
@@ -323,23 +275,16 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-
-              // Loans Section
               Card(
-                elevation: _loansExpanded ? 6 : 2,
+                elevation: 1,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Theme(
-                  data: Theme.of(context).copyWith(
-                    dividerColor: Colors.transparent,
-                  ),
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
-                    onExpansionChanged: (expanded) {
-                      setState(() {
-                        _loansExpanded = expanded;
-                      });
-                    },
+                    initiallyExpanded: false,
                     title: Text(
                       'Loans',
                       style: GoogleFonts.poppins(
@@ -359,63 +304,28 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                       ),
                     ),
                     children: [
-                      if (loans.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: _EmptySection(message: 'No loans found'),
-                        )
-                      else
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                        child: Column(
+                          children: [
+                            if (loans.isEmpty)
+                              const _EmptySection(message: 'No loans found')
+                            else
                               ...loans.map((loan) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              loan.lender,
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            Text(
-                                              '${loan.remainingMonths} months remaining',
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 11,
-                                                color: Colors.grey.shade600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Text(
-                                        AppUtils.formatCurrency(
-                                          loan.pendingAmount,
-                                          currencySymbol: currencySymbol,
-                                        ),
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.red.withOpacity(0.7),
-                                        ),
-                                      ),
-                                    ],
+                                return _DataRowItem(
+                                  title: loan.lender,
+                                  subtitle:
+                                      '${loan.remainingMonths} months remaining',
+                                  value: AppUtils.formatCurrency(
+                                    loan.pendingAmount,
+                                    currencySymbol: currencySymbol,
                                   ),
+                                  valueColor: Colors.red.shade700,
                                 );
                               }),
-                            ],
-                          ),
+                          ],
                         ),
+                      ),
                     ],
                   ),
                 ),
@@ -433,11 +343,13 @@ class _MetricBox extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
+  final IconData icon;
 
   const _MetricBox({
     required this.label,
     required this.value,
     required this.color,
+    required this.icon,
   });
 
   @override
@@ -445,31 +357,152 @@ class _MetricBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.7),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey.shade600,
-            ),
+          Row(
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             value,
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: color.withOpacity(0.8),
+              color: color,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String total;
+  final Color totalColor;
+
+  const _SectionHeader({
+    required this.icon,
+    required this.title,
+    required this.total,
+    required this.totalColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon,
+              size: 18, color: Theme.of(context).colorScheme.primary),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        Text(
+          total,
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: totalColor,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DataRowItem extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final String value;
+  final Color valueColor;
+
+  const _DataRowItem({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).colorScheme.surface,
+        border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.12)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            value,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: valueColor,
+            ),
           ),
         ],
       ),

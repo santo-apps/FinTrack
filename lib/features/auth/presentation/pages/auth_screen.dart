@@ -55,8 +55,9 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _verifyPIN() async {
-    if (_pinController.text.length != 4) {
-      setState(() => _errorMessage = 'PIN must be 4 digits');
+    final pinLength = _pinController.text.length;
+    if (pinLength != 4 && pinLength != 6) {
+      setState(() => _errorMessage = 'PIN must be 4 or 6 digits');
       return;
     }
 
@@ -134,7 +135,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 enabled: !_isLoading,
                 obscureText: true,
                 keyboardType: TextInputType.number,
-                maxLength: 4,
+                maxLength: 6,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   fontSize: 24,
@@ -142,7 +143,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   fontWeight: FontWeight.w600,
                 ),
                 decoration: InputDecoration(
-                  hintText: '••••',
+                  hintText: '••••••',
                   hintStyle: GoogleFonts.poppins(
                     fontSize: 24,
                     color: Colors.grey[400],

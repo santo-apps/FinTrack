@@ -137,6 +137,7 @@ class _ManageAccountTypeModelsScreenState
         },
       ),
       floatingActionButton: FloatingActionButton(
+        mini: true,
         heroTag: 'manage_account_types_fab',
         onPressed: () => _showAddEditDialog(),
         child: const Icon(Icons.add),

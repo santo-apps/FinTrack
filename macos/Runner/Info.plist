@@ -28,5 +28,7 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSBiometricUsageDescription</key>
+	<string>We need biometric authentication permission to secure your financial data in FinTrack</string>
 </dict>
 </plist>
