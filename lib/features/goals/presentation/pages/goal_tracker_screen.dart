@@ -70,7 +70,10 @@ class _GoalTrackerScreenState extends State<GoalTrackerScreen> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Colors.amber.shade400, Colors.amber.shade600],
+                        colors: [
+                          Theme.of(context).primaryColor,
+                          Theme.of(context).primaryColor.withOpacity(0.8)
+                        ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -361,9 +364,9 @@ class _GoalCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: progress / 100,
                 minHeight: 8,
-                backgroundColor: Colors.grey.shade300,
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  Colors.blue,
+                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Theme.of(context).colorScheme.primary,
                 ),
               ),
             ),

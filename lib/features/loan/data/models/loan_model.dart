@@ -49,6 +49,9 @@ class Loan extends HiveObject {
   @HiveField(14)
   DateTime? lastPaymentDate; // Track when last payment was made
 
+  @HiveField(15)
+  double interestPaidAmount; // Track interest-only payments separately
+
   Loan({
     required this.id,
     required this.lender,
@@ -65,6 +68,7 @@ class Loan extends HiveObject {
     this.notes,
     this.accountId,
     this.lastPaymentDate,
+    this.interestPaidAmount = 0.0,
   });
 
   double get pendingAmount => borrowedAmount - paidAmount;
@@ -118,6 +122,7 @@ class Loan extends HiveObject {
     String? notes,
     String? accountId,
     DateTime? lastPaymentDate,
+    double? interestPaidAmount,
   }) {
     return Loan(
       id: id ?? this.id,
@@ -135,6 +140,7 @@ class Loan extends HiveObject {
       notes: notes ?? this.notes,
       accountId: accountId ?? this.accountId,
       lastPaymentDate: lastPaymentDate ?? this.lastPaymentDate,
+      interestPaidAmount: interestPaidAmount ?? this.interestPaidAmount,
     );
   }
 
@@ -155,6 +161,7 @@ class Loan extends HiveObject {
       'notes': notes,
       'accountId': accountId,
       'lastPaymentDate': lastPaymentDate?.toIso8601String(),
+      'interestPaidAmount': interestPaidAmount,
     };
   }
 
@@ -177,6 +184,7 @@ class Loan extends HiveObject {
       lastPaymentDate: json['lastPaymentDate'] != null
           ? DateTime.parse(json['lastPaymentDate'])
           : null,
+      interestPaidAmount: json['interestPaidAmount'] ?? 0.0,
     );
   }
 }

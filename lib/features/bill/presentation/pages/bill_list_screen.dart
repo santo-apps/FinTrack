@@ -74,13 +74,16 @@ class _BillListScreenState extends State<BillListScreen> {
           children: [
             // Month Selector
             Container(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.chevron_left),
+                    icon: Icon(
+                      Icons.chevron_left,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                     onPressed: _previousMonth,
                     tooltip: 'Previous Month',
                   ),
@@ -92,7 +95,8 @@ class _BillListScreenState extends State<BillListScreen> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
+                        border:
+                            Border.all(color: Theme.of(context).dividerColor),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -100,12 +104,16 @@ class _BillListScreenState extends State<BillListScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.chevron_right),
+                    icon: Icon(
+                      Icons.chevron_right,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                     onPressed: _nextMonth,
                     tooltip: 'Next Month',
                   ),
@@ -113,11 +121,12 @@ class _BillListScreenState extends State<BillListScreen> {
               ),
             ),
             Container(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               child: TabBar(
-                labelColor: Colors.black,
-                unselectedLabelColor: Colors.grey.shade700,
-                indicatorColor: Colors.blue,
+                labelColor: Theme.of(context).colorScheme.onSurface,
+                unselectedLabelColor:
+                    Theme.of(context).colorScheme.onSurfaceVariant,
+                indicatorColor: Theme.of(context).colorScheme.primary,
                 indicatorWeight: 3,
                 labelPadding: const EdgeInsets.symmetric(horizontal: 12.0),
                 labelStyle: GoogleFonts.poppins(
@@ -208,11 +217,16 @@ class _BillListScreenState extends State<BillListScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox, size: 64, color: Colors.grey.shade400),
+            Icon(
+              Icons.inbox,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
             Text(emptyMessage,
                 style: GoogleFonts.poppins(
-                    fontSize: 16, color: Colors.grey.shade600)),
+                    fontSize: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         ),
       );
@@ -260,6 +274,7 @@ class _BillListScreenState extends State<BillListScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
+      color: Theme.of(context).colorScheme.surface,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -270,6 +285,7 @@ class _BillListScreenState extends State<BillListScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 12),
@@ -281,6 +297,7 @@ class _BillListScreenState extends State<BillListScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 Text(
@@ -301,7 +318,7 @@ class _BillListScreenState extends State<BillListScreen> {
                 subscriptionTotal,
                 currency,
                 Icons.subscriptions,
-                Colors.purple,
+                AppTheme.primaryColor,
               ),
             if (creditCards.isNotEmpty)
               _buildSummaryRow(
@@ -366,13 +383,14 @@ class _BillListScreenState extends State<BillListScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 Text(
                   '$count item${count > 1 ? "s" : ""}',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -399,6 +417,7 @@ class _BillListScreenState extends State<BillListScreen> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      color: Theme.of(context).colorScheme.surface,
       child: InkWell(
         onTap: () => _showReminderDetails(reminder),
         child: Padding(
@@ -418,6 +437,7 @@ class _BillListScreenState extends State<BillListScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -425,7 +445,8 @@ class _BillListScreenState extends State<BillListScreen> {
                           reminder.getTypeLabel(),
                           style: GoogleFonts.poppins(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -476,7 +497,7 @@ class _BillListScreenState extends State<BillListScreen> {
                         _formatDate(reminder.dueDate),
                         style: GoogleFonts.poppins(
                           fontSize: 14,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       if (isPending && daysUntilDue >= 0)
@@ -952,7 +973,6 @@ class _BillListScreenState extends State<BillListScreen> {
         <String>{...accounts.map((a) => a.accountType)}.toList()..sort();
     String? selectedType = accountTypes.isNotEmpty ? accountTypes.first : null;
     String? selectedAccountId;
-    String searchQuery = '';
 
     showModalBottomSheet(
       context: context,
@@ -964,11 +984,7 @@ class _BillListScreenState extends State<BillListScreen> {
         builder: (context, setState) {
           final filteredByType = accountTypes.isEmpty
               ? []
-              : accounts
-                  .where((a) => a.accountType == selectedType)
-                  .where((a) =>
-                      a.name.toLowerCase().contains(searchQuery.toLowerCase()))
-                  .toList();
+              : accounts.where((a) => a.accountType == selectedType).toList();
 
           return Padding(
             padding: EdgeInsets.only(
@@ -1021,7 +1037,6 @@ class _BillListScreenState extends State<BillListScreen> {
                       setState(() {
                         selectedType = value;
                         selectedAccountId = null;
-                        searchQuery = '';
                       });
                     },
                     decoration: InputDecoration(
@@ -1032,31 +1047,6 @@ class _BillListScreenState extends State<BillListScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    'Search Account:',
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    onChanged: (value) {
-                      setState(() {
-                        searchQuery = value;
-                      });
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'Search by account name...',
-                      hintStyle: GoogleFonts.poppins(fontSize: 12),
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
                   Text(
                     'Select Account:',
                     style: GoogleFonts.poppins(
@@ -1291,7 +1281,6 @@ class _BillListScreenState extends State<BillListScreen> {
         <String>{...accounts.map((a) => a.accountType)}.toList()..sort();
     String? selectedType = accountTypes.isNotEmpty ? accountTypes.first : null;
     String? selectedAccountId;
-    String searchQuery = '';
 
     showModalBottomSheet(
       context: context,
@@ -1303,11 +1292,7 @@ class _BillListScreenState extends State<BillListScreen> {
         builder: (context, setState) {
           final filteredByType = accountTypes.isEmpty
               ? []
-              : accounts
-                  .where((a) => a.accountType == selectedType)
-                  .where((a) =>
-                      a.name.toLowerCase().contains(searchQuery.toLowerCase()))
-                  .toList();
+              : accounts.where((a) => a.accountType == selectedType).toList();
 
           return Padding(
             padding: EdgeInsets.only(
@@ -1360,7 +1345,6 @@ class _BillListScreenState extends State<BillListScreen> {
                       setState(() {
                         selectedType = value;
                         selectedAccountId = null;
-                        searchQuery = '';
                       });
                     },
                     decoration: InputDecoration(
@@ -1371,31 +1355,6 @@ class _BillListScreenState extends State<BillListScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    'Search Account:',
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    onChanged: (value) {
-                      setState(() {
-                        searchQuery = value;
-                      });
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'Search by account name...',
-                      hintStyle: GoogleFonts.poppins(fontSize: 12),
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
                   Text(
                     'Select Account:',
                     style: GoogleFonts.poppins(
@@ -1627,7 +1586,6 @@ class _BillListScreenState extends State<BillListScreen> {
         <String>{...accounts.map((a) => a.accountType)}.toList()..sort();
     String? selectedType = accountTypes.isNotEmpty ? accountTypes.first : null;
     String? selectedAccountId;
-    String searchQuery = '';
 
     showModalBottomSheet(
       context: context,
@@ -1639,11 +1597,7 @@ class _BillListScreenState extends State<BillListScreen> {
         builder: (context, setState) {
           final filteredByType = accountTypes.isEmpty
               ? []
-              : accounts
-                  .where((a) => a.accountType == selectedType)
-                  .where((a) =>
-                      a.name.toLowerCase().contains(searchQuery.toLowerCase()))
-                  .toList();
+              : accounts.where((a) => a.accountType == selectedType).toList();
 
           return Padding(
             padding: EdgeInsets.only(
@@ -1712,7 +1666,6 @@ class _BillListScreenState extends State<BillListScreen> {
                       setState(() {
                         selectedType = value;
                         selectedAccountId = null;
-                        searchQuery = '';
                       });
                     },
                     decoration: InputDecoration(
@@ -1723,31 +1676,6 @@ class _BillListScreenState extends State<BillListScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    'Search Account:',
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    onChanged: (value) {
-                      setState(() {
-                        searchQuery = value;
-                      });
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'Search by account name...',
-                      hintStyle: GoogleFonts.poppins(fontSize: 12),
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
                   Text(
                     'Select Account:',
                     style: GoogleFonts.poppins(

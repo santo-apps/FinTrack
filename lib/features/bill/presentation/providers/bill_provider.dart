@@ -263,11 +263,13 @@ class BillProvider extends ChangeNotifier {
 
     final List<BillReminder> reminders = [];
     for (var card in creditCards) {
-      final nextBillingDate = card.nextBillingDate ??
+      // Use dueDate if available, otherwise fallback to nextBillingDate or calculated date
+      final nextBillingDate = card.dueDate ??
+          card.nextBillingDate ??
           _calculateCardDueDate(now, card.billingCycleDay);
       if (kDebugMode) {
         print(
-            '  ${card.name} next billing: $nextBillingDate, balance: ${card.balance}');
+            '  ${card.name} next billing: $nextBillingDate, balance: ${card.balance}, dueDate: ${card.dueDate}');
       }
 
       // Determine status - check balance FIRST, then date
@@ -293,9 +295,11 @@ class BillProvider extends ChangeNotifier {
         type: BillReminderType.creditCard,
         status: status,
         accountName: card.name,
-        notes: card.billingCycleDay == null
-            ? 'Credit card bill payment (set billing cycle day for accurate due date)'
-            : 'Credit card bill payment',
+        notes: card.dueDate == null && card.billingCycleDay == null
+            ? 'Credit card bill payment (set due date for accurate reminder)'
+            : card.statementDate != null
+                ? 'Statement date: ${card.statementDate!.day}/${card.statementDate!.month}/${card.statementDate!.year}'
+                : 'Credit card bill payment',
       ));
     }
 

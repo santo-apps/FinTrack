@@ -7,6 +7,7 @@ import 'package:fintrack/features/settings/presentation/pages/settings_content_m
 import 'package:fintrack/features/settings/presentation/pages/settings_data_management_screen.dart';
 import 'package:fintrack/features/settings/presentation/pages/settings_about_screen.dart';
 import 'package:fintrack/services/security_service.dart';
+import 'package:fintrack/services/notification_service.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -161,47 +162,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     ) = await BiometricService
                                         .enableBiometric();
 
-                                    if (mounted) {
-                                      if (enabled) {
-                                        settingsProvider
-                                            .setBiometricEnabled(true);
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                '✓ Biometric authentication enabled',
-                                              ),
-                                              duration: Duration(seconds: 2),
-                                            ),
-                                          );
-                                        }
-                                      } else {
-                                        // Failed to enable - show error
-                                        settingsProvider
-                                            .setBiometricEnabled(false);
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                '✗ ${errorMessage ?? 'Failed to enable biometric. Please check permissions.'}',
-                                              ),
-                                              duration:
-                                                  const Duration(seconds: 3),
-                                              action: shouldOpenSettings
-                                                  ? SnackBarAction(
-                                                      label: 'Open Settings',
-                                                      onPressed: () {
-                                                        BiometricService
-                                                            .openBiometricSettings();
-                                                      },
-                                                    )
-                                                  : null,
-                                            ),
-                                          );
-                                        }
+                                    if (!context.mounted) {
+                                      return;
+                                    }
+
+                                    if (enabled) {
+                                      await settingsProvider
+                                          .setBiometricEnabled(true);
+                                      if (!context.mounted) {
+                                        return;
                                       }
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            '✓ Biometric authentication enabled',
+                                          ),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
+                                    } else {
+                                      await settingsProvider
+                                          .setBiometricEnabled(false);
+                                      if (!context.mounted) {
+                                        return;
+                                      }
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            '✗ ${errorMessage ?? 'Failed to enable biometric. Please check permissions.'}',
+                                          ),
+                                          duration: const Duration(seconds: 3),
+                                          action: shouldOpenSettings
+                                              ? SnackBarAction(
+                                                  label: 'Open Settings',
+                                                  onPressed: () {
+                                                    BiometricService
+                                                        .openBiometricSettings();
+                                                  },
+                                                )
+                                              : null,
+                                        ),
+                                      );
                                     }
                                   } else {
                                     // Disable biometric - require verification
@@ -212,21 +215,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       useBiometric: true,
                                     );
 
-                                    if (verified && mounted) {
+                                    if (!context.mounted) {
+                                      return;
+                                    }
+
+                                    if (verified) {
                                       await BiometricService.disableBiometric();
-                                      settingsProvider
+                                      await settingsProvider
                                           .setBiometricEnabled(false);
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Biometric authentication disabled',
-                                            ),
-                                            duration: Duration(seconds: 2),
-                                          ),
-                                        );
+                                      if (!context.mounted) {
+                                        return;
                                       }
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Biometric authentication disabled',
+                                          ),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
                                     }
                                   }
                                 }
@@ -256,8 +264,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 useBiometric: false,
                               );
 
-                              if (verified && mounted) {
-                                settingsProvider.setPinEnabled(false);
+                              if (!context.mounted) {
+                                return;
+                              }
+
+                              if (verified) {
+                                await settingsProvider.setPinEnabled(false);
+                                if (!context.mounted) {
+                                  return;
+                                }
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('PIN protection disabled'),
@@ -288,6 +303,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onChanged: (value) {
                     settingsProvider.setNotificationsEnabled(value);
                   },
+                ),
+              ),
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: settingsProvider.notificationsEnabled &&
+                        settingsProvider.dailyReminderEnabled
+                    ? () => _showTimePickerDialog(context, settingsProvider)
+                    : null,
+                child: _buildSettingCard(
+                  context,
+                  leading:
+                      Icon(Icons.alarm, color: Theme.of(context).primaryColor),
+                  title: 'Daily Reminder',
+                  subtitle: settingsProvider.dailyReminderEnabled
+                      ? '${_formatTime(settingsProvider.dailyReminderHour, settingsProvider.dailyReminderMinute)} - ${_getNextReminderText(settingsProvider.dailyReminderHour, settingsProvider.dailyReminderMinute)}. Tap to change'
+                      : 'Get daily reminders to track expenses',
+                  trailing: Switch(
+                    value: settingsProvider.dailyReminderEnabled,
+                    onChanged: settingsProvider.notificationsEnabled
+                        ? (value) async {
+                            try {
+                              await settingsProvider
+                                  .setDailyReminderEnabled(value);
+                              if (value && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Daily reminder enabled'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Permission required: Please enable "Alarms & reminders" permission in your device settings for FinTrack',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    duration: const Duration(seconds: 5),
+                                  ),
+                                );
+                              }
+                            }
+                          }
+                        : null,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+              _buildSettingCard(
+                context,
+                leading:
+                    Icon(Icons.settings, color: Theme.of(context).primaryColor),
+                title: 'Open Notification Settings',
+                subtitle:
+                    'Enable FinTrack alerts, banners, and Notification Center',
+                trailing: ElevatedButton(
+                  onPressed: () async {
+                    await NotificationService.openNotificationSettings();
+                  },
+                  child: const Text('Open'),
                 ),
               ),
               const SizedBox(height: 20),
@@ -435,7 +513,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Text(
                     subtitle,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -499,7 +577,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Text(
                     'Custom currency',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                   ),
                 ],
@@ -582,7 +660,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(
                       description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey.shade600,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -751,6 +830,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     // If biometric failed or not available, try PIN
     if (settingsProvider.pinEnabled) {
+      if (!context.mounted) {
+        return false;
+      }
       return await _showPINVerificationDialog(context);
     }
 
@@ -767,7 +849,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     // No authentication method available or all failed
-    if (mounted) {
+    if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Authentication failed'),
@@ -797,6 +879,82 @@ class _SettingsScreenState extends State<SettingsScreen> {
         isSetup: isSetup,
       ),
     );
+  }
+
+  String _formatTime(int hour, int minute) {
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    final displayMinute = minute.toString().padLeft(2, '0');
+    return '$displayHour:$displayMinute $period';
+  }
+
+  String _getNextReminderText(int hour, int minute) {
+    final now = DateTime.now();
+    var nextReminder = DateTime(now.year, now.month, now.day, hour, minute);
+
+    // If the time has passed today, schedule for tomorrow
+    if (nextReminder.isBefore(now)) {
+      nextReminder = nextReminder.add(const Duration(days: 1));
+    }
+
+    final difference = nextReminder.difference(now);
+    if (difference.inHours < 1) {
+      return 'Next reminder in ${difference.inMinutes} minutes';
+    } else if (difference.inHours < 24) {
+      return 'Next reminder in ${difference.inHours} hours';
+    } else {
+      return 'Next reminder tomorrow';
+    }
+  }
+
+  Future<void> _showTimePickerDialog(
+      BuildContext context, SettingsProvider settingsProvider) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(
+        hour: settingsProvider.dailyReminderHour,
+        minute: settingsProvider.dailyReminderMinute,
+      ),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            timePickerTheme: TimePickerThemeData(
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      try {
+        await settingsProvider.setDailyReminderTime(picked.hour, picked.minute);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Daily reminder set for ${_formatTime(picked.hour, picked.minute)}. ${_getNextReminderText(picked.hour, picked.minute)}',
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Permission required: Please enable "Alarms & reminders" permission in your device settings for FinTrack',
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      }
+    }
   }
 }
 

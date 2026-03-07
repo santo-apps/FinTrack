@@ -147,12 +147,20 @@ class _AccountListScreenState extends State<AccountListScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppTheme.primaryColor, AppTheme.accentColor],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Theme.of(context).colorScheme.surface
+                      : null,
+                  gradient: Theme.of(context).brightness == Brightness.dark
+                      ? null
+                      : LinearGradient(
+                          colors: [AppTheme.primaryColor, AppTheme.accentColor],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                   borderRadius: BorderRadius.circular(16),
+                  border: Theme.of(context).brightness == Brightness.dark
+                      ? Border.all(color: Theme.of(context).dividerColor)
+                      : null,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,7 +169,9 @@ class _AccountListScreenState extends State<AccountListScreen> {
                       'Total Balance',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
-                        color: Colors.white70,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Theme.of(context).colorScheme.onSurfaceVariant
+                            : Colors.white70,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -174,7 +184,9 @@ class _AccountListScreenState extends State<AccountListScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Theme.of(context).colorScheme.onSurface
+                            : Colors.white,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -396,7 +408,9 @@ class _SummaryItem extends StatelessWidget {
           label,
           style: GoogleFonts.poppins(
             fontSize: 12,
-            color: Colors.white70,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Theme.of(context).colorScheme.onSurfaceVariant
+                : Colors.white70,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -406,7 +420,9 @@ class _SummaryItem extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Theme.of(context).colorScheme.onSurface
+                : Colors.white,
           ),
         ),
       ],
@@ -555,6 +571,51 @@ class _AccountCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  // Show statement and due dates for credit cards
+                  if (isCredit &&
+                      (account.statementDate != null ||
+                          account.dueDate != null)) ...[
+                    const SizedBox(height: 6),
+                    if (account.statementDate != null)
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.receipt_outlined,
+                            size: 10,
+                            color: AppTheme.textSecondaryColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Statement: ${account.statementDate!.day.toString().padLeft(2, '0')}/${account.statementDate!.month.toString().padLeft(2, '0')}/${account.statementDate!.year}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 10,
+                              color: AppTheme.textSecondaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    if (account.dueDate != null) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.alarm_outlined,
+                            size: 10,
+                            color: AppTheme.errorColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Due: ${account.dueDate!.day.toString().padLeft(2, '0')}/${account.dueDate!.month.toString().padLeft(2, '0')}/${account.dueDate!.year}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 10,
+                              color: AppTheme.errorColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
                 ],
               ),
             ),

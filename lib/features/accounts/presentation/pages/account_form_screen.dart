@@ -33,6 +33,8 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
   bool _isActive = true;
   String? _selectedColor;
   DateTime? _expiryDate;
+  DateTime? _dueDate;
+  DateTime? _statementDate;
   String? _cardNetwork;
   String? _linkedAccountId;
 
@@ -76,6 +78,8 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
       _isActive = widget.account!.isActive;
       _selectedColor = widget.account!.color;
       _expiryDate = widget.account!.expiryDate;
+      _dueDate = widget.account!.dueDate;
+      _statementDate = widget.account!.statementDate;
       _linkedAccountId = widget.account!.linkedAccountId;
       _cardNetwork = widget.account!.cardNetwork;
     } else {
@@ -397,6 +401,89 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
               const SizedBox(height: 16),
             ],
 
+            // Statement Date (for credit cards only)
+            if (_selectedAccountType?.toLowerCase().contains('credit') ==
+                true) ...[
+              Text(
+                'Statement Date',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: _selectStatementDate,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppTheme.borderColor),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _statementDate != null
+                            ? '${_statementDate!.day.toString().padLeft(2, '0')}/${_statementDate!.month.toString().padLeft(2, '0')}/${_statementDate!.year}'
+                            : 'Select statement date',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: _statementDate != null
+                              ? AppTheme.textColor
+                              : AppTheme.textSecondaryColor,
+                        ),
+                      ),
+                      Icon(Icons.calendar_today,
+                          color: AppTheme.textSecondaryColor, size: 18),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Payment Due Date',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: _selectDueDate,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppTheme.borderColor),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _dueDate != null
+                            ? '${_dueDate!.day.toString().padLeft(2, '0')}/${_dueDate!.month.toString().padLeft(2, '0')}/${_dueDate!.year}'
+                            : 'Select due date',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: _dueDate != null
+                              ? AppTheme.textColor
+                              : AppTheme.textSecondaryColor,
+                        ),
+                      ),
+                      Icon(Icons.calendar_today,
+                          color: AppTheme.textSecondaryColor, size: 18),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
             // Linked Account
             Text(
               'Linked Account (Optional)',
@@ -705,6 +792,58 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
     }
   }
 
+  Future<void> _selectStatementDate() async {
+    final initialDate = _statementDate ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppTheme.primaryColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _statementDate = picked;
+      });
+    }
+  }
+
+  Future<void> _selectDueDate() async {
+    final initialDate = _dueDate ?? DateTime.now().add(const Duration(days: 7));
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppTheme.primaryColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _dueDate = picked;
+      });
+    }
+  }
+
   Future<void> _saveAccount() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -745,6 +884,8 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
       expiryDate: _expiryDate,
       cardNetwork: _cardNetwork,
       linkedAccountId: _linkedAccountId,
+      dueDate: _dueDate,
+      statementDate: _statementDate,
     );
 
     try {

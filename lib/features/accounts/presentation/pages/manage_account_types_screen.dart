@@ -105,15 +105,6 @@ class _ManageAccountTypeModelsScreenState
                       color: AppTheme.textColor,
                     ),
                   ),
-                  subtitle: type.isDefault
-                      ? Text(
-                          'Default',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: AppTheme.textSecondaryColor,
-                          ),
-                        )
-                      : null,
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -228,8 +219,8 @@ class _ManageAccountTypeModelsScreenState
                           ),
                         ),
                         child: Center(
-                          child:
-                              Text(emoji, style: GoogleFonts.poppins(fontSize: 24)),
+                          child: Text(emoji,
+                              style: GoogleFonts.poppins(fontSize: 24)),
                         ),
                       ),
                     );
@@ -345,41 +336,9 @@ class _ManageAccountTypeModelsScreenState
           'Delete Account Type',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Are you sure you want to delete "${type.name}"?',
-              style: GoogleFonts.poppins(),
-            ),
-            if (type.isDefault) const SizedBox(height: 12),
-            if (type.isDefault)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  border: Border.all(color: Colors.orange.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.warning_amber_rounded,
-                        color: Colors.orange.shade700, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'This is a default account type. Deleting it may affect existing accounts.',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: Colors.orange.shade900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
+        content: Text(
+          'Are you sure you want to delete "${type.name}"?',
+          style: GoogleFonts.poppins(),
         ),
         actions: [
           TextButton(

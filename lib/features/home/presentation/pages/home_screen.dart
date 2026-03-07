@@ -14,7 +14,6 @@ import 'package:fintrack/features/settings/presentation/providers/settings_provi
 import 'package:fintrack/features/accounts/presentation/pages/account_list_screen.dart';
 import 'package:fintrack/features/accounts/presentation/pages/account_form_screen.dart';
 import 'package:fintrack/features/loan/presentation/widgets/add_edit_loan_dialog.dart';
-import 'package:fintrack/features/about/presentation/pages/about_app_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -61,9 +60,10 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
     _NavModule(
       id: 'subscriptions',
-      label: 'Subscriptions',
+      label: 'Subs',
       icon: Icons.subscriptions,
       screen: SubscriptionListScreen(showAppBar: false),
+      appBarTitle: 'Subscriptions',
     ),
     _NavModule(
       id: 'investments',
@@ -349,7 +349,7 @@ class _HomeScreenState extends State<HomeScreen> {
               appBar: AppBar(
                 title: isHomeModule
                     ? const Text('FinTrack')
-                    : Text(currentModule.label),
+                    : Text(currentModule.appBarTitle ?? currentModule.label),
                 elevation: 0,
                 automaticallyImplyLeading: true,
               ),
@@ -438,7 +438,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(24, 40, 24, 30),
+              padding: EdgeInsets.fromLTRB(
+                24,
+                MediaQuery.of(context).padding.top + 24,
+                24,
+                30,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -446,13 +451,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: Colors.white24,
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Icon(
-                      Icons.trending_up,
-                      color: Colors.white,
-                      size: 32,
+                    padding: const EdgeInsets.all(8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.asset(
+                        'assets/icon/fintrack_icon.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -496,7 +504,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return _buildModernDrawerItem(
                 context,
                 icon: module.icon,
-                label: module.label,
+                label: module.appBarTitle ?? module.label,
                 isSelected: _currentIndex == index,
                 onTap: () {
                   setState(() => _currentIndex = index);
@@ -536,7 +544,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   (module) => _buildModernDrawerItem(
                     context,
                     icon: module.icon,
-                    label: module.label,
+                    label: module.appBarTitle ?? module.label,
                     onTap: () => _navigateToScreen(
                         _createScreenWithBackButton(module.id)),
                   ),
@@ -574,12 +582,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             // About
-            _buildModernDrawerItem(
-              context,
-              icon: Icons.info_outline,
-              label: 'About',
-              onTap: () => _navigateToScreen(const AboutAppScreen()),
-            ),
+            // _buildModernDrawerItem(
+            //   context,
+            //   icon: Icons.info_outline,
+            //   label: 'About',
+            //   onTap: () => _navigateToScreen(const AboutAppScreen()),
+            // ),
 
             // Footer Spacer
             const SizedBox(height: 24),
@@ -696,12 +704,14 @@ class _NavModule {
   final String label;
   final IconData icon;
   final Widget screen;
+  final String? appBarTitle;
 
   const _NavModule({
     required this.id,
     required this.label,
     required this.icon,
     required this.screen,
+    this.appBarTitle,
   });
 }
 

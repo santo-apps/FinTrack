@@ -12,6 +12,7 @@ import 'package:fintrack/features/loan/presentation/providers/loan_provider.dart
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
 import 'package:fintrack/features/subscription/data/models/subscription_model.dart';
 import 'package:fintrack/features/subscription/presentation/providers/subscription_provider.dart';
+import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -967,7 +968,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Card(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         child: SingleChildScrollView(
           child: Column(
             children: [
@@ -1110,9 +1111,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ]; // Loan - Teal
       case 6:
         return [
-          const Color(0xFFAB47BC),
-          const Color(0xFF9C27B0),
-        ]; // Subscription - Pink/Purple
+          AppTheme.primaryColor,
+          AppTheme.primaryColor.withOpacity(0.8),
+        ]; // Subscription - App primary
       case 7:
         return [
           const Color(0xFF0288D1),
@@ -1144,7 +1145,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Card(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         child: SingleChildScrollView(
           child: Column(
             children: [

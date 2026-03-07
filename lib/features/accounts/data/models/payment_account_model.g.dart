@@ -36,13 +36,15 @@ class PaymentAccountAdapter extends TypeAdapter<PaymentAccount> {
       cardNetwork: fields[16] as String?,
       linkedAccountId: fields[17] as String?,
       billingCycleDay: fields[18] as int?,
+      dueDate: fields[19] as DateTime?,
+      statementDate: fields[20] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, PaymentAccount obj) {
     writer
-      ..writeByte(19)
+      ..writeByte(21)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -80,7 +82,11 @@ class PaymentAccountAdapter extends TypeAdapter<PaymentAccount> {
       ..writeByte(17)
       ..write(obj.linkedAccountId)
       ..writeByte(18)
-      ..write(obj.billingCycleDay);
+      ..write(obj.billingCycleDay)
+      ..writeByte(19)
+      ..write(obj.dueDate)
+      ..writeByte(20)
+      ..write(obj.statementDate);
   }
 
   @override

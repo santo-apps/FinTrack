@@ -22,14 +22,6 @@ class SettingsAboutScreen extends StatelessWidget {
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Theme.of(context).primaryColor,
-                        Theme.of(context).primaryColor.withOpacity(0.7),
-                      ],
-                    ),
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
@@ -39,10 +31,14 @@ class SettingsAboutScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.account_balance_wallet,
-                    size: 50,
-                    color: Colors.white,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Image.asset(
+                      'assets/icon/fintrack_icon.png',
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -56,7 +52,7 @@ class SettingsAboutScreen extends StatelessWidget {
                 Text(
                   'Your Personal Financial Manager',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
               ],
@@ -107,7 +103,9 @@ class SettingsAboutScreen extends StatelessWidget {
                           '1.0.0',
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey.shade600,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                   ),
                         ),
                       ],
@@ -224,7 +222,8 @@ class SettingsAboutScreen extends StatelessWidget {
                     Text(
                       description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey.shade600,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                   ],

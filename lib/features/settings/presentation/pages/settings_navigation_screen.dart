@@ -298,7 +298,7 @@ class _SettingsNavigationScreenState extends State<SettingsNavigationScreen>
         Text(
           description,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
         ),
       ],

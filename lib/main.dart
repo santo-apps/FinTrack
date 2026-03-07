@@ -38,6 +38,25 @@ void main() async {
   // Initialize notifications
   await NotificationService.init();
 
+  // Sync reminder scheduling from persisted settings
+  final notificationsEnabled =
+      HiveService.getSetting('notifications_enabled', defaultValue: true);
+  final dailyReminderEnabled =
+      HiveService.getSetting('daily_reminder_enabled', defaultValue: true);
+  final dailyReminderHour =
+      HiveService.getSetting('daily_reminder_hour', defaultValue: 9);
+  final dailyReminderMinute =
+      HiveService.getSetting('daily_reminder_minute', defaultValue: 0);
+
+  if (notificationsEnabled && dailyReminderEnabled) {
+    await NotificationService.scheduleDailyReminder(
+      hour: dailyReminderHour,
+      minute: dailyReminderMinute,
+    );
+  } else {
+    await NotificationService.cancelDailyReminder();
+  }
+
   final settings = HiveService.getAllSettings();
   if (!settings.containsKey('onboarding_completed')) {
     final hasExistingData = HiveService.getAllExpenses().isNotEmpty ||

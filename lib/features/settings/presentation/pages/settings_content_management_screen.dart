@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/features/expense/presentation/pages/manage_expense_categories_screen.dart';
 import 'package:fintrack/features/investment/presentation/pages/manage_investment_types_screen.dart';
+import 'package:fintrack/features/accounts/presentation/pages/manage_account_types_screen.dart';
+import 'package:fintrack/features/settings/presentation/pages/manage_subscription_categories_screen.dart';
 
 class SettingsContentManagementScreen extends StatelessWidget {
   const SettingsContentManagementScreen({super.key});
@@ -26,7 +28,7 @@ class SettingsContentManagementScreen extends StatelessWidget {
           Text(
             'Customize categories, types, and classifications',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 20),
@@ -69,9 +71,27 @@ class SettingsContentManagementScreen extends StatelessWidget {
             title: 'Manage Account Types',
             description: 'Configure account types (Bank, Card, Wallet)',
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Account types management coming soon'),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ManageAccountTypeModelsScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _buildContentCard(
+            context,
+            icon: Icons.subscriptions,
+            iconColor: const Color(0xFFFF0A67),
+            title: 'Manage Subscription Categories',
+            description: 'Add, edit, or delete subscription categories',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const ManageSubscriptionCategoriesScreen(),
                 ),
               );
             },
@@ -133,7 +153,8 @@ class SettingsContentManagementScreen extends StatelessWidget {
                     Text(
                       description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey.shade600,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

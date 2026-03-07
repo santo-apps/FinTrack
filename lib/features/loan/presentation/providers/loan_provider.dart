@@ -92,6 +92,31 @@ class LoanProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> makeInterestPayment(String loanId, double amount) async {
+    try {
+      final loan = _loans.firstWhere((l) => l.id == loanId);
+      final now = DateTime.now();
+      final updatedLoan = loan.copyWith(
+        interestPaidAmount: loan.interestPaidAmount + amount,
+        lastPaymentDate: now, // Track when payment was made
+      );
+
+      if (kDebugMode) {
+        print(
+            '💵 Making interest-only payment for loan: ${loan.lender} (${loan.id})');
+        print('  Amount: $amount');
+        print('  Previous interest paid: ${loan.interestPaidAmount}');
+        print('  New interest paid: ${updatedLoan.interestPaidAmount}');
+        print('  Outstanding balance unchanged: ${loan.pendingAmount}');
+        print('  Last payment date: $now');
+      }
+
+      await updateLoan(updatedLoan);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   double getTotalOutstandingAmount() {
     return _loans.fold<double>(
       0,

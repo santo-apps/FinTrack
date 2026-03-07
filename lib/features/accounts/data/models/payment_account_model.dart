@@ -62,6 +62,12 @@ class PaymentAccount extends HiveObject {
   @HiveField(18)
   int? billingCycleDay; // Day of month when credit card bill is due (1-31)
 
+  @HiveField(19)
+  DateTime? dueDate; // Credit card payment due date
+
+  @HiveField(20)
+  DateTime? statementDate; // Credit card statement date
+
   PaymentAccount({
     required this.id,
     required this.name,
@@ -82,6 +88,8 @@ class PaymentAccount extends HiveObject {
     this.cardNetwork,
     this.linkedAccountId,
     this.billingCycleDay,
+    this.dueDate,
+    this.statementDate,
   });
 
   PaymentAccount copyWith({
@@ -104,6 +112,8 @@ class PaymentAccount extends HiveObject {
     String? cardNetwork,
     String? linkedAccountId,
     int? billingCycleDay,
+    DateTime? dueDate,
+    DateTime? statementDate,
   }) {
     return PaymentAccount(
       id: id ?? this.id,
@@ -125,6 +135,8 @@ class PaymentAccount extends HiveObject {
       cardNetwork: cardNetwork ?? this.cardNetwork,
       linkedAccountId: linkedAccountId ?? this.linkedAccountId,
       billingCycleDay: billingCycleDay ?? this.billingCycleDay,
+      dueDate: dueDate ?? this.dueDate,
+      statementDate: statementDate ?? this.statementDate,
     );
   }
 
@@ -186,6 +198,8 @@ class PaymentAccount extends HiveObject {
       'cardNetwork': cardNetwork,
       'linkedAccountId': linkedAccountId,
       'billingCycleDay': billingCycleDay,
+      'dueDate': dueDate?.toIso8601String(),
+      'statementDate': statementDate?.toIso8601String(),
     };
   }
 

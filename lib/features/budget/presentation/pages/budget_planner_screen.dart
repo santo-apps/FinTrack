@@ -320,18 +320,28 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
         margin: const EdgeInsets.symmetric(horizontal: 12),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppTheme.primaryColor,
-              AppTheme.primaryColor.withOpacity(0.7)
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Theme.of(context).colorScheme.surface
+              : null,
+          gradient: Theme.of(context).brightness == Brightness.dark
+              ? null
+              : LinearGradient(
+                  colors: [
+                    AppTheme.primaryColor,
+                    AppTheme.primaryColor.withOpacity(0.7)
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
           borderRadius: BorderRadius.circular(16),
+          border: Theme.of(context).brightness == Brightness.dark
+              ? Border.all(color: Theme.of(context).dividerColor)
+              : null,
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.3),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.transparent
+                  : AppTheme.primaryColor.withOpacity(0.3),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -349,13 +359,17 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                     'Summary',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Theme.of(context).colorScheme.onSurface
+                          : Colors.white.withOpacity(0.9),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Icon(
                     _summaryExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Theme.of(context).colorScheme.onSurface
+                        : Colors.white.withOpacity(0.9),
                     size: 18,
                   ),
                 ],
@@ -377,7 +391,12 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                               'Total Budget',
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
-                                color: Colors.white.withOpacity(0.9),
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant
+                                    : Colors.white.withOpacity(0.9),
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -387,7 +406,10 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                               style: GoogleFonts.poppins(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Theme.of(context).colorScheme.onSurface
+                                    : Colors.white,
                               ),
                             ),
                             if (_summaryExpanded) ...[
@@ -403,8 +425,13 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                           'Spent',
                                           style: GoogleFonts.poppins(
                                             fontSize: 11,
-                                            color:
-                                                Colors.white.withOpacity(0.8),
+                                            color: Theme.of(context)
+                                                        .brightness ==
+                                                    Brightness.dark
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant
+                                                : Colors.white.withOpacity(0.8),
                                           ),
                                         ),
                                         Text(
@@ -413,7 +440,13 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                           style: GoogleFonts.poppins(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
-                                            color: Colors.white,
+                                            color:
+                                                Theme.of(context).brightness ==
+                                                        Brightness.dark
+                                                    ? Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurface
+                                                    : Colors.white,
                                           ),
                                         ),
                                       ],
@@ -428,8 +461,13 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                           'Remaining',
                                           style: GoogleFonts.poppins(
                                             fontSize: 11,
-                                            color:
-                                                Colors.white.withOpacity(0.8),
+                                            color: Theme.of(context)
+                                                        .brightness ==
+                                                    Brightness.dark
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant
+                                                : Colors.white.withOpacity(0.8),
                                           ),
                                         ),
                                         Text(
@@ -439,7 +477,13 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
                                             color: remaining >= 0
-                                                ? Colors.white
+                                                ? (Theme.of(context)
+                                                            .brightness ==
+                                                        Brightness.dark
+                                                    ? Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurface
+                                                    : Colors.white)
                                                 : Colors.red.shade200,
                                           ),
                                         ),
@@ -476,7 +520,10 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                   child: LinearProgressIndicator(
                     value: percentage,
                     minHeight: 8,
-                    backgroundColor: Colors.white.withOpacity(0.3),
+                    backgroundColor:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? Theme.of(context).colorScheme.surfaceVariant
+                            : Colors.white.withOpacity(0.3),
                     valueColor: AlwaysStoppedAnimation<Color>(
                       percentage >= 1.0
                           ? Colors.red.shade300
@@ -491,7 +538,9 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                   '${(percentage * 100).toStringAsFixed(1)}% of budget used',
                   style: GoogleFonts.poppins(
                     fontSize: 11,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Theme.of(context).colorScheme.onSurfaceVariant
+                        : Colors.white.withOpacity(0.9),
                   ),
                 ),
               ] else ...[
@@ -501,7 +550,10 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                   child: LinearProgressIndicator(
                     value: percentage,
                     minHeight: 4,
-                    backgroundColor: Colors.white.withOpacity(0.3),
+                    backgroundColor:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? Theme.of(context).colorScheme.surfaceVariant
+                            : Colors.white.withOpacity(0.3),
                     valueColor: AlwaysStoppedAnimation<Color>(
                       percentage >= 1.0
                           ? Colors.red.shade300
@@ -690,7 +742,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                 child: LinearProgressIndicator(
                   value: percentage,
                   minHeight: 6,
-                  backgroundColor: Colors.grey.shade200,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     percentage >= 1.0
                         ? AppTheme.errorColor

@@ -87,15 +87,6 @@ class _ManageExpenseCategoriesScreenState
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  subtitle: category.isDefault
-                      ? Text(
-                          'Default Category',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: AppTheme.textSecondaryColor,
-                          ),
-                        )
-                      : null,
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -286,39 +277,7 @@ class _ManageExpenseCategoriesScreenState
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Category'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Are you sure you want to delete "${category.name}"?'),
-            if (category.isDefault) const SizedBox(height: 12),
-            if (category.isDefault)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  border: Border.all(color: Colors.orange.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.warning_amber_rounded,
-                        color: Colors.orange.shade700, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'This is a default category. Deleting it may affect existing expenses.',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: Colors.orange.shade900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
+        content: Text('Are you sure you want to delete "${category.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

@@ -1,7 +1,19 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
+import 'package:fintrack/database/hive_service.dart';
+import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
+import 'package:fintrack/features/bill/presentation/providers/bill_provider.dart';
+import 'package:fintrack/features/budget/presentation/providers/budget_provider.dart';
+import 'package:fintrack/features/debt/presentation/providers/debt_provider.dart';
+import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
+import 'package:fintrack/features/goals/presentation/providers/goal_provider.dart';
+import 'package:fintrack/features/investment/presentation/providers/investment_provider.dart';
+import 'package:fintrack/features/loan/presentation/providers/loan_provider.dart';
+import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
+import 'package:fintrack/features/subscription/presentation/providers/subscription_provider.dart';
 import 'package:fintrack/services/backup_service.dart';
 import 'package:fintrack/services/data_exchange_service.dart';
 
@@ -189,7 +201,8 @@ class _SettingsDataManagementScreenState
                     Text(
                       description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey.shade600,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -394,18 +407,49 @@ class _SettingsDataManagementScreenState
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              // Clear data logic
+            onPressed: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('All data cleared')),
-              );
+              await _clearAllData(context);
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _clearAllData(BuildContext context) async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Clearing all data...')),
+      );
+
+      await HiveService.clearAllData();
+
+      if (!mounted) return;
+
+      await context.read<ExpenseProvider>().refreshData();
+      await context.read<BudgetProvider>().refreshData();
+      await context.read<SubscriptionProvider>().refreshData();
+      await context.read<InvestmentProvider>().refreshData();
+      await context.read<GoalProvider>().refreshData();
+      await context.read<LoanProvider>().refreshData();
+      await context.read<BillProvider>().refreshData();
+      await context.read<DebtProvider>().refreshData();
+      context.read<PaymentAccountProvider>().refreshData();
+      await context.read<SettingsProvider>().refreshSettings();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('All data cleared successfully')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to clear data: $e')),
+      );
+    }
   }
 
   void _showExportDialog(BuildContext context) {

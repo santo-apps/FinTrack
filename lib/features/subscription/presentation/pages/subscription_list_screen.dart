@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
+import 'package:fintrack/features/settings/presentation/pages/manage_subscription_categories_screen.dart';
 import 'package:fintrack/features/subscription/data/models/subscription_model.dart';
 import 'package:fintrack/features/subscription/presentation/providers/subscription_provider.dart';
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
@@ -21,12 +23,17 @@ class SubscriptionListScreen extends StatefulWidget {
 }
 
 class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
+  static const String _allCategoriesFilter = 'All';
+  String _selectedCategoryFilter = _allCategoriesFilter;
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      Provider.of<SubscriptionProvider>(context, listen: false)
-          .initSubscriptions();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      context.read<SubscriptionProvider>().initSubscriptions();
     });
   }
 
@@ -54,10 +61,19 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
             );
           }
 
+          final categoryFilters = _buildCategoryFilters(subscriptions);
+          if (!categoryFilters.contains(_selectedCategoryFilter)) {
+            _selectedCategoryFilter = _allCategoriesFilter;
+          }
+          final filteredSubscriptions =
+              _getFilteredSubscriptions(subscriptions, _selectedCategoryFilter);
+
           double totalMonthly = 0;
-          for (var sub in subscriptions) {
+          for (var sub in filteredSubscriptions) {
             totalMonthly += sub.getMonthlyAmount();
           }
+          final categoryBreakdown =
+              _calculateCategoryBreakdown(filteredSubscriptions);
 
           return Column(
             children: [
@@ -65,56 +81,189 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
                 margin: const EdgeInsets.all(16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.blue.shade400, Colors.blue.shade600],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Theme.of(context).colorScheme.surface
+                      : null,
+                  gradient: Theme.of(context).brightness == Brightness.dark
+                      ? null
+                      : LinearGradient(
+                          colors: [
+                            AppTheme.primaryColor.withOpacity(0.85),
+                            AppTheme.primaryColor,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                   borderRadius: BorderRadius.circular(12),
+                  border: Theme.of(context).brightness == Brightness.dark
+                      ? Border.all(color: Theme.of(context).dividerColor)
+                      : null,
                 ),
                 child: Column(
                   children: [
                     Text(
                       'Monthly Cost',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.white70,
+                            color: Theme.of(context).brightness ==
+                                    Brightness.dark
+                                ? Theme.of(context).colorScheme.onSurfaceVariant
+                                : Colors.white70,
                           ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       '$currencySymbol${totalMonthly.toStringAsFixed(2)}',
-                      style:
-                          Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall
+                          ?.copyWith(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Theme.of(context).colorScheme.onSurface
+                                    : Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Across ${subscriptions.length} subscriptions',
+                      'Across ${filteredSubscriptions.length} subscriptions',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.white70,
+                            color: Theme.of(context).brightness ==
+                                    Brightness.dark
+                                ? Theme.of(context).colorScheme.onSurfaceVariant
+                                : Colors.white70,
                           ),
                     ),
                   ],
                 ),
               ),
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () async => subProvider.initSubscriptions(),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: subscriptions.length,
-                    itemBuilder: (context, index) {
-                      final sub = subscriptions[index];
-                      return _SubscriptionCard(
-                        subscription: sub,
-                        onEdit: () => _showAddEditDialog(context, sub),
-                        onDelete: () => _deleteSubscription(context, sub),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: categoryFilters.map((category) {
+                      final isSelected = category == _selectedCategoryFilter;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(category),
+                          selected: isSelected,
+                          onSelected: (_) {
+                            setState(() {
+                              _selectedCategoryFilter = category;
+                            });
+                          },
+                          elevation: isSelected ? 4 : 2,
+                          pressElevation: 6,
+                          shadowColor: Colors.black26,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.surface,
+                          selectedColor: AppTheme.primaryColor,
+                          side: BorderSide(
+                            color: isSelected
+                                ? AppTheme.primaryColor
+                                : Theme.of(context).dividerColor,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          labelStyle:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.color,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                                  ),
+                        ),
                       );
-                    },
+                    }).toList(),
                   ),
                 ),
+              ),
+              const SizedBox(height: 12),
+              if (categoryBreakdown.isNotEmpty)
+                Card(
+                  elevation: 3,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Category Breakdown',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 12),
+                        ...categoryBreakdown.entries.map((entry) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: AppTheme.primaryColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    '${entry.key} (${entry.value.count})',
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ),
+                                Text(
+                                  '$currencySymbol${entry.value.monthlyAmount.toStringAsFixed(2)}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: filteredSubscriptions.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No subscriptions in this category',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: () async => subProvider.initSubscriptions(),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: filteredSubscriptions.length,
+                          itemBuilder: (context, index) {
+                            final sub = filteredSubscriptions[index];
+                            return _SubscriptionCard(
+                              subscription: sub,
+                              onEdit: () => _showAddEditDialog(context, sub),
+                              onDelete: () => _deleteSubscription(context, sub),
+                            );
+                          },
+                        ),
+                      ),
               ),
             ],
           );
@@ -165,6 +314,61 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
       ),
     );
   }
+
+  Map<String, _CategorySummary> _calculateCategoryBreakdown(
+    List<Subscription> subscriptions,
+  ) {
+    final grouped = <String, _CategorySummary>{};
+
+    for (final subscription in subscriptions) {
+      final category = _normalizeCategory(subscription.category);
+      final existing = grouped[category];
+      final monthlyAmount = subscription.getMonthlyAmount();
+
+      grouped[category] = _CategorySummary(
+        count: (existing?.count ?? 0) + 1,
+        monthlyAmount: (existing?.monthlyAmount ?? 0) + monthlyAmount,
+      );
+    }
+
+    final sortedEntries = grouped.entries.toList()
+      ..sort((a, b) => b.value.monthlyAmount.compareTo(a.value.monthlyAmount));
+    return Map<String, _CategorySummary>.fromEntries(sortedEntries);
+  }
+
+  String _normalizeCategory(String? category) {
+    final value = category?.trim();
+    if (value == null || value.isEmpty) {
+      return 'Other';
+    }
+    return value;
+  }
+
+  List<String> _buildCategoryFilters(List<Subscription> subscriptions) {
+    final categories = subscriptions
+        .map((subscription) => _normalizeCategory(subscription.category))
+        .toSet()
+        .toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+    return [_allCategoriesFilter, ...categories];
+  }
+
+  List<Subscription> _getFilteredSubscriptions(
+    List<Subscription> subscriptions,
+    String selectedFilter,
+  ) {
+    if (selectedFilter == _allCategoriesFilter) {
+      return subscriptions;
+    }
+
+    return subscriptions
+        .where(
+          (subscription) =>
+              _normalizeCategory(subscription.category) == selectedFilter,
+        )
+        .toList();
+  }
 }
 
 class _SubscriptionCard extends StatelessWidget {
@@ -187,10 +391,10 @@ class _SubscriptionCard extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.blue.shade100,
+            color: AppTheme.primaryColor.withOpacity(0.12),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(Icons.subscriptions, color: Colors.blue.shade700),
+          child: const Icon(Icons.subscriptions, color: AppTheme.primaryColor),
         ),
         title: Text(
           subscription.name,
@@ -211,13 +415,11 @@ class _SubscriptionCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            if (subscription.category != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                subscription.category!,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
+            const SizedBox(height: 4),
+            Text(
+              _displayCategory(subscription.category),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ],
         ),
         trailing: PopupMenuButton(
@@ -256,6 +458,7 @@ class _SubscriptionCard extends StatelessWidget {
               'Renewal Date',
               _formatDate(subscription.renewalDate),
             ),
+            _DetailRow('Category', _displayCategory(subscription.category)),
             if (subscription.notes != null) ...[
               const SizedBox(height: 12),
               _DetailRow('Notes', subscription.notes!),
@@ -274,6 +477,14 @@ class _SubscriptionCard extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  String _displayCategory(String? category) {
+    final value = category?.trim();
+    if (value == null || value.isEmpty) {
+      return 'Other';
+    }
+    return value;
   }
 }
 
@@ -318,6 +529,7 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
   late TextEditingController _notesController;
   late DateTime _selectedRenewalDate;
   late String _selectedBillingCycle;
+  late String _selectedCategory;
   late bool _autoRenewal;
 
   @override
@@ -331,6 +543,10 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
           TextEditingController(text: widget.subscription!.notes ?? '');
       _selectedRenewalDate = widget.subscription!.renewalDate;
       _selectedBillingCycle = widget.subscription!.billingCycle;
+      final initialCategory = widget.subscription!.category?.trim();
+      _selectedCategory = (initialCategory == null || initialCategory.isEmpty)
+          ? 'Other'
+          : initialCategory;
       _autoRenewal = widget.subscription!.autoRenewal;
     } else {
       _nameController = TextEditingController();
@@ -338,6 +554,7 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
       _notesController = TextEditingController();
       _selectedRenewalDate = DateTime.now().add(const Duration(days: 30));
       _selectedBillingCycle = 'monthly';
+      _selectedCategory = 'Other';
       _autoRenewal = true;
     }
   }
@@ -352,6 +569,14 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final categoryModels =
+        context.watch<SettingsProvider>().subscriptionCategories;
+    final categories = categoryModels.map((c) => c.name).toList();
+    if (!categories.contains(_selectedCategory)) {
+      _selectedCategory =
+          categories.contains('Other') ? 'Other' : categories.first;
+    }
+
     return Material(
       child: SingleChildScrollView(
         child: Container(
@@ -435,6 +660,49 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedCategory,
+                decoration: InputDecoration(
+                  labelText: 'Category',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                items: categories
+                    .map(
+                      (category) => DropdownMenuItem<String>(
+                        value: category,
+                        child: Text(category),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedCategory = value);
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const ManageSubscriptionCategoriesScreen(),
+                      ),
+                    );
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  },
+                  icon: const Icon(Icons.settings),
+                  label: const Text('Manage categories'),
+                ),
+              ),
+              const SizedBox(height: 16),
               TextField(
                 controller: _notesController,
                 maxLines: 2,
@@ -500,6 +768,7 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
             renewalDate: _selectedRenewalDate,
             notes: _notesController.text,
             currency: currencyCode,
+            category: _selectedCategory,
             autoRenewal: _autoRenewal,
           )
         : Subscription(
@@ -511,6 +780,7 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
             createdAt: DateTime.now(),
             notes: _notesController.text,
             currency: currencyCode,
+            category: _selectedCategory,
             autoRenewal: _autoRenewal,
           );
 
@@ -535,4 +805,14 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
   String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
+}
+
+class _CategorySummary {
+  final int count;
+  final double monthlyAmount;
+
+  const _CategorySummary({
+    required this.count,
+    required this.monthlyAmount,
+  });
 }

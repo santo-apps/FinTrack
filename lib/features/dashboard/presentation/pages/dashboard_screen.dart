@@ -238,7 +238,9 @@ class _SnapshotCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Theme.of(context).colorScheme.surface
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: const Color(0xFF10B981).withOpacity(0.4),
@@ -315,7 +317,9 @@ class _SnapshotCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Theme.of(context).colorScheme.surface
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: const Color(0xFFF59E0B).withOpacity(0.4),
@@ -396,7 +400,9 @@ class _SnapshotCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Theme.of(context).colorScheme.surface
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isNegative
@@ -525,7 +531,7 @@ class _CompactMetric extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 10,
             fontWeight: FontWeight.w500,
-            color: Colors.grey.shade600,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 4),
@@ -631,7 +637,7 @@ class _InvestmentSummaryCard extends StatelessWidget {
                         'Current Value',
                         style: GoogleFonts.poppins(
                           fontSize: 10,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -657,7 +663,7 @@ class _InvestmentSummaryCard extends StatelessWidget {
                         'Gain / Loss',
                         style: GoogleFonts.poppins(
                           fontSize: 10,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -770,7 +776,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -915,7 +921,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: LinearProgressIndicator(
                   value: budgetUsagePercent.clamp(0.0, 1.0),
-                  backgroundColor: Colors.grey.shade200,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                   valueColor: AlwaysStoppedAnimation(usageColor),
                   minHeight: 10,
                 ),
@@ -932,7 +938,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                         'You spent',
                         style: GoogleFonts.poppins(
                           fontSize: 10,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       Text(
@@ -957,7 +963,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                         isExceeded ? 'Overspent by' : 'You have left',
                         style: GoogleFonts.poppins(
                           fontSize: 10,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       Text(
@@ -1090,7 +1096,7 @@ class _TopCategoriesCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           value: cat.percentage,
-                          backgroundColor: Colors.grey.shade200,
+                          backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                           valueColor: AlwaysStoppedAnimation(
                             cat.percentage > 1.0
                                 ? Colors.red
@@ -1143,13 +1149,21 @@ class _StreakCard extends StatelessWidget {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.primaryColor,
-                    AppTheme.primaryColor.withOpacity(0.7),
-                  ],
-                ),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Theme.of(context).colorScheme.surface
+                    : null,
+                gradient: Theme.of(context).brightness == Brightness.dark
+                    ? null
+                    : LinearGradient(
+                        colors: [
+                          AppTheme.primaryColor,
+                          AppTheme.primaryColor.withOpacity(0.7),
+                        ],
+                      ),
                 shape: BoxShape.circle,
+                border: Theme.of(context).brightness == Brightness.dark
+                    ? Border.all(color: Theme.of(context).dividerColor)
+                    : null,
               ),
               child: Center(
                 child: Text(
@@ -1157,7 +1171,9 @@ class _StreakCard extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
-                    color: Colors.white,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Theme.of(context).colorScheme.onSurface
+                        : Colors.white,
                   ),
                 ),
               ),
@@ -1172,7 +1188,7 @@ class _StreakCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1313,7 +1329,7 @@ class _GoalsSection extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -1373,7 +1389,7 @@ class _GoalsSection extends StatelessWidget {
                         ),
                       ),
                       Icon(Icons.arrow_forward_ios,
-                          size: 16, color: Colors.grey.shade600),
+                          size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -1382,7 +1398,7 @@ class _GoalsSection extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -1390,7 +1406,7 @@ class _GoalsSection extends StatelessWidget {
                     '${AppUtils.formatCurrency(totalSaved, currencySymbol: settingsProvider.currencySymbol)} saved of ${AppUtils.formatCurrency(totalTarget, currencySymbol: settingsProvider.currencySymbol)}',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: Colors.grey.shade700,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -1398,7 +1414,7 @@ class _GoalsSection extends StatelessWidget {
                     '$completedGoalsCount completed goal${completedGoalsCount == 1 ? '' : 's'}',
                     style: GoogleFonts.poppins(
                       fontSize: 11,
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -1407,7 +1423,7 @@ class _GoalsSection extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: (progressPercent / 100).clamp(0.0, 1.0),
                       minHeight: 8,
-                      backgroundColor: Colors.grey.shade200,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                       valueColor:
                           AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
                     ),

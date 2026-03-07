@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
 import 'package:fintrack/database/hive_service.dart';
+import 'package:fintrack/features/subscription/data/models/subscription_category_model.dart';
+import 'package:fintrack/services/notification_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
   static const List<String> _supportedOverviewItems = [
@@ -14,6 +16,9 @@ class SettingsProvider extends ChangeNotifier {
   bool _isBiometricEnabled = false;
   bool _isPINEnabled = false;
   bool _notificationsEnabled = true;
+  bool _dailyReminderEnabled = true;
+  int _dailyReminderHour = 9;
+  int _dailyReminderMinute = 0;
   String _currency = 'USD';
   String _language = 'en';
   List<String> _bottomNavItems = ['expenses', 'budget', 'bills'];
@@ -26,6 +31,8 @@ class SettingsProvider extends ChangeNotifier {
   ];
   List<String> _customCurrencies = [];
   Map<String, String> _customCurrencySymbols = {};
+  List<SubscriptionCategoryModel> _subscriptionCategories =
+      SubscriptionCategoryModel.getDefaultCategories();
 
   bool get isDarkMode => _isDarkMode;
   bool get biometricEnabled => _isBiometricEnabled;
@@ -33,6 +40,9 @@ class SettingsProvider extends ChangeNotifier {
   bool get pinEnabled => _isPINEnabled;
   bool get isPINEnabled => _isPINEnabled;
   bool get notificationsEnabled => _notificationsEnabled;
+  bool get dailyReminderEnabled => _dailyReminderEnabled;
+  int get dailyReminderHour => _dailyReminderHour;
+  int get dailyReminderMinute => _dailyReminderMinute;
   String get currency => _currency;
   String get currencySymbol =>
       _customCurrencySymbols[_currency] ??
@@ -41,6 +51,8 @@ class SettingsProvider extends ChangeNotifier {
   List<String> get bottomNavItems => List.unmodifiable(_bottomNavItems);
   List<String> get quickActionItems => List.unmodifiable(_quickActionItems);
   List<String> get overviewItems => List.unmodifiable(_overviewItems);
+  List<SubscriptionCategoryModel> get subscriptionCategories =>
+      List.unmodifiable(_subscriptionCategories);
   Map<String, String> get customCurrencySymbols =>
       Map.unmodifiable(_customCurrencySymbols);
   List<String> get availableCurrencies {
@@ -63,6 +75,14 @@ class SettingsProvider extends ChangeNotifier {
     _isBiometricEnabled =
         HiveService.getSetting('biometric_enabled', defaultValue: false);
     _isPINEnabled = HiveService.getSetting('pin_enabled', defaultValue: false);
+    _notificationsEnabled =
+        HiveService.getSetting('notifications_enabled', defaultValue: true);
+    _dailyReminderEnabled =
+        HiveService.getSetting('daily_reminder_enabled', defaultValue: true);
+    _dailyReminderHour =
+        HiveService.getSetting('daily_reminder_hour', defaultValue: 9);
+    _dailyReminderMinute =
+        HiveService.getSetting('daily_reminder_minute', defaultValue: 0);
     _currency = HiveService.getSetting('currency', defaultValue: 'USD');
     _language = HiveService.getSetting('language', defaultValue: 'en');
     _bottomNavItems = List<String>.from(
@@ -106,6 +126,7 @@ class SettingsProvider extends ChangeNotifier {
         for (final code in _customCurrencies) code: code,
       };
     }
+    _loadSubscriptionCategories();
   }
 
   Future<void> setDarkMode(bool value) async {
@@ -136,9 +157,65 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> setNotificationsEnabled(bool value) async {
+    if (value && _dailyReminderEnabled) {
+      await NotificationService.scheduleDailyReminder(
+        hour: _dailyReminderHour,
+        minute: _dailyReminderMinute,
+      );
+    }
+
+    if (!value) {
+      await NotificationService.cancelDailyReminder();
+    }
+
     _notificationsEnabled = value;
     await HiveService.saveSetting('notifications_enabled', value);
     notifyListeners();
+  }
+
+  Future<bool> setDailyReminderEnabled(bool value) async {
+    try {
+      if (value && _notificationsEnabled) {
+        await NotificationService.scheduleDailyReminder(
+          hour: _dailyReminderHour,
+          minute: _dailyReminderMinute,
+        );
+      } else {
+        await NotificationService.cancelDailyReminder();
+      }
+
+      _dailyReminderEnabled = value;
+      await HiveService.saveSetting('daily_reminder_enabled', value);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _dailyReminderEnabled = false;
+      await HiveService.saveSetting('daily_reminder_enabled', false);
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<bool> setDailyReminderTime(int hour, int minute) async {
+    try {
+      _dailyReminderHour = hour;
+      _dailyReminderMinute = minute;
+      await HiveService.saveSetting('daily_reminder_hour', hour);
+      await HiveService.saveSetting('daily_reminder_minute', minute);
+
+      if (_dailyReminderEnabled && _notificationsEnabled) {
+        await NotificationService.scheduleDailyReminder(
+          hour: hour,
+          minute: minute,
+        );
+      }
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      notifyListeners();
+      rethrow;
+    }
   }
 
   Future<void> setPINEnabled(bool value) async {
@@ -243,5 +320,182 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> refreshSettings() async {
     _loadSettings();
     notifyListeners();
+  }
+
+  // Subscription Categories Management
+  void _loadSubscriptionCategories() {
+    final stored = HiveService.getSetting('subscription_categories');
+
+    if (stored == null) {
+      _subscriptionCategories =
+          SubscriptionCategoryModel.getDefaultCategories();
+      return;
+    }
+
+    try {
+      if (stored is List) {
+        if (stored.isEmpty) {
+          _subscriptionCategories =
+              SubscriptionCategoryModel.getDefaultCategories();
+        } else if (stored.first is String) {
+          // Old format - migrate from strings
+          _subscriptionCategories = stored
+              .map((item) =>
+                  SubscriptionCategoryModel.fromString(item.toString()))
+              .toList();
+          _saveSubscriptionCategories(); // Save in new format
+        } else if (stored.first is Map) {
+          // New format
+          _subscriptionCategories = stored
+              .map((item) => SubscriptionCategoryModel.fromJson(
+                  item as Map<String, dynamic>))
+              .toList();
+        } else {
+          _subscriptionCategories =
+              SubscriptionCategoryModel.getDefaultCategories();
+        }
+      } else {
+        _subscriptionCategories =
+            SubscriptionCategoryModel.getDefaultCategories();
+      }
+    } catch (e) {
+      _subscriptionCategories =
+          SubscriptionCategoryModel.getDefaultCategories();
+    }
+
+    _subscriptionCategories =
+        _normalizeSubscriptionCategories(_subscriptionCategories);
+  }
+
+  List<SubscriptionCategoryModel> _normalizeSubscriptionCategories(
+      List<SubscriptionCategoryModel> categories) {
+    final normalized = <SubscriptionCategoryModel>[];
+    final seenNames = <String>{};
+
+    for (final category in categories) {
+      final trimmed = category.name.trim();
+      if (trimmed.isEmpty) continue;
+
+      final lowerName = trimmed.toLowerCase();
+      if (!seenNames.contains(lowerName)) {
+        seenNames.add(lowerName);
+        normalized.add(category);
+      }
+    }
+
+    if (normalized.isEmpty) {
+      return SubscriptionCategoryModel.getDefaultCategories();
+    }
+
+    if (!normalized.any((c) => c.name.toLowerCase() == 'other')) {
+      normalized.add(SubscriptionCategoryModel(
+        id: 'other',
+        name: 'Other',
+        icon: '📋',
+      ));
+    }
+
+    return normalized;
+  }
+
+  Future<void> _saveSubscriptionCategories() async {
+    final json = _subscriptionCategories.map((c) => c.toJson()).toList();
+    await HiveService.saveSetting('subscription_categories', json);
+  }
+
+  Future<bool> addSubscriptionCategory(String name, [String? icon]) async {
+    final trimmed = name.trim();
+    final categoryIcon = icon?.trim() ?? '📱';
+
+    if (trimmed.isEmpty) {
+      return false;
+    }
+
+    final exists = _subscriptionCategories.any(
+      (existing) => existing.name.toLowerCase() == trimmed.toLowerCase(),
+    );
+    if (exists) {
+      return false;
+    }
+
+    _subscriptionCategories = [
+      ..._subscriptionCategories,
+      SubscriptionCategoryModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: trimmed,
+        icon: categoryIcon,
+      ),
+    ];
+    _subscriptionCategories =
+        _normalizeSubscriptionCategories(_subscriptionCategories);
+    await _saveSubscriptionCategories();
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> updateSubscriptionCategory(
+    String oldCategoryName,
+    String newName, {
+    String? newIcon,
+  }) async {
+    final oldTrimmed = oldCategoryName.trim();
+    final newTrimmed = newName.trim();
+
+    if (oldTrimmed.isEmpty || newTrimmed.isEmpty) {
+      return false;
+    }
+
+    if (oldTrimmed.toLowerCase() == 'other' &&
+        newTrimmed.toLowerCase() != 'other') {
+      return false;
+    }
+
+    final oldIndex = _subscriptionCategories.indexWhere(
+      (category) => category.name.toLowerCase() == oldTrimmed.toLowerCase(),
+    );
+    if (oldIndex == -1) {
+      return false;
+    }
+
+    final duplicateIndex = _subscriptionCategories.indexWhere(
+      (category) => category.name.toLowerCase() == newTrimmed.toLowerCase(),
+    );
+    if (duplicateIndex != -1 && duplicateIndex != oldIndex) {
+      return false;
+    }
+
+    final updated =
+        List<SubscriptionCategoryModel>.from(_subscriptionCategories);
+    updated[oldIndex] = SubscriptionCategoryModel(
+      id: _subscriptionCategories[oldIndex].id,
+      name: newTrimmed,
+      icon: newIcon?.trim() ?? _subscriptionCategories[oldIndex].icon,
+    );
+    _subscriptionCategories = _normalizeSubscriptionCategories(updated);
+    await _saveSubscriptionCategories();
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> deleteSubscriptionCategory(String categoryName) async {
+    final trimmed = categoryName.trim();
+    if (trimmed.isEmpty || trimmed.toLowerCase() == 'other') {
+      return false;
+    }
+
+    final oldLength = _subscriptionCategories.length;
+    _subscriptionCategories = _subscriptionCategories
+        .where((c) => c.name.toLowerCase() != trimmed.toLowerCase())
+        .toList();
+
+    if (_subscriptionCategories.length == oldLength) {
+      return false;
+    }
+
+    _subscriptionCategories =
+        _normalizeSubscriptionCategories(_subscriptionCategories);
+    await _saveSubscriptionCategories();
+    notifyListeners();
+    return true;
   }
 }

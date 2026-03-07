@@ -142,12 +142,29 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppTheme.primaryColor, AppTheme.accentColor],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Theme.of(context).colorScheme.surface
+                      : null,
+                  gradient: Theme.of(context).brightness == Brightness.dark
+                      ? null
+                      : LinearGradient(
+                          colors: [AppTheme.primaryColor, AppTheme.accentColor],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                   borderRadius: BorderRadius.circular(16),
+                  border: Theme.of(context).brightness == Brightness.dark
+                      ? Border.all(color: Theme.of(context).dividerColor)
+                      : null,
+                  boxShadow: Theme.of(context).brightness == Brightness.dark
+                      ? []
+                      : [
+                          BoxShadow(
+                            color: AppTheme.primaryColor.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,7 +173,9 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                       'Account Balance',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
-                        color: Colors.white70,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Theme.of(context).colorScheme.onSurfaceVariant
+                            : Colors.white70,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -170,7 +189,9 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                       style: GoogleFonts.poppins(
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Theme.of(context).colorScheme.onSurface
+                            : Colors.white,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -327,6 +348,10 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
       ),
       builder: (context) => AddEditExpenseScreen(
         expense: expense,
+        initialAccountId: expense.accountId,
+        initialTransactionType: expense.transactionType,
+        initialDestinationAccountId: expense.destinationAccountId,
+        initialAmount: expense.amount,
       ),
     );
   }
@@ -1109,7 +1134,9 @@ class _SummaryItem extends StatelessWidget {
           label,
           style: GoogleFonts.poppins(
             fontSize: 12,
-            color: Colors.white70,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Theme.of(context).colorScheme.onSurfaceVariant
+                : Colors.white70,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -1119,7 +1146,9 @@ class _SummaryItem extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Theme.of(context).colorScheme.onSurface
+                : Colors.white,
           ),
         ),
       ],
@@ -1259,39 +1288,31 @@ class _TransactionCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          expense.category,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textColor,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                  Text(
+                    expense.category,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  // Transaction type badge
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      _getTransactionLabel(),
+                      style: GoogleFonts.poppins(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: color,
                       ),
-                      const SizedBox(width: 4),
-                      // Transaction type badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          _getTransactionLabel(),
-                          style: GoogleFonts.poppins(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            color: color,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
