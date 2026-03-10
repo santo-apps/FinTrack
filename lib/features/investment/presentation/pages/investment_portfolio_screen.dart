@@ -281,6 +281,14 @@ class _InvestmentCard extends StatelessWidget {
     final gainLoss = investment.getGainLoss();
     final gainLossPercentage = investment.getGainLossPercentage();
     final isProfit = investment.isProfit();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final gainLossBg = isProfit
+        ? (isDark ? Colors.green.withOpacity(0.2) : Colors.green.shade100)
+        : (isDark ? Colors.red.withOpacity(0.2) : Colors.red.shade100);
+    final gainLossTextColor = isProfit
+        ? (isDark ? Colors.green.shade300 : Colors.green.shade700)
+        : (isDark ? Colors.red.shade300 : Colors.red.shade700);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -384,7 +392,7 @@ class _InvestmentCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: isProfit ? Colors.green.shade100 : Colors.red.shade100,
+                color: gainLossBg,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -398,9 +406,7 @@ class _InvestmentCard extends StatelessWidget {
                     '${investment.currency} ${investment.getCurrentValue().toStringAsFixed(2)}',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: isProfit
-                          ? Colors.green.shade700
-                          : Colors.red.shade700,
+                      color: gainLossTextColor,
                     ),
                   ),
                 ],
@@ -410,7 +416,7 @@ class _InvestmentCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: isProfit ? Colors.green.shade100 : Colors.red.shade100,
+                color: gainLossBg,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -424,9 +430,7 @@ class _InvestmentCard extends StatelessWidget {
                     '${isProfit ? '+' : ''} ${investment.currency} ${gainLoss.toStringAsFixed(2)} (${gainLossPercentage.toStringAsFixed(2)}%)',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: isProfit
-                          ? Colors.green.shade700
-                          : Colors.red.shade700,
+                      color: gainLossTextColor,
                     ),
                   ),
                 ],

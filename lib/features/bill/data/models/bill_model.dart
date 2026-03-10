@@ -4,6 +4,8 @@ part 'bill_model.g.dart';
 
 @HiveType(typeId: 4)
 class Bill extends HiveObject {
+  static const Object _unset = Object();
+
   @HiveField(0)
   String id;
 
@@ -58,11 +60,11 @@ class Bill extends HiveObject {
     DateTime? dueDate,
     bool? isPaid,
     bool? isRecurring,
-    String? recurringFrequency,
+    Object? recurringFrequency = _unset,
     DateTime? createdAt,
     String? currency,
-    String? notes,
-    DateTime? paidDate,
+    Object? notes = _unset,
+    Object? paidDate = _unset,
   }) {
     return Bill(
       id: id ?? this.id,
@@ -71,20 +73,28 @@ class Bill extends HiveObject {
       dueDate: dueDate ?? this.dueDate,
       isPaid: isPaid ?? this.isPaid,
       isRecurring: isRecurring ?? this.isRecurring,
-      recurringFrequency: recurringFrequency ?? this.recurringFrequency,
+      recurringFrequency: recurringFrequency == _unset
+          ? this.recurringFrequency
+          : recurringFrequency as String?,
       createdAt: createdAt ?? this.createdAt,
       currency: currency ?? this.currency,
-      notes: notes ?? this.notes,
-      paidDate: paidDate ?? this.paidDate,
+      notes: notes == _unset ? this.notes : notes as String?,
+      paidDate: paidDate == _unset ? this.paidDate : paidDate as DateTime?,
     );
   }
 
   bool isOverdue() {
-    return !isPaid && DateTime.now().isAfter(dueDate);
+    final today = DateTime.now();
+    final startOfToday = DateTime(today.year, today.month, today.day);
+    final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    return !isPaid && dueDay.isBefore(startOfToday);
   }
 
   int getDaysUntilDue() {
-    return dueDate.difference(DateTime.now()).inDays;
+    final today = DateTime.now();
+    final startOfToday = DateTime(today.year, today.month, today.day);
+    final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    return dueDay.difference(startOfToday).inDays;
   }
 
   Map<String, dynamic> toJson() => {

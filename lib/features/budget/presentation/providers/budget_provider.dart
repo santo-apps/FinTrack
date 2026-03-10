@@ -118,7 +118,8 @@ class BudgetProvider extends ChangeNotifier {
           categoryLimits: categoryLimits,
           updatedAt: DateTime.now(),
           recurrenceType: recurrenceType,
-          endDate: endDate,
+          endDate: recurrenceType == 'monthly' ? endDate : null,
+          baselineId: recurrenceType == 'monthly' ? existing.baselineId : null,
         );
         await HiveService.updateBudget(updated);
         final index = _budgets.indexWhere((b) => b.id == updated.id);

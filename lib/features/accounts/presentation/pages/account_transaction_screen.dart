@@ -48,6 +48,7 @@ class AccountTransactionScreen extends StatefulWidget {
 class _AccountTransactionScreenState extends State<AccountTransactionScreen>
     with TickerProviderStateMixin {
   late int _selectedTabIndex;
+  final Set<String> _pendingDeletedExpenseIds = <String>{};
 
   @override
   void initState() {
@@ -57,7 +58,10 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
+      backgroundColor:
+          isDarkMode ? Theme.of(context).colorScheme.surface : null,
       appBar: CustomAppBar(
         title: widget.account.name,
         showBackButton: true,
@@ -85,7 +89,8 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
           // the same transaction.
           final expenses = expenseProvider.expenses
               .where((expense) =>
-                  shouldShowTransactionForAccount(expense, currentAccount.id))
+                  shouldShowTransactionForAccount(expense, currentAccount.id) &&
+                  !_pendingDeletedExpenseIds.contains(expense.id))
               .toList();
 
           // Sort by date descending
@@ -119,7 +124,9 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                     style: GoogleFonts.poppins(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textSecondaryColor,
+                      color: isDarkMode
+                          ? Colors.white
+                          : AppTheme.textSecondaryColor,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -127,7 +134,9 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                     'No expenses recorded for this account',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: AppTheme.textSecondaryColor,
+                      color: isDarkMode
+                          ? Colors.white70
+                          : AppTheme.textSecondaryColor,
                     ),
                   ),
                 ],
@@ -224,11 +233,12 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textColor,
+                  color: isDarkMode ? Colors.white : AppTheme.textColor,
                 ),
               ),
               const SizedBox(height: 12),
               ...expenses.map((expense) => _TransactionCard(
+                    key: Key(expense.id),
                     expense: expense,
                     currentAccountId: currentAccount.id,
                     currencySymbol:
@@ -245,9 +255,10 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
+          color: isDarkMode ? Theme.of(context).colorScheme.surface : null,
           border: Border(
             top: BorderSide(
-              color: Colors.grey.shade200,
+              color: isDarkMode ? Colors.white24 : Colors.grey.shade200,
               width: 1,
             ),
           ),
@@ -261,6 +272,7 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
   }
 
   List<Widget> _getTransactionTabs() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final isCreditCard = widget.account.accountType == 'Credit Card';
     final tabs = [
       ('Expense', 'expense', '💸'),
@@ -302,7 +314,9 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                           isSelected ? FontWeight.w600 : FontWeight.w500,
                       color: isSelected
                           ? AppTheme.primaryColor
-                          : AppTheme.textSecondaryColor,
+                          : (isDarkMode
+                              ? Colors.white70
+                              : AppTheme.textSecondaryColor),
                     ),
                   ),
                   if (isSelected)
@@ -325,9 +339,12 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
   }
 
   void _showCalculator(String transactionType) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor:
+          isDarkMode ? Theme.of(context).colorScheme.surface : null,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -339,10 +356,13 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
   }
 
   void _editTransaction(Expense expense) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      backgroundColor:
+          isDarkMode ? Theme.of(context).colorScheme.surface : null,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -356,95 +376,21 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
     );
   }
 
-  void _deleteTransaction(Expense expense) {
-    showDialog(
+  void _deleteTransaction(Expense expense) async {
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Transaction'),
         content: const Text(
           'Are you sure you want to delete this transaction? This action cannot be undone.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () async {
-              Navigator.pop(context); // Close dialog
-
-              // Reverse transaction effects
-              final accountProvider = context.read<PaymentAccountProvider>();
-              final sourceId = expense.accountId;
-              if (sourceId != null) {
-                final sourceAccount = accountProvider.getAccountById(sourceId);
-                if (sourceAccount != null) {
-                  final isCreditCard = sourceAccount.accountType
-                      .toLowerCase()
-                      .contains('credit');
-
-                  final amount = expense.amount;
-                  final transactionType = expense.transactionType ?? 'expense';
-
-                  double sourceDelta = 0;
-                  double destinationDelta = 0;
-                  String? destinationId = expense.destinationAccountId;
-
-                  // Calculate the original deltas (same logic as _applyTransactionEffects)
-                  switch (transactionType) {
-                    case 'income':
-                      sourceDelta = isCreditCard ? -amount : amount;
-                      break;
-                    case 'transfer':
-                      sourceDelta = -amount;
-                      if (destinationId != null) {
-                        final destination =
-                            accountProvider.getAccountById(destinationId);
-                        if (destination != null) {
-                          final isDestCredit = destination.accountType
-                              .toLowerCase()
-                              .contains('credit');
-                          destinationDelta = isDestCredit ? -amount : amount;
-                        }
-                      }
-                      break;
-                    case 'payment':
-                      sourceDelta = -amount;
-                      if (destinationId != null) {
-                        destinationDelta = -amount;
-                      }
-                      break;
-                    default: // expense
-                      sourceDelta = isCreditCard ? amount : -amount;
-                  }
-
-                  // Reverse the deltas (negate them)
-                  sourceDelta = -sourceDelta;
-                  destinationDelta = -destinationDelta;
-
-                  await accountProvider.adjustAccountBalance(
-                    sourceId,
-                    sourceDelta,
-                  );
-
-                  if (destinationId != null && destinationDelta != 0) {
-                    await accountProvider.adjustAccountBalance(
-                      destinationId,
-                      destinationDelta,
-                    );
-                  }
-                }
-              }
-
-              // Delete the transaction
-              context.read<ExpenseProvider>().deleteExpense(expense.id);
-
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Transaction deleted')),
-                );
-              }
-            },
+            onPressed: () => Navigator.pop(dialogContext, true),
             style: TextButton.styleFrom(
               foregroundColor: Colors.red,
             ),
@@ -453,6 +399,101 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
         ],
       ),
     );
+
+    if (confirmed != true) return;
+
+    // Get providers from current context
+    final accountProvider = context.read<PaymentAccountProvider>();
+    final expenseProvider = context.read<ExpenseProvider>();
+
+    // Optimistically hide the item so UI updates immediately.
+    if (mounted) {
+      setState(() {
+        _pendingDeletedExpenseIds.add(expense.id);
+      });
+    }
+
+    try {
+      // Reverse transaction effects
+      final sourceId = expense.accountId;
+      if (sourceId != null) {
+        final sourceAccount = accountProvider.getAccountById(sourceId);
+        if (sourceAccount != null) {
+          final isCreditCard =
+              sourceAccount.accountType.toLowerCase().contains('credit');
+
+          final amount = expense.amount;
+          final transactionType = expense.transactionType ?? 'expense';
+
+          double sourceDelta = 0;
+          double destinationDelta = 0;
+          String? destinationId = expense.destinationAccountId;
+
+          // Calculate the original deltas (same logic as _applyTransactionEffects)
+          switch (transactionType) {
+            case 'income':
+              sourceDelta = isCreditCard ? -amount : amount;
+              break;
+            case 'transfer':
+              sourceDelta = -amount;
+              if (destinationId != null) {
+                final destination =
+                    accountProvider.getAccountById(destinationId);
+                if (destination != null) {
+                  final isDestCredit =
+                      destination.accountType.toLowerCase().contains('credit');
+                  destinationDelta = isDestCredit ? -amount : amount;
+                }
+              }
+              break;
+            case 'payment':
+              sourceDelta = -amount;
+              if (destinationId != null) {
+                destinationDelta = -amount;
+              }
+              break;
+            default: // expense
+              sourceDelta = isCreditCard ? amount : -amount;
+          }
+
+          // Reverse the deltas (negate them)
+          sourceDelta = -sourceDelta;
+          destinationDelta = -destinationDelta;
+
+          await accountProvider.adjustAccountBalance(
+            sourceId,
+            sourceDelta,
+          );
+
+          if (destinationId != null && destinationDelta != 0) {
+            await accountProvider.adjustAccountBalance(
+              destinationId,
+              destinationDelta,
+            );
+          }
+        }
+      }
+
+      await expenseProvider.deleteExpense(expense.id);
+
+      if (mounted) {
+        setState(() {
+          _pendingDeletedExpenseIds.remove(expense.id);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Transaction deleted')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _pendingDeletedExpenseIds.remove(expense.id);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to delete transaction')),
+        );
+      }
+    }
   }
 }
 
@@ -609,9 +650,12 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
     List<PaymentAccount> availableAccounts,
     String title,
   ) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor:
+          isDarkMode ? Theme.of(context).colorScheme.surface : null,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -620,6 +664,7 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
 
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            final isDarkMode = Theme.of(context).brightness == Brightness.dark;
             final filteredAccounts = availableAccounts.where((account) {
               final nameMatch =
                   account.name.toLowerCase().contains(query.toLowerCase());
@@ -640,7 +685,7 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textColor,
+                        color: isDarkMode ? Colors.white : AppTheme.textColor,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -657,9 +702,14 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
                     ),
                     const SizedBox(height: 12),
                     if (filteredAccounts.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Text('No matching accounts'),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Text(
+                          'No matching accounts',
+                          style: TextStyle(
+                            color: isDarkMode ? Colors.white70 : null,
+                          ),
+                        ),
                       )
                     else
                       SizedBox(
@@ -669,8 +719,18 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
                           itemBuilder: (context, index) {
                             final account = filteredAccounts[index];
                             return ListTile(
-                              title: Text(account.name),
-                              subtitle: Text(account.accountType),
+                              title: Text(
+                                account.name,
+                                style: TextStyle(
+                                  color: isDarkMode ? Colors.white : null,
+                                ),
+                              ),
+                              subtitle: Text(
+                                account.accountType,
+                                style: TextStyle(
+                                  color: isDarkMode ? Colors.white70 : null,
+                                ),
+                              ),
                               onTap: () {
                                 setState(() {
                                   _selectedAccountId = account.id;
@@ -699,10 +759,13 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
     // Show the form in a full-screen bottom sheet
     Future.delayed(const Duration(milliseconds: 200), () {
       if (mounted) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
           useSafeArea: true,
+          backgroundColor:
+              isDarkMode ? Theme.of(context).colorScheme.surface : null,
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
@@ -769,10 +832,13 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
       _accountFieldController.text = selectedAccountName;
     }
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      decoration: const BoxDecoration(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        color: Colors.white,
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        color:
+            isDarkMode ? Theme.of(context).colorScheme.surface : Colors.white,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -784,7 +850,7 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
               height: 4,
               width: 40,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: isDarkMode ? Colors.white54 : Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -830,7 +896,7 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textColor,
+                    color: isDarkMode ? Colors.white : AppTheme.textColor,
                   ),
                 ),
                 ElevatedButton(
@@ -869,7 +935,7 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
               style: GoogleFonts.poppins(
                 fontSize: 36,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textColor,
+                color: isDarkMode ? Colors.white : AppTheme.textColor,
               ),
             ),
           ),
@@ -973,7 +1039,9 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
               child: OutlinedButton(
                 onPressed: _clear,
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.grey.shade300),
+                  side: BorderSide(
+                    color: isDarkMode ? Colors.white54 : Colors.grey.shade300,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -983,7 +1051,9 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textSecondaryColor,
+                    color: isDarkMode
+                        ? Colors.white70
+                        : AppTheme.textSecondaryColor,
                   ),
                 ),
               ),
@@ -1002,13 +1072,16 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
   }
 
   Widget _buildNumberButton(String number) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: GestureDetector(
         onTap: () => _handleNumber(number),
         child: Container(
           height: 50,
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: isDarkMode
+                ? Colors.white.withOpacity(0.1)
+                : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
@@ -1017,7 +1090,7 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textColor,
+                color: isDarkMode ? Colors.white : AppTheme.textColor,
               ),
             ),
           ),
@@ -1052,13 +1125,16 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
   }
 
   Widget _buildDecimalButton() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: GestureDetector(
         onTap: _handleDecimal,
         child: Container(
           height: 50,
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: isDarkMode
+                ? Colors.white.withOpacity(0.1)
+                : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
@@ -1067,7 +1143,7 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textColor,
+                color: isDarkMode ? Colors.white : AppTheme.textColor,
               ),
             ),
           ),
@@ -1077,19 +1153,22 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
   }
 
   Widget _buildDeleteButton() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: GestureDetector(
         onTap: _delete,
         child: Container(
           height: 50,
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: isDarkMode
+                ? Colors.white.withOpacity(0.1)
+                : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
             child: Icon(
               Icons.backspace_outlined,
-              color: AppTheme.textColor,
+              color: isDarkMode ? Colors.white : AppTheme.textColor,
               size: 20,
             ),
           ),
@@ -1165,6 +1244,7 @@ class _TransactionCard extends StatelessWidget {
   final VoidCallback? onDelete;
 
   const _TransactionCard({
+    super.key,
     required this.expense,
     required this.currentAccountId,
     required this.currencySymbol,
@@ -1234,6 +1314,7 @@ class _TransactionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final transactionType = expense.transactionType ?? 'expense';
     final isDebit = isDebitTransactionForAccount(expense, currentAccountId);
 
@@ -1261,8 +1342,14 @@ class _TransactionCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
+      color: isDarkMode ? Theme.of(context).colorScheme.surface : Colors.white,
       elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: isDarkMode
+            ? const BorderSide(color: Colors.white, width: 1)
+            : BorderSide.none,
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
@@ -1293,7 +1380,7 @@ class _TransactionCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textColor,
+                      color: isDarkMode ? Colors.white : AppTheme.textColor,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -1319,7 +1406,9 @@ class _TransactionCard extends StatelessWidget {
                     _formatDate(expense.date),
                     style: GoogleFonts.poppins(
                       fontSize: 11,
-                      color: AppTheme.textSecondaryColor,
+                      color: isDarkMode
+                          ? Colors.white70
+                          : AppTheme.textSecondaryColor,
                     ),
                   ),
                   if (expense.notes != null && expense.notes!.isNotEmpty) ...[
@@ -1328,7 +1417,9 @@ class _TransactionCard extends StatelessWidget {
                       expense.notes!,
                       style: GoogleFonts.poppins(
                         fontSize: 10,
-                        color: AppTheme.textSecondaryColor,
+                        color: isDarkMode
+                            ? Colors.white70
+                            : AppTheme.textSecondaryColor,
                         fontStyle: FontStyle.italic,
                       ),
                       maxLines: 1,

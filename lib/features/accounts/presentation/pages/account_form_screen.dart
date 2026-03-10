@@ -101,8 +101,11 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.account != null;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor:
+          isDarkMode ? Theme.of(context).colorScheme.surface : null,
       appBar: CustomAppBar(
         title: isEdit ? 'Edit Account' : 'Add Account',
         showBackButton: true,
@@ -118,7 +121,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textColor,
+                color: isDarkMode ? Colors.white : AppTheme.textColor,
               ),
             ),
             const SizedBox(height: 8),
@@ -205,7 +208,11 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                                 fontWeight: isSelected
                                     ? FontWeight.w600
                                     : FontWeight.w400,
-                                color: isSelected ? color : AppTheme.textColor,
+                                color: isSelected
+                                    ? color
+                                    : (isDarkMode
+                                        ? Colors.white
+                                        : AppTheme.textColor),
                               ),
                             ),
                           ],
@@ -323,7 +330,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textColor,
+                  color: isDarkMode ? Colors.white : AppTheme.textColor,
                 ),
               ),
               const SizedBox(height: 8),
@@ -365,7 +372,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textColor,
+                  color: isDarkMode ? Colors.white : AppTheme.textColor,
                 ),
               ),
               const SizedBox(height: 8),
@@ -388,12 +395,17 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           color: _expiryDate != null
-                              ? AppTheme.textColor
-                              : AppTheme.textSecondaryColor,
+                              ? (isDarkMode ? Colors.white : AppTheme.textColor)
+                              : (isDarkMode
+                                  ? Colors.white70
+                                  : AppTheme.textSecondaryColor),
                         ),
                       ),
                       Icon(Icons.calendar_today,
-                          color: AppTheme.textSecondaryColor, size: 18),
+                          color: isDarkMode
+                              ? Colors.white70
+                              : AppTheme.textSecondaryColor,
+                          size: 18),
                     ],
                   ),
                 ),
@@ -409,7 +421,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textColor,
+                  color: isDarkMode ? Colors.white : AppTheme.textColor,
                 ),
               ),
               const SizedBox(height: 8),
@@ -432,12 +444,17 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           color: _statementDate != null
-                              ? AppTheme.textColor
-                              : AppTheme.textSecondaryColor,
+                              ? (isDarkMode ? Colors.white : AppTheme.textColor)
+                              : (isDarkMode
+                                  ? Colors.white70
+                                  : AppTheme.textSecondaryColor),
                         ),
                       ),
                       Icon(Icons.calendar_today,
-                          color: AppTheme.textSecondaryColor, size: 18),
+                          color: isDarkMode
+                              ? Colors.white70
+                              : AppTheme.textSecondaryColor,
+                          size: 18),
                     ],
                   ),
                 ),
@@ -448,7 +465,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textColor,
+                  color: isDarkMode ? Colors.white : AppTheme.textColor,
                 ),
               ),
               const SizedBox(height: 8),
@@ -471,12 +488,17 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           color: _dueDate != null
-                              ? AppTheme.textColor
-                              : AppTheme.textSecondaryColor,
+                              ? (isDarkMode ? Colors.white : AppTheme.textColor)
+                              : (isDarkMode
+                                  ? Colors.white70
+                                  : AppTheme.textSecondaryColor),
                         ),
                       ),
                       Icon(Icons.calendar_today,
-                          color: AppTheme.textSecondaryColor, size: 18),
+                          color: isDarkMode
+                              ? Colors.white70
+                              : AppTheme.textSecondaryColor,
+                          size: 18),
                     ],
                   ),
                 ),
@@ -490,7 +512,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textColor,
+                color: isDarkMode ? Colors.white : AppTheme.textColor,
               ),
             ),
             const SizedBox(height: 4),
@@ -498,7 +520,8 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
               'Link this account to another account (e.g., debit card to bank account)',
               style: GoogleFonts.poppins(
                 fontSize: 12,
-                color: AppTheme.textSecondaryColor,
+                color:
+                    isDarkMode ? Colors.white70 : AppTheme.textSecondaryColor,
               ),
             ),
             const SizedBox(height: 8),
@@ -606,14 +629,18 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: AppTheme.textColor,
+                                      color: isDarkMode
+                                          ? Colors.white
+                                          : AppTheme.textColor,
                                     ),
                                   ),
                                   Text(
                                     item.accountType,
                                     style: GoogleFonts.poppins(
                                       fontSize: 12,
-                                      color: AppTheme.textSecondaryColor,
+                                      color: isDarkMode
+                                          ? Colors.white70
+                                          : AppTheme.textSecondaryColor,
                                     ),
                                   ),
                                 ],
@@ -642,7 +669,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textColor,
+                color: isDarkMode ? Colors.white : AppTheme.textColor,
               ),
             ),
             const SizedBox(height: 8),

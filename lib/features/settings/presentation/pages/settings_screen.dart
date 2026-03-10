@@ -20,6 +20,21 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  Color _settingsIconColor(BuildContext context, {bool enabled = true}) {
+    final theme = Theme.of(context);
+    final baseColor = theme.brightness == Brightness.dark
+        ? theme.colorScheme.onSurface
+        : theme.colorScheme.primary;
+    return enabled ? baseColor : baseColor.withOpacity(0.45);
+  }
+
+  Color _settingsIconBackgroundColor(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.brightness == Brightness.dark
+        ? theme.colorScheme.onSurface.withOpacity(0.08)
+        : theme.colorScheme.primary.withOpacity(0.1);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,7 +52,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildSettingCard(
                 context,
                 leading: Icon(Icons.brightness_4,
-                    color: Theme.of(context).primaryColor),
+                    color: _settingsIconColor(context)),
                 title: 'Dark Mode',
                 subtitle: 'Switch between light and dark theme',
                 trailing: Switch(
@@ -54,7 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildSettingCard(
                 context,
                 leading: Icon(Icons.attach_money,
-                    color: Theme.of(context).primaryColor),
+                    color: _settingsIconColor(context)),
                 title: 'Default Currency',
                 subtitle: settingsProvider.currency,
                 trailing: Row(
@@ -95,7 +110,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     IconButton(
                       icon: Icon(Icons.add,
-                          color: Theme.of(context).primaryColor, size: 20),
+                          color: _settingsIconColor(context), size: 20),
                       tooltip: 'Add currency',
                       onPressed: () =>
                           _showAddCurrencyDialog(context, settingsProvider),
@@ -143,8 +158,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         context,
                         leading: Icon(Icons.fingerprint,
                             color: canUseBiometrics
-                                ? Theme.of(context).primaryColor
-                                : Colors.grey),
+                                ? _settingsIconColor(context)
+                                : _settingsIconColor(context, enabled: false)),
                         title: 'Biometric Authentication',
                         subtitle: biometricSubtitle,
                         enabled: canUseBiometrics,
@@ -245,7 +260,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _buildSettingCard(
                         context,
                         leading: Icon(Icons.vpn_key,
-                            color: Theme.of(context).primaryColor),
+                            color: _settingsIconColor(context)),
                         title: 'PIN Protection',
                         subtitle: settingsProvider.pinEnabled
                             ? 'PIN is enabled'
@@ -295,7 +310,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildSettingCard(
                 context,
                 leading: Icon(Icons.notifications_active,
-                    color: Theme.of(context).primaryColor),
+                    color: _settingsIconColor(context)),
                 title: 'Enable Notifications',
                 subtitle: 'Receive app notifications',
                 trailing: Switch(
@@ -314,7 +329,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: _buildSettingCard(
                   context,
                   leading:
-                      Icon(Icons.alarm, color: Theme.of(context).primaryColor),
+                      Icon(Icons.alarm, color: _settingsIconColor(context)),
                   title: 'Daily Reminder',
                   subtitle: settingsProvider.dailyReminderEnabled
                       ? '${_formatTime(settingsProvider.dailyReminderHour, settingsProvider.dailyReminderMinute)} - ${_getNextReminderText(settingsProvider.dailyReminderHour, settingsProvider.dailyReminderMinute)}. Tap to change'
@@ -357,7 +372,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildSettingCard(
                 context,
                 leading:
-                    Icon(Icons.settings, color: Theme.of(context).primaryColor),
+                    Icon(Icons.settings, color: _settingsIconColor(context)),
                 title: 'Open Notification Settings',
                 subtitle:
                     'Enable FinTrack alerts, banners, and Notification Center',
@@ -454,12 +469,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              color: _settingsIconBackgroundColor(context),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
-              color: Theme.of(context).primaryColor,
+              color: _settingsIconColor(context),
               size: 20,
             ),
           ),
@@ -585,7 +600,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             IconButton(
               icon: Icon(Icons.edit,
-                  size: 18, color: Theme.of(context).primaryColor),
+                  size: 18, color: _settingsIconColor(context)),
               tooltip: 'Edit symbol',
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 32, minHeight: 32),

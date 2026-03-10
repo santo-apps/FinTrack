@@ -17,6 +17,17 @@ class _SettingsNavigationScreenState extends State<SettingsNavigationScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  Color _activeAccent(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.brightness == Brightness.dark
+        ? theme.colorScheme.onSurface
+        : theme.colorScheme.primary;
+  }
+
+  Color _mutedText(BuildContext context) {
+    return Theme.of(context).colorScheme.onSurfaceVariant;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -89,8 +100,8 @@ class _SettingsNavigationScreenState extends State<SettingsNavigationScreen>
                 ),
                 child: TabBar(
                   controller: _tabController,
-                  labelColor: Theme.of(context).primaryColor,
-                  unselectedLabelColor: Colors.grey,
+                  labelColor: _activeAccent(context),
+                  unselectedLabelColor: _mutedText(context),
                   indicatorSize: TabBarIndicatorSize.tab,
                   indicatorWeight: 3,
                   tabs: const [
@@ -318,13 +329,12 @@ class _SettingsNavigationScreenState extends State<SettingsNavigationScreen>
         borderRadius: BorderRadius.circular(10),
         side: BorderSide(
           color: isSelected
-              ? Theme.of(context).primaryColor.withOpacity(0.3)
+              ? _activeAccent(context).withOpacity(0.35)
               : Theme.of(context).dividerColor,
           width: isSelected ? 1.5 : 0.5,
         ),
       ),
-      color:
-          isSelected ? Theme.of(context).primaryColor.withOpacity(0.05) : null,
+      color: isSelected ? _activeAccent(context).withOpacity(0.08) : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
@@ -340,12 +350,12 @@ class _SettingsNavigationScreenState extends State<SettingsNavigationScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                color: _activeAccent(context).withOpacity(0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 option.icon,
-                color: Theme.of(context).primaryColor,
+                color: _activeAccent(context),
                 size: 18,
               ),
             ),
@@ -355,7 +365,9 @@ class _SettingsNavigationScreenState extends State<SettingsNavigationScreen>
                 option.label,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w500,
-                      color: isSelected ? null : Colors.grey.shade800,
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.onSurface
+                          : _mutedText(context),
                     ),
               ),
             ),
@@ -387,19 +399,19 @@ class _SettingsNavigationScreenState extends State<SettingsNavigationScreen>
           children: [
             Icon(
               Icons.drag_handle,
-              color: Colors.grey.shade400,
+              color: _mutedText(context),
               size: 20,
             ),
             const SizedBox(width: 12),
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                color: _activeAccent(context).withOpacity(0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 option.icon,
-                color: Theme.of(context).primaryColor,
+                color: _activeAccent(context),
                 size: 18,
               ),
             ),

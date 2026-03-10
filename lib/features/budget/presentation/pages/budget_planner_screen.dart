@@ -243,9 +243,9 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 8),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.borderColor),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -643,9 +643,9 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.borderColor),
+            border: Border.all(color: Theme.of(context).dividerColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -839,274 +839,298 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
       for (final cat in availableCategories) cat.name: cat,
     };
 
+    final rootContext = context;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppTheme.textSecondaryColor.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+      builder: (context) {
+        String? errorMsg;
+        return StatefulBuilder(
+          builder: (context, setState) => SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Add Category Budget',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 16),
-              DropdownSearch<String>(
-                items: availableCategories
-                    .map((cat) => cat.name as String)
-                    .toList(),
-                selectedItem: selectedCategory,
-                popupProps: PopupProps.menu(
-                  showSearchBox: true,
-                  itemBuilder: (context, item, isSelected) {
-                    final cat = categoryMap[item];
-                    return ListTile(
-                      leading: cat == null
-                          ? null
-                          : Text(cat.icon,
-                              style: GoogleFonts.poppins(fontSize: 20)),
-                      title: Text(item),
-                    );
-                  },
-                ),
-                dropdownDecoratorProps: DropDownDecoratorProps(
-                  dropdownSearchDecoration: const InputDecoration(
-                    labelText: 'Category',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                dropdownBuilder: (context, selectedItem) {
-                  if (selectedItem == null) {
-                    return const Text('Select a category');
-                  }
-                  final cat = categoryMap[selectedItem];
-                  if (cat == null) {
-                    return Text(selectedItem);
-                  }
-                  return Row(
-                    children: [
-                      Text(cat.icon, style: GoogleFonts.poppins(fontSize: 18)),
-                      const SizedBox(width: 8),
-                      Text(cat.name),
-                    ],
-                  );
-                },
-                onChanged: (value) {
-                  setState(() {
-                    selectedCategory = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: amountController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: 'Budget Amount',
-                  border: const OutlineInputBorder(),
-                  prefixText:
-                      '${context.read<SettingsProvider>().currencySymbol} ',
-                ),
-              ),
-              if (shouldShowRecurrence) ...[
-                const SizedBox(height: 16),
-                Text(
-                  'Recurrence',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Column(
-                  children: [
-                    RadioListTile<String>(
-                      title: const Text('One-Time'),
-                      subtitle: Text(
-                        'Budget for ${_getMonthYearString(_selectedMonth)} only',
-                        style: GoogleFonts.poppins(fontSize: 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(2),
                       ),
-                      value: 'oneTime',
-                      groupValue: recurrenceType,
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (value) {
-                        setState(() {
-                          recurrenceType = value ?? 'oneTime';
-                          if (recurrenceType == 'oneTime') {
-                            endDate = null;
-                          }
-                        });
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Add Category Budget',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownSearch<String>(
+                    items: availableCategories
+                        .map((cat) => cat.name as String)
+                        .toList(),
+                    selectedItem: selectedCategory,
+                    popupProps: PopupProps.menu(
+                      showSearchBox: true,
+                      itemBuilder: (context, item, isSelected) {
+                        final cat = categoryMap[item];
+                        return ListTile(
+                          leading: cat == null
+                              ? null
+                              : Text(cat.icon,
+                                  style: GoogleFonts.poppins(fontSize: 20)),
+                          title: Text(item),
+                        );
                       },
                     ),
-                    RadioListTile<String>(
-                      title: const Text('Monthly Recurring'),
-                      subtitle: Text(
-                        'Repeat every month from now onwards',
-                        style: GoogleFonts.poppins(fontSize: 12),
+                    dropdownDecoratorProps: DropDownDecoratorProps(
+                      dropdownSearchDecoration: const InputDecoration(
+                        labelText: 'Category',
+                        border: OutlineInputBorder(),
                       ),
-                      value: 'monthly',
-                      groupValue: recurrenceType,
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (value) {
-                        setState(() {
-                          recurrenceType = value ?? 'oneTime';
-                        });
-                      },
+                    ),
+                    dropdownBuilder: (context, selectedItem) {
+                      if (selectedItem == null) {
+                        return const Text('Select a category');
+                      }
+                      final cat = categoryMap[selectedItem];
+                      if (cat == null) return Text(selectedItem);
+                      return Row(
+                        children: [
+                          Text(cat.icon,
+                              style: GoogleFonts.poppins(fontSize: 18)),
+                          const SizedBox(width: 8),
+                          Text(cat.name),
+                        ],
+                      );
+                    },
+                    onChanged: (value) {
+                      setState(() {
+                        selectedCategory = value;
+                        errorMsg = null;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: amountController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Budget Amount',
+                      border: const OutlineInputBorder(),
+                      prefixText:
+                          '${rootContext.read<SettingsProvider>().currencySymbol} ',
+                    ),
+                    onChanged: (_) => setState(() => errorMsg = null),
+                  ),
+                  if (errorMsg != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline,
+                              color: Colors.red, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              errorMsg!,
+                              style: GoogleFonts.poppins(
+                                  fontSize: 12, color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
-                ),
-                if (recurrenceType == 'monthly') ...[
-                  const SizedBox(height: 12),
+                  if (shouldShowRecurrence) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'Recurrence',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Column(
+                      children: [
+                        RadioListTile<String>(
+                          title: const Text('One-Time'),
+                          subtitle: Text(
+                            'Budget for ${_getMonthYearString(_selectedMonth)} only',
+                            style: GoogleFonts.poppins(fontSize: 12),
+                          ),
+                          value: 'oneTime',
+                          groupValue: recurrenceType,
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          onChanged: (value) {
+                            setState(() {
+                              recurrenceType = value ?? 'oneTime';
+                              if (recurrenceType == 'oneTime') endDate = null;
+                            });
+                          },
+                        ),
+                        RadioListTile<String>(
+                          title: const Text('Monthly Recurring'),
+                          subtitle: Text(
+                            'Repeat every month from now onwards',
+                            style: GoogleFonts.poppins(fontSize: 12),
+                          ),
+                          value: 'monthly',
+                          groupValue: recurrenceType,
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          onChanged: (value) {
+                            setState(() {
+                              recurrenceType = value ?? 'oneTime';
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    if (recurrenceType == 'monthly') ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              endDate == null
+                                  ? 'No end date'
+                                  : 'Until ${endDate!.year}-${endDate!.month.toString().padLeft(2, "0")}',
+                              style: GoogleFonts.poppins(fontSize: 13),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              final selectedDate = await showDatePicker(
+                                context: context,
+                                initialDate: endDate ??
+                                    DateTime(_selectedMonth.year,
+                                        _selectedMonth.month + 1),
+                                firstDate: DateTime(_selectedMonth.year,
+                                    _selectedMonth.month + 1),
+                                lastDate: DateTime(_selectedMonth.year + 10),
+                              );
+                              if (selectedDate != null) {
+                                setState(() {
+                                  endDate = DateTime(
+                                    selectedDate.year,
+                                    selectedDate.month,
+                                  );
+                                });
+                              }
+                            },
+                            child: Text(
+                                endDate == null ? 'Set End Date' : 'Change'),
+                          ),
+                          if (endDate != null)
+                            TextButton(
+                              onPressed: () {
+                                setState(() => endDate = null);
+                              },
+                              child: const Text('Clear'),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ],
+                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          endDate == null
-                              ? 'No end date'
-                              : 'Until ${endDate!.year}-${endDate!.month.toString().padLeft(2, "0")}',
-                          style: GoogleFonts.poppins(fontSize: 13),
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
                         ),
                       ),
-                      TextButton(
-                        onPressed: () async {
-                          final selectedDate = await showDatePicker(
-                            context: context,
-                            initialDate: endDate ??
-                                DateTime(_selectedMonth.year,
-                                    _selectedMonth.month + 1),
-                            firstDate: DateTime(
-                                _selectedMonth.year, _selectedMonth.month + 1),
-                            lastDate: DateTime(_selectedMonth.year + 10),
-                          );
-                          if (selectedDate != null) {
-                            setState(() {
-                              endDate = DateTime(
-                                selectedDate.year,
-                                selectedDate.month,
-                              );
-                            });
-                          }
-                        },
-                        child:
-                            Text(endDate == null ? 'Set End Date' : 'Change'),
-                      ),
-                      if (endDate != null)
-                        TextButton(
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton(
                           onPressed: () {
-                            setState(() {
-                              endDate = null;
-                            });
+                            if (selectedCategory == null ||
+                                amountController.text.isEmpty) {
+                              setState(() =>
+                                  errorMsg = 'Please fill all required fields');
+                              return;
+                            }
+                            final amount =
+                                double.tryParse(amountController.text) ?? 0;
+                            if (amount <= 0) {
+                              setState(() =>
+                                  errorMsg = 'Please enter a valid amount');
+                              return;
+                            }
+                            final budgetProvider =
+                                rootContext.read<BudgetProvider>();
+                            final newLimits = Map<String, double>.from(
+                                currentBudget?.categoryLimits ?? {});
+                            newLimits[selectedCategory!] = amount;
+                            if (isFirstCategory) {
+                              budgetProvider.createOrUpdateBudget(
+                                newLimits,
+                                month: _selectedMonth.month,
+                                year: _selectedMonth.year,
+                                recurrenceType: recurrenceType,
+                                endDate: endDate,
+                              );
+                            } else {
+                              final updated = currentBudget.copyWith(
+                                categoryLimits: newLimits,
+                                updatedAt: DateTime.now(),
+                              );
+                              budgetProvider.saveBudget(updated);
+                              if (currentBudget.recurrenceType == 'monthly' &&
+                                  currentBudget.baselineId != null) {
+                                budgetProvider.updateRecurringSeries(
+                                  currentBudget.baselineId!,
+                                  newLimits,
+                                );
+                              }
+                            }
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(rootContext).showSnackBar(
+                              const SnackBar(content: Text('Budget added')),
+                            );
                           },
-                          child: const Text('Clear'),
+                          child: const Text('Add'),
                         ),
+                      ),
                     ],
                   ),
                 ],
-              ],
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (selectedCategory == null ||
-                            amountController.text.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Please fill all fields')),
-                          );
-                          return;
-                        }
-
-                        final amount =
-                            double.tryParse(amountController.text) ?? 0;
-                        if (amount <= 0) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Please enter a valid amount')),
-                          );
-                          return;
-                        }
-
-                        final budgetProvider = context.read<BudgetProvider>();
-                        final newLimits = Map<String, double>.from(
-                            currentBudget?.categoryLimits ?? {});
-                        newLimits[selectedCategory!] = amount;
-
-                        if (isFirstCategory) {
-                          // Create new budget with recurrence settings
-                          budgetProvider.createOrUpdateBudget(
-                            newLimits,
-                            month: _selectedMonth.month,
-                            year: _selectedMonth.year,
-                            recurrenceType: recurrenceType,
-                            endDate: endDate,
-                          );
-                        } else {
-                          // Add category to existing budget
-                          final updated = currentBudget.copyWith(
-                            categoryLimits: newLimits,
-                            updatedAt: DateTime.now(),
-                          );
-                          budgetProvider.saveBudget(updated);
-
-                          // If this is part of a recurring series, update all future months
-                          if (currentBudget.baselineId != null) {
-                            budgetProvider.updateRecurringSeries(
-                              currentBudget.baselineId!,
-                              newLimits,
-                            );
-                          }
-                        }
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Budget added')),
-                        );
-                      },
-                      child: const Text('Add'),
-                    ),
-                  ),
-                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -1234,6 +1258,9 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                   final updated = currentBudget.copyWith(
                     recurrenceType: recurrenceType,
                     endDate: endDate,
+                    baselineId: recurrenceType == 'monthly'
+                        ? currentBudget.baselineId
+                        : null,
                     updatedAt: DateTime.now(),
                   );
                   budgetProvider.saveBudget(updated);
@@ -1311,7 +1338,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                 ));
 
                 // If this is part of a recurring series, update all future months
-                if (budget.baselineId != null) {
+                if (budget.recurrenceType == 'monthly' &&
+                    budget.baselineId != null) {
                   budgetProvider.updateRecurringSeries(
                     budget.baselineId!,
                     newLimits,
@@ -1368,7 +1396,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                 ));
 
                 // If this is part of a recurring series, update all future months
-                if (budget.baselineId != null) {
+                if (budget.recurrenceType == 'monthly' &&
+                    budget.baselineId != null) {
                   budgetProvider.updateRecurringSeries(
                     budget.baselineId!,
                     newLimits,
@@ -1382,6 +1411,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
             ),
             child: const Text('Delete'),
           ),
@@ -1422,7 +1452,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
               'Delete budget for ${_getMonthYearString(_selectedMonth)}?',
               style: GoogleFonts.poppins(),
             ),
-            if (budget.baselineId != null) ...[
+            if (budget.recurrenceType == 'monthly' &&
+                budget.baselineId != null) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -1461,7 +1492,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          if (budget.baselineId != null)
+          if (budget.recurrenceType == 'monthly' && budget.baselineId != null)
             ElevatedButton(
               onPressed: () {
                 budgetProvider.deleteBudgetForMonth(
@@ -1479,12 +1510,14 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
               ),
               child: const Text('This Month Only'),
             ),
           ElevatedButton(
             onPressed: () {
-              if (budget.baselineId != null) {
+              if (budget.recurrenceType == 'monthly' &&
+                  budget.baselineId != null) {
                 budgetProvider.deleteRecurringSeries(budget.baselineId!);
               } else {
                 budgetProvider.deleteBudgetForMonth(
@@ -1496,7 +1529,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    budget.baselineId != null
+                    (budget.recurrenceType == 'monthly' &&
+                            budget.baselineId != null)
                         ? 'All recurring budgets deleted'
                         : 'Budget deleted',
                   ),
@@ -1505,8 +1539,12 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
             ),
-            child: Text(budget.baselineId != null ? 'All Future' : 'Delete'),
+            child: Text((budget.recurrenceType == 'monthly' &&
+                    budget.baselineId != null)
+                ? 'All Future'
+                : 'Delete'),
           ),
         ],
       ),
@@ -1616,9 +1654,10 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppTheme.surfaceColor,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppTheme.borderColor),
+                            border: Border.all(
+                                color: Theme.of(context).dividerColor),
                           ),
                           child: Row(
                             children: [

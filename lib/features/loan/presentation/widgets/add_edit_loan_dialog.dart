@@ -438,7 +438,8 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                                 style: GoogleFonts.poppins(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: AppTheme.textColor,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                               Text(
@@ -462,7 +463,9 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                                   'Total Interest',
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
-                                    color: AppTheme.textSecondaryColor,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                   ),
                                 ),
                                 Text(
@@ -485,7 +488,9 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                                   'End Date',
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
-                                    color: AppTheme.textSecondaryColor,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                   ),
                                 ),
                                 Text(
@@ -493,7 +498,8 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: AppTheme.textColor,
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ),
                               ],

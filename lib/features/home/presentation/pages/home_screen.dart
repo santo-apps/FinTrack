@@ -421,201 +421,205 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildDrawer(BuildContext context, List<_NavModule> bottomModules) {
     return Drawer(
-      child: Container(
-        color: Colors.grey[50],
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            // Modern Gradient Header
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Theme.of(context).primaryColor,
-                    Theme.of(context).primaryColor.withOpacity(0.7),
+      child: SafeArea(
+        child: Container(
+          color: Colors.grey[50],
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              // Modern Gradient Header
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Theme.of(context).primaryColor,
+                      Theme.of(context).primaryColor.withOpacity(0.7),
+                    ],
+                  ),
+                ),
+                padding: const EdgeInsets.fromLTRB(
+                  24,
+                  24,
+                  24,
+                  30,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.asset(
+                          'assets/icon/fintrack_icon.png',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'FinTrack',
+                      style: GoogleFonts.poppins(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Personal Finance Manager',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              padding: EdgeInsets.fromLTRB(
-                24,
-                MediaQuery.of(context).padding.top + 24,
-                24,
-                30,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding: const EdgeInsets.all(8),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.asset(
-                        'assets/icon/fintrack_icon.png',
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'FinTrack',
-                    style: GoogleFonts.poppins(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Personal Finance Manager',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
-            // Quick Navigation Section
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-              child: Text(
-                'Quick Navigation',
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[600],
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-            ...bottomModules.asMap().entries.map((entry) {
-              final index = entry.key;
-              final module = entry.value;
-              return _buildModernDrawerItem(
-                context,
-                icon: module.icon,
-                label: module.appBarTitle ?? module.label,
-                isSelected: _currentIndex == index,
-                onTap: () {
-                  setState(() => _currentIndex = index);
-                  Navigator.pop(context);
-                },
-              );
-            }),
-
-            // Divider
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Divider(
-                color: Colors.grey[300],
-                height: 1,
-              ),
-            ),
-
-            // Features Section
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-              child: Text(
-                'Features',
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[600],
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-            ..._allModules
-                .where(
-                  (module) =>
-                      !bottomModules.any((item) => item.id == module.id),
-                )
-                .map(
-                  (module) => _buildModernDrawerItem(
-                    context,
-                    icon: module.icon,
-                    label: module.appBarTitle ?? module.label,
-                    onTap: () => _navigateToScreen(
-                        _createScreenWithBackButton(module.id)),
-                  ),
-                ),
-
-            // Divider
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Divider(
-                color: Colors.grey[300],
-                height: 1,
-              ),
-            ),
-
-            // Application Section
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-              child: Text(
-                'Application',
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[600],
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-
-            // Settings
-            _buildModernDrawerItem(
-              context,
-              icon: Icons.settings,
-              label: 'Settings',
-              onTap: () => _navigateToScreen(const SettingsScreen()),
-            ),
-
-            // About
-            // _buildModernDrawerItem(
-            //   context,
-            //   icon: Icons.info_outline,
-            //   label: 'About',
-            //   onTap: () => _navigateToScreen(const AboutAppScreen()),
-            // ),
-
-            // Footer Spacer
-            const SizedBox(height: 24),
-
-            // Footer Section
-            Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.grey[200]!,
-                ),
-              ),
-              child: Center(
+              // Quick Navigation Section
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
                 child: Text(
-                  'v1.0.0',
+                  'Quick Navigation',
                   style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.grey[500],
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[600],
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-          ],
+              ...bottomModules.asMap().entries.map((entry) {
+                final index = entry.key;
+                final module = entry.value;
+                return _buildModernDrawerItem(
+                  context,
+                  icon: module.icon,
+                  label: module.appBarTitle ?? module.label,
+                  isSelected: _currentIndex == index,
+                  onTap: () {
+                    setState(() => _currentIndex = index);
+                    Navigator.pop(context);
+                  },
+                );
+              }),
+
+              // Divider
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Divider(
+                  color: Colors.grey[300],
+                  height: 1,
+                ),
+              ),
+
+              // Features Section
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Text(
+                  'Features',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[600],
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              ..._allModules
+                  .where(
+                    (module) =>
+                        !bottomModules.any((item) => item.id == module.id),
+                  )
+                  .map(
+                    (module) => _buildModernDrawerItem(
+                      context,
+                      icon: module.icon,
+                      label: module.appBarTitle ?? module.label,
+                      onTap: () => _navigateToScreen(
+                          _createScreenWithBackButton(module.id)),
+                    ),
+                  ),
+
+              // Divider
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Divider(
+                  color: Colors.grey[300],
+                  height: 1,
+                ),
+              ),
+
+              // Application Section
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Text(
+                  'Application',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[600],
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+
+              // Settings
+              _buildModernDrawerItem(
+                context,
+                icon: Icons.settings,
+                label: 'Settings',
+                onTap: () => _navigateToScreen(const SettingsScreen()),
+              ),
+
+              // About
+              // _buildModernDrawerItem(
+              //   context,
+              //   icon: Icons.info_outline,
+              //   label: 'About',
+              //   onTap: () => _navigateToScreen(const AboutAppScreen()),
+              // ),
+
+              // Footer Spacer
+              const SizedBox(height: 24),
+
+              // Footer Section
+              Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.grey[200]!,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    'v1.0.0',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
     );

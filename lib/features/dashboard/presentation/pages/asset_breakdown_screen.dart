@@ -60,7 +60,6 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
             children: [
               Card(
                 elevation: 3,
-                color: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),

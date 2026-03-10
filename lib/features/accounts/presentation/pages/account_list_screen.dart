@@ -82,8 +82,11 @@ class _AccountListScreenState extends State<AccountListScreen> {
   @override
   Widget build(BuildContext context) {
     final currencySymbol = context.watch<SettingsProvider>().currencySymbol;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor:
+          isDarkMode ? Theme.of(context).colorScheme.surface : null,
       appBar: widget.showAppBar
           ? CustomAppBar(
               title: 'Payment Accounts',
@@ -110,7 +113,9 @@ class _AccountListScreenState extends State<AccountListScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textSecondaryColor,
+                      color: isDarkMode
+                          ? Colors.white
+                          : AppTheme.textSecondaryColor,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -118,7 +123,9 @@ class _AccountListScreenState extends State<AccountListScreen> {
                     'Add a bank account, card, or wallet',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: AppTheme.textSecondaryColor,
+                      color: isDarkMode
+                          ? Colors.white70
+                          : AppTheme.textSecondaryColor,
                     ),
                   ),
                 ],
@@ -217,7 +224,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textColor,
+                        color: isDarkMode ? Colors.white : AppTheme.textColor,
                       ),
                     ),
                   ),
@@ -260,13 +267,17 @@ class _AccountListScreenState extends State<AccountListScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 14),
                   child: Card(
-                    color: Colors.white,
+                    color: isDarkMode
+                        ? Theme.of(context).colorScheme.surface
+                        : Colors.white,
                     elevation: 1,
                     clipBehavior: Clip.antiAlias,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                       side: BorderSide(
-                        color: AppTheme.primaryColor.withOpacity(0.12),
+                        color: isDarkMode
+                            ? Colors.white
+                            : AppTheme.primaryColor.withOpacity(0.12),
                         width: 1,
                       ),
                     ),
@@ -289,7 +300,9 @@ class _AccountListScreenState extends State<AccountListScreen> {
                           Divider(
                             height: 1,
                             thickness: 1,
-                            color: AppTheme.dividerColor,
+                            color: isDarkMode
+                                ? Colors.white
+                                : AppTheme.dividerColor,
                             indent: 12,
                             endIndent: 12,
                           ),
@@ -451,6 +464,7 @@ class _AccountCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final color = account.color != null
         ? Color(int.parse(account.color!.replaceFirst('#', '0xFF')))
         : AppTheme.primaryColor;
@@ -493,7 +507,8 @@ class _AccountCard extends StatelessWidget {
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.textColor,
+                            color:
+                                isDarkMode ? Colors.white : AppTheme.textColor,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -533,7 +548,9 @@ class _AccountCard extends StatelessWidget {
                             : ''),
                     style: GoogleFonts.poppins(
                       fontSize: 11,
-                      color: AppTheme.textSecondaryColor,
+                      color: isDarkMode
+                          ? Colors.white70
+                          : AppTheme.textSecondaryColor,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -545,7 +562,9 @@ class _AccountCard extends StatelessWidget {
                         isCredit ? 'Outstanding' : 'Balance',
                         style: GoogleFonts.poppins(
                           fontSize: 10,
-                          color: AppTheme.textSecondaryColor,
+                          color: isDarkMode
+                              ? Colors.white70
+                              : AppTheme.textSecondaryColor,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -564,7 +583,9 @@ class _AccountCard extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                               color: isCredit
                                   ? AppTheme.errorColor
-                                  : AppTheme.textColor,
+                                  : (isDarkMode
+                                      ? Colors.white
+                                      : AppTheme.textColor),
                             ),
                           ),
                         ),
@@ -589,7 +610,9 @@ class _AccountCard extends StatelessWidget {
                             'Statement: ${account.statementDate!.day.toString().padLeft(2, '0')}/${account.statementDate!.month.toString().padLeft(2, '0')}/${account.statementDate!.year}',
                             style: GoogleFonts.poppins(
                               fontSize: 10,
-                              color: AppTheme.textSecondaryColor,
+                              color: isDarkMode
+                                  ? Colors.white70
+                                  : AppTheme.textSecondaryColor,
                             ),
                           ),
                         ],
@@ -647,7 +670,7 @@ class _AccountCard extends StatelessWidget {
                   Divider(
                     height: 1,
                     thickness: 1,
-                    color: AppTheme.dividerColor,
+                    color: isDarkMode ? Colors.white : AppTheme.dividerColor,
                     indent: 12,
                     endIndent: 12,
                   ),
@@ -655,6 +678,9 @@ class _AccountCard extends StatelessWidget {
             )
           : Card(
               margin: const EdgeInsets.only(bottom: 10),
+              color: isDarkMode
+                  ? Theme.of(context).colorScheme.surface
+                  : Colors.white,
               elevation: 1,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -706,6 +732,7 @@ class _AccountTypeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -726,7 +753,7 @@ class _AccountTypeHeader extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textColor,
+                        color: isDarkMode ? Colors.white : AppTheme.textColor,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -734,7 +761,9 @@ class _AccountTypeHeader extends StatelessWidget {
                       '$accountCount ${accountCount == 1 ? 'account' : 'accounts'}',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: AppTheme.textSecondaryColor,
+                        color: isDarkMode
+                            ? Colors.white70
+                            : AppTheme.textSecondaryColor,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -755,7 +784,9 @@ class _AccountTypeHeader extends StatelessWidget {
                           'Total',
                           style: GoogleFonts.poppins(
                             fontSize: 10,
-                            color: AppTheme.textSecondaryColor,
+                            color: isDarkMode
+                                ? Colors.white70
+                                : AppTheme.textSecondaryColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),

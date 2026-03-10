@@ -4,6 +4,8 @@ part 'loan_model.g.dart';
 
 @HiveType(typeId: 9)
 class Loan extends HiveObject {
+  static const Object _unset = Object();
+
   @HiveField(0)
   String id;
 
@@ -121,7 +123,7 @@ class Loan extends HiveObject {
     String? currency,
     String? notes,
     String? accountId,
-    DateTime? lastPaymentDate,
+    Object? lastPaymentDate = _unset,
     double? interestPaidAmount,
   }) {
     return Loan(
@@ -139,7 +141,9 @@ class Loan extends HiveObject {
       currency: currency ?? this.currency,
       notes: notes ?? this.notes,
       accountId: accountId ?? this.accountId,
-      lastPaymentDate: lastPaymentDate ?? this.lastPaymentDate,
+      lastPaymentDate: lastPaymentDate == _unset
+          ? this.lastPaymentDate
+          : lastPaymentDate as DateTime?,
       interestPaidAmount: interestPaidAmount ?? this.interestPaidAmount,
     );
   }

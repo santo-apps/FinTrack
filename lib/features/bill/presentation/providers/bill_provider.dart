@@ -235,6 +235,7 @@ class BillProvider extends ChangeNotifier {
   List<BillReminder> _getRemindersFromCreditCards() {
     final accounts = HiveService.getAllPaymentAccounts();
     final now = DateTime.now();
+    final startOfToday = DateTime(now.year, now.month, now.day);
 
     if (kDebugMode) {
       print('💳 Total accounts: ${accounts.length}');
@@ -277,7 +278,9 @@ class BillProvider extends ChangeNotifier {
       if (card.balance <= 0) {
         // Balance is paid off - mark as completed
         status = BillReminderStatus.completed;
-      } else if (nextBillingDate.isBefore(now)) {
+      } else if (DateTime(
+              nextBillingDate.year, nextBillingDate.month, nextBillingDate.day)
+          .isBefore(startOfToday)) {
         // Has balance and date has passed - overdue
         status = BillReminderStatus.overdue;
       } else {
@@ -318,6 +321,7 @@ class BillProvider extends ChangeNotifier {
 
       BillReminderStatus status;
       final now = DateTime.now();
+      final startOfToday = DateTime(now.year, now.month, now.day);
       final currentMonth = DateTime(now.year, now.month);
       final emiDueThisMonth = DateTime(now.year, now.month, loan.emiDate);
 
@@ -342,7 +346,7 @@ class BillProvider extends ChangeNotifier {
         if (kDebugMode) {
           print('  Status: COMPLETED ✅');
         }
-      } else if (emiDueThisMonth.isBefore(now)) {
+      } else if (emiDueThisMonth.isBefore(startOfToday)) {
         // EMI was due this month but hasn't been paid yet
         status = BillReminderStatus.overdue;
         if (kDebugMode) {
@@ -397,17 +401,79 @@ class BillProvider extends ChangeNotifier {
     return activeSubscriptions.map((subscription) {
       BillReminderStatus status;
       final now = DateTime.now();
+      final startOfToday = DateTime(now.year, now.month, now.day);
       final effectiveDueDate = _getEffectiveSubscriptionDueDate(subscription);
 
-      // Check if renewal date has passed
-      if (effectiveDueDate.isBefore(now)) {
+      // Determine if the current billing period has been paid
+      // by checking for expense records for this subscription in current period
+      bool currentPeriodPaid = false;
+
+      // Calculate the date range for the current billing period
+      DateTime periodStart;
+      DateTime periodEnd = effectiveDueDate;
+
+      switch (subscription.billingCycle.toLowerCase()) {
+        case 'weekly':
+          periodStart = effectiveDueDate.subtract(const Duration(days: 7));
+          break;
+        case 'monthly':
+          periodStart = DateTime(
+            effectiveDueDate.month == 1
+                ? effectiveDueDate.year - 1
+                : effectiveDueDate.year,
+            effectiveDueDate.month == 1 ? 12 : effectiveDueDate.month - 1,
+            effectiveDueDate.day,
+          );
+          break;
+        case 'quarterly':
+          periodStart = DateTime(
+            effectiveDueDate.year,
+            effectiveDueDate.month - 3,
+            effectiveDueDate.day,
+          );
+          break;
+        case 'yearly':
+        case 'annual':
+          periodStart = DateTime(
+            effectiveDueDate.year - 1,
+            effectiveDueDate.month,
+            effectiveDueDate.day,
+          );
+          break;
+        default:
+          periodStart = DateTime(
+            effectiveDueDate.month == 1
+                ? effectiveDueDate.year - 1
+                : effectiveDueDate.year,
+            effectiveDueDate.month == 1 ? 12 : effectiveDueDate.month - 1,
+            effectiveDueDate.day,
+          );
+      }
+
+      // Check for expense records matching this subscription in the current period
+      final expenses =
+          HiveService.getExpensesInDateRange(periodStart, periodEnd);
+      currentPeriodPaid = expenses.any((expense) => expense.title
+          .contains('Subscription Payment - ${subscription.name}'));
+
+      // Determine status
+      if (currentPeriodPaid) {
+        // Current billing period is paid, mark as completed
+        status = BillReminderStatus.completed;
+      } else if (DateTime(effectiveDueDate.year, effectiveDueDate.month,
+              effectiveDueDate.day)
+          .isBefore(startOfToday)) {
+        // Renewal date has passed and not paid
         status = BillReminderStatus.overdue;
       } else {
+        // Renewal date is upcoming in current period
         status = BillReminderStatus.pending;
       }
 
       if (kDebugMode) {
-        print('  Creating reminder for ${subscription.name}: status=$status');
+        print('  Creating reminder for ${subscription.name}: status=$status, '
+            'currentPeriodPaid=$currentPeriodPaid, dueDate=$effectiveDueDate, '
+            'periodStart=$periodStart, periodEnd=$periodEnd, expenseCount=${expenses.length}');
       }
 
       return BillReminder(

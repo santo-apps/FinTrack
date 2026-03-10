@@ -40,6 +40,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
   final TextEditingController _timelineSearchController =
       TextEditingController();
   String _timelineSearchQuery = '';
+  int _touchedIndex = -1;
+  final Set<String> _pendingDeletedExpenseIds = <String>{};
 
   @override
   void initState() {
@@ -76,7 +78,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
           : null,
       body: Consumer<ExpenseProvider>(
         builder: (context, provider, _) {
-          final allExpenses = provider.expenses;
+          final allExpenses = provider.expenses
+              .where((e) => !_pendingDeletedExpenseIds.contains(e.id))
+              .toList();
 
           // Filter expenses based on selected period
           List<Expense> filteredExpenses;
@@ -94,8 +98,12 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
             }).toList();
           }
 
+          // Use one consistent dataset across summary + all tabs
+          final overviewExpenses =
+              filteredExpenses.where(_isAccountBreakdownTransaction).toList();
+
           // Sort expenses for list usage
-          final sortedExpenses = List<Expense>.from(filteredExpenses);
+          final sortedExpenses = List<Expense>.from(overviewExpenses);
           switch (_sortOption) {
             case SortOption.date:
               sortedExpenses.sort((a, b) => _sortAscending
@@ -114,7 +122,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
               break;
           }
 
-          final totalAmount = filteredExpenses.fold<double>(
+          final totalAmount = overviewExpenses.fold<double>(
               0, (sum, expense) => sum + expense.amount);
 
           if (allExpenses.isEmpty) {
@@ -148,7 +156,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                 ),
               ),
               // Month/Period Summary Card
-              _buildSummaryCard(totalAmount, filteredExpenses.length),
+              _buildSummaryCard(totalAmount),
 
               // Tabs Content
               Expanded(
@@ -194,32 +202,38 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
     required String subtitle,
   }) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            size: 80,
-            color: AppTheme.primaryColor.withOpacity(0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: _tabPrimaryTextColor(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 80,
+              color: AppTheme.primaryColor.withOpacity(0.3),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: _tabSecondaryTextColor(context),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: _tabPrimaryTextColor(context),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: _tabSecondaryTextColor(context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -229,17 +243,24 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
     List<Expense> expenses,
     double totalAmount,
   ) {
-    // Overview should reflect expense entries only.
-    final expenseEntries = expenses
-        .where((expense) => (expense.transactionType ?? 'expense') == 'expense')
-        .toList();
-    final expenseTotal = expenseEntries.fold<double>(
+    final overviewExpenses =
+        expenses.where(_isAccountBreakdownTransaction).toList();
+
+    // Overview should exclude income transactions but include payment/other expense-side entries
+    final expenseTotal = overviewExpenses.fold<double>(
       0,
       (sum, expense) => sum + expense.amount,
     );
-    final categoryBreakdown = _getCategoryBreakdown(expenseEntries);
+    final categoryBreakdown = _getCategoryBreakdown(overviewExpenses);
+    final accountBreakdownExpenses = overviewExpenses;
+    final accountBreakdown =
+        _getPaymentAccountBreakdown(accountBreakdownExpenses);
+    final accountBreakdownTotal = accountBreakdownExpenses.fold<double>(
+      0,
+      (sum, expense) => sum + expense.amount,
+    );
 
-    if (expenseEntries.isEmpty) {
+    if (overviewExpenses.isEmpty) {
       return _buildEmptyState(
         icon: Icons.inbox_outlined,
         title: 'No expense transactions for this period',
@@ -250,41 +271,58 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        _buildSectionTitle('Category Distribution'),
+        const SizedBox(height: 8),
         _buildPieChartCard(context, categoryBreakdown, expenseTotal),
         const SizedBox(height: 16),
         _buildSectionTitle('Top 5 Expenses'),
-        const SizedBox(height: 8),
-        ...expenseEntries
-            .take(5)
-            .map((expense) => ExpenseCard(expense: expense)),
-        if (expenseEntries.length > 5)
-          Text(
-            'Showing top 5 of ${expenseEntries.length} expenses',
-            style: GoogleFonts.poppins(
-              fontSize: 11,
-              color: _tabSecondaryTextColor(context),
+        if (overviewExpenses.length > 5)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'Showing top 5 of ${overviewExpenses.length} expenses',
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                color: _tabSecondaryTextColor(context),
+              ),
             ),
           ),
-        const SizedBox(height: 16),
-        _buildSectionTitle('Category Breakdown'),
         const SizedBox(height: 8),
-        ...categoryBreakdown.entries.map((entry) {
-          final categoryName = entry.key;
-          final categoryAmount = entry.value;
-          final percentage = expenseTotal > 0
-              ? ((categoryAmount / expenseTotal) * 100).toDouble()
+        ...overviewExpenses.take(5).map((expense) => ExpenseCard(
+              key: ValueKey(expense.id),
+              expense: expense,
+              onDeleted: _handleExpenseDeleted,
+            )),
+        const SizedBox(height: 16),
+        _buildSectionTitle('Payment Account Breakdown'),
+        const SizedBox(height: 8),
+        ...accountBreakdown.entries.toList().asMap().entries.map((entry) {
+          final accountName = entry.value.key;
+          final accountAmount = entry.value.value;
+          final percentage = accountBreakdownTotal > 0
+              ? ((accountAmount / accountBreakdownTotal) * 100).toDouble()
               : 0.0;
 
-          final categoryData = _getCategoryData(context, categoryName);
-          final categoryColor = categoryData != null
-              ? _hexToColor(categoryData.color)
-              : AppTheme.primaryColor;
-
           return _buildCategoryBreakdownItem(
-            label: categoryName,
-            amount: categoryAmount,
+            label: accountName,
+            amount: accountAmount,
             percentage: percentage,
-            color: categoryColor,
+            color: _getBreakdownColor(entry.key),
+            onTap: () {
+              final accountExpenses = accountBreakdownExpenses
+                  .where((expense) =>
+                      _getExpenseAccountName(expense) == accountName)
+                  .toList();
+
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => _AccountTransactionsPage(
+                    accountName: accountName,
+                    expenses: accountExpenses,
+                  ),
+                ),
+              );
+            },
           );
         }),
       ],
@@ -386,7 +424,11 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                 ],
               ),
               children: categoryExpenses
-                  .map((expense) => ExpenseCard(expense: expense))
+                  .map((expense) => ExpenseCard(
+                        key: ValueKey(expense.id),
+                        expense: expense,
+                        onDeleted: _handleExpenseDeleted,
+                      ))
                   .toList(),
             ),
           ),
@@ -396,12 +438,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
   }
 
   Widget _buildTimelineTab(BuildContext context, List<Expense> expenses) {
-    // Filter to show only expense transactions
-    final expenseEntries = expenses
-        .where((e) => (e.transactionType ?? 'expense') == 'expense')
-        .toList();
-
-    if (expenseEntries.isEmpty) {
+    // Show all expenses including payments (loan, subscription, credit card)
+    if (expenses.isEmpty) {
       return _buildEmptyState(
         icon: Icons.inbox_outlined,
         title: 'No expenses for this period',
@@ -411,8 +449,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
 
     final query = _timelineSearchQuery.trim().toLowerCase();
     final filteredExpenses = query.isEmpty
-        ? expenseEntries
-        : expenseEntries.where((expense) {
+        ? expenses
+        : expenses.where((expense) {
             final haystack = [
               expense.title,
               expense.category,
@@ -526,8 +564,11 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                             ),
                           ),
                         ),
-                        ...dayExpenses
-                            .map((expense) => ExpenseCard(expense: expense)),
+                        ...dayExpenses.map((expense) => ExpenseCard(
+                              key: ValueKey(expense.id),
+                              expense: expense,
+                              onDeleted: _handleExpenseDeleted,
+                            )),
                       ],
                     );
                   }).toList(),
@@ -542,11 +583,12 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
     Map<String, double> breakdown,
     double totalAmount,
   ) {
-    final sections = _buildPieChartSections(context, breakdown, totalAmount);
+    final sections =
+        _buildPieChartSections(context, breakdown, totalAmount, _touchedIndex);
     final currencySymbol = context.read<SettingsProvider>().currencySymbol;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark
             ? Theme.of(context).colorScheme.surface
@@ -554,82 +596,150 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.borderColor),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 140,
-            height: 140,
-            child: PieChart(
-              PieChartData(
-                sectionsSpace: 2,
-                centerSpaceRadius: 30,
-                sections: sections,
+          Align(
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: 142,
+              height: 142,
+              child: PieChart(
+                PieChartData(
+                  sectionsSpace: 2,
+                  centerSpaceRadius: 19,
+                  sections: sections,
+                  pieTouchData: PieTouchData(
+                    touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                      if (event is! FlTapUpEvent) {
+                        return;
+                      }
+
+                      setState(() {
+                        if (pieTouchResponse == null ||
+                            pieTouchResponse.touchedSection == null) {
+                          _touchedIndex = -1;
+                          return;
+                        }
+
+                        final tappedIndex = pieTouchResponse
+                            .touchedSection!.touchedSectionIndex;
+                        _touchedIndex =
+                            _touchedIndex == tappedIndex ? -1 : tappedIndex;
+                      });
+                    },
+                  ),
+                ),
+                swapAnimationDuration: const Duration(milliseconds: 800),
+                swapAnimationCurve: Curves.easeInOutCubic,
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Category Distribution',
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: _tabPrimaryTextColor(context),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ...breakdown.entries.take(4).map(
-                  (entry) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: _getCategoryColor(context, entry.key),
-                              shape: BoxShape.circle,
-                            ),
+          const SizedBox(height: 8),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final itemWidth = (constraints.maxWidth - 4) / 2;
+              return Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: breakdown.entries.toList().asMap().entries.map(
+                  (mapEntry) {
+                    final index = mapEntry.key;
+                    final entry = mapEntry.value;
+                    final isSelected = index == _touchedIndex;
+
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        setState(() {
+                          _touchedIndex = isSelected ? -1 : index;
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: itemWidth,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? _getCategoryColor(context, entry.key)
+                                  .withOpacity(0.15)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: isSelected
+                                ? _getCategoryColor(context, entry.key)
+                                : Colors.transparent,
+                            width: 2,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    entry.key,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: isSelected ? 10 : 8,
+                              height: isSelected ? 10 : 8,
+                              margin: const EdgeInsets.only(top: 2),
+                              decoration: BoxDecoration(
+                                color: _getCategoryColor(context, entry.key),
+                                shape: BoxShape.circle,
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: _getCategoryColor(
+                                                  context, entry.key)
+                                              .withOpacity(0.6),
+                                          blurRadius: 6,
+                                          spreadRadius: 1,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '${entry.key} (${_formatPercentLabel(entry.value, totalAmount)})',
                                     style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
+                                      fontSize: isSelected ? 11 : 10,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
                                       color: _tabPrimaryTextColor(context),
                                     ),
+                                    maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                                Text(
-                                  AppUtils.formatCurrency(entry.value,
-                                      currencySymbol: currencySymbol),
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    color: _tabSecondaryTextColor(context),
+                                  Text(
+                                    AppUtils.formatCurrency(entry.value,
+                                        currencySymbol: currencySymbol),
+                                    style: GoogleFonts.poppins(
+                                      fontSize: isSelected ? 10 : 9,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
+                                      color: _tabSecondaryTextColor(context),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     );
                   },
-                ),
-              ],
-            ),
+                ).toList(),
+              );
+            },
           ),
         ],
       ),
@@ -652,72 +762,76 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
     required double amount,
     required double percentage,
     required Color color,
+    VoidCallback? onTap,
   }) {
     final currencySymbol = context.read<SettingsProvider>().currencySymbol;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? Theme.of(context).colorScheme.surface
-            : AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: _tabPrimaryTextColor(context),
-                  ),
-                ),
-              ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    '${percentage.toStringAsFixed(1)}%',
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Theme.of(context).colorScheme.surface
+              : AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppTheme.borderColor),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
                     style: GoogleFonts.poppins(
                       fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: color,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    AppUtils.formatCurrency(amount,
-                        currencySymbol: currencySymbol),
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: _tabSecondaryTextColor(context),
+                      color: _tabPrimaryTextColor(context),
                     ),
                   ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: percentage / 100,
-              minHeight: 6,
-              backgroundColor: color.withOpacity(0.1),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      '${percentage.toStringAsFixed(1)}%',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      AppUtils.formatCurrency(amount,
+                          currencySymbol: currencySymbol),
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _tabSecondaryTextColor(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: percentage / 100,
+                minHeight: 6,
+                backgroundColor: color.withOpacity(0.1),
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -827,41 +941,97 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
     return breakdown;
   }
 
+  Map<String, double> _getPaymentAccountBreakdown(List<Expense> expenses) {
+    final breakdown = <String, double>{};
+
+    for (final expense in expenses) {
+      final accountName = _getExpenseAccountName(expense);
+
+      breakdown[accountName] = (breakdown[accountName] ?? 0) + expense.amount;
+    }
+
+    final sortedEntries = breakdown.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return Map<String, double>.fromEntries(sortedEntries);
+  }
+
+  bool _isAccountBreakdownTransaction(Expense expense) {
+    final transactionType = expense.transactionType ?? 'expense';
+    return transactionType != 'income';
+  }
+
+  String _getExpenseAccountName(Expense expense) {
+    final accountProvider = context.read<PaymentAccountProvider>();
+
+    if (expense.accountId != null && expense.accountId!.isNotEmpty) {
+      final account = accountProvider.getAccountById(expense.accountId!);
+      return account?.name ?? 'Deleted Account';
+    }
+
+    return 'Unassigned Account';
+  }
+
+  Color _getBreakdownColor(int index) {
+    final palette = <Color>[
+      AppTheme.primaryColor,
+      Colors.teal,
+      Colors.indigo,
+      Colors.orange,
+      Colors.purple,
+      Colors.green,
+      Colors.red,
+      Colors.blue,
+    ];
+    return palette[index % palette.length];
+  }
+
+  String _formatPercentLabel(double value, double totalAmount) {
+    final percentage = totalAmount > 0 ? ((value / totalAmount) * 100) : 0.0;
+    return '${percentage.toStringAsFixed(0)}%';
+  }
+
   List<PieChartSectionData> _buildPieChartSections(
     BuildContext context,
     Map<String, double> breakdown,
     double totalAmount,
+    int touchedIndex,
   ) {
     if (breakdown.isEmpty) {
       return [
         PieChartSectionData(
           value: 1,
           color: Colors.grey.shade300,
-          radius: 18,
+          radius: 39,
           showTitle: false,
         ),
       ];
     }
 
+    int index = 0;
     return breakdown.entries.map((entry) {
-      final percentage =
-          totalAmount > 0 ? ((entry.value / totalAmount) * 100) : 0.0;
+      final isTouched = index == touchedIndex;
+      final radius = isTouched ? 43.0 : 39.0;
+      final fontSize = isTouched ? 14.0 : 12.0;
+      final baseColor = _getCategoryColor(context, entry.key);
+      final color =
+          isTouched ? Color.lerp(baseColor, Colors.white, 0.2)! : baseColor;
+      index++;
 
       return PieChartSectionData(
         value: entry.value,
-        color: _getCategoryColor(context, entry.key),
-        radius: 25,
+        color: color,
+        radius: radius,
         showTitle: true,
-        title: '${percentage.toStringAsFixed(0)}%',
+        title: _formatPercentLabel(entry.value, totalAmount),
         titleStyle: GoogleFonts.poppins(
           color: Colors.white,
           fontWeight: FontWeight.bold,
-          fontSize: 13,
+          fontSize: fontSize,
           shadows: [
             Shadow(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withOpacity(isTouched ? 0.8 : 0.7),
               offset: const Offset(0.5, 0.5),
-              blurRadius: 1.5,
+              blurRadius: isTouched ? 2.5 : 1.5,
             ),
           ],
         ),
@@ -888,7 +1058,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
     return Color(int.parse(buffer.toString(), radix: 16));
   }
 
-  Widget _buildSummaryCard(double totalAmount, int expenseCount) {
+  Widget _buildSummaryCard(double totalAmount) {
     final currencySymbol = context.watch<SettingsProvider>().currencySymbol;
 
     return Container(
@@ -1377,12 +1547,102 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
     ];
     return '${months[date.month - 1]} ${date.year}';
   }
+
+  void _handleExpenseDeleted(String expenseId) {
+    if (!mounted) return;
+    setState(() {
+      _pendingDeletedExpenseIds.add(expenseId);
+    });
+  }
+}
+
+class _AccountTransactionsPage extends StatefulWidget {
+  final String accountName;
+  final List<Expense> expenses;
+
+  const _AccountTransactionsPage({
+    super.key,
+    required this.accountName,
+    required this.expenses,
+  });
+
+  @override
+  State<_AccountTransactionsPage> createState() =>
+      _AccountTransactionsPageState();
+}
+
+class _AccountTransactionsPageState extends State<_AccountTransactionsPage> {
+  late List<Expense> _visibleExpenses;
+
+  @override
+  void initState() {
+    super.initState();
+    _visibleExpenses = List<Expense>.from(widget.expenses);
+  }
+
+  void _handleDeleted(String expenseId) {
+    if (!mounted) return;
+    setState(() {
+      _visibleExpenses.removeWhere((e) => e.id == expenseId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.accountName),
+      ),
+      body: _visibleExpenses.isEmpty
+          ? Center(
+              child: Text(
+                'No transactions found for this account in the selected period.',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : AppTheme.textSecondaryColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            )
+          : ListView(
+              padding: const EdgeInsets.all(12),
+              children: [
+                Text(
+                  'Transactions',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : AppTheme.textColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ..._visibleExpenses.map((expense) => ExpenseCard(
+                      key: ValueKey(expense.id),
+                      expense: expense,
+                      dense: true,
+                      onDeleted: _handleDeleted,
+                    )),
+              ],
+            ),
+    );
+  }
 }
 
 class ExpenseCard extends StatelessWidget {
   final Expense expense;
+  final bool dense;
+  final ValueChanged<String>? onDeleted;
 
-  const ExpenseCard({super.key, required this.expense});
+  const ExpenseCard({
+    super.key,
+    required this.expense,
+    this.dense = false,
+    this.onDeleted,
+  });
 
   Color _hexToColor(String hexString) {
     final buffer = StringBuffer();
@@ -1417,6 +1677,18 @@ class ExpenseCard extends StatelessWidget {
         : AppTheme.primaryColor;
     final categoryIcon = categoryData?.icon ?? '📌';
     final accountData = _getAccountData(context);
+    final cardMargin = dense ? 8.0 : 12.0;
+    final cardPadding = dense ? 10.0 : 12.0;
+    final iconSize = dense ? 42.0 : 48.0;
+    final iconFontSize = dense ? 20.0 : 24.0;
+    final titleFontSize = dense ? 14.0 : 15.0;
+    final amountFontSize = dense ? 15.0 : 16.0;
+    final metadataFontSize = dense ? 10.0 : 11.0;
+    final subMetaFontSize = dense ? 9.0 : 10.0;
+    final trailingIconSize = dense ? 17.0 : 18.0;
+    final titleToAmountSpacing = dense ? 3.0 : 4.0;
+    final amountToMetaSpacing = dense ? 4.0 : 6.0;
+    final betweenMetaRowsSpacing = dense ? 2.0 : 3.0;
 
     return GestureDetector(
       onTap: () {
@@ -1431,7 +1703,7 @@ class ExpenseCard extends StatelessWidget {
         _showExpenseMenu(context);
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: EdgeInsets.only(bottom: cardMargin),
         decoration: BoxDecoration(
           color: Theme.of(context).brightness == Brightness.dark
               ? Theme.of(context).colorScheme.surface
@@ -1439,12 +1711,13 @@ class ExpenseCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppTheme.borderColor),
         ),
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(cardPadding),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: iconSize,
+              height: iconSize,
               decoration: BoxDecoration(
                 color: categoryColor.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
@@ -1452,7 +1725,7 @@ class ExpenseCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   categoryIcon,
-                  style: GoogleFonts.poppins(fontSize: 24),
+                  style: GoogleFonts.poppins(fontSize: iconFontSize),
                 ),
               ),
             ),
@@ -1464,12 +1737,24 @@ class ExpenseCard extends StatelessWidget {
                   Text(
                     expense.title,
                     style: GoogleFonts.poppins(
-                      fontSize: 14,
+                      fontSize: titleFontSize,
                       fontWeight: FontWeight.w600,
                       color: primaryTextColor,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: titleToAmountSpacing),
+                  Text(
+                    AppUtils.formatCurrency(expense.amount,
+                        currencySymbol: currencySymbol),
+                    style: GoogleFonts.poppins(
+                      fontSize: amountFontSize,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.errorColor,
+                    ),
+                  ),
+                  SizedBox(height: amountToMetaSpacing),
                   Row(
                     children: [
                       Icon(
@@ -1478,15 +1763,23 @@ class ExpenseCard extends StatelessWidget {
                         color: secondaryTextColor,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        expense.category,
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: secondaryTextColor,
+                      Expanded(
+                        child: Text(
+                          expense.category,
+                          style: GoogleFonts.poppins(
+                            fontSize: metadataFontSize,
+                            color: secondaryTextColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (expense.paymentMethod.isNotEmpty) ...[
-                        const SizedBox(width: 8),
+                    ],
+                  ),
+                  if (expense.paymentMethod.isNotEmpty) ...[
+                    SizedBox(height: betweenMetaRowsSpacing),
+                    Row(
+                      children: [
                         Icon(
                           Icons.payment,
                           size: 12,
@@ -1497,7 +1790,7 @@ class ExpenseCard extends StatelessWidget {
                           child: Text(
                             expense.paymentMethod,
                             style: GoogleFonts.poppins(
-                              fontSize: 11,
+                              fontSize: metadataFontSize,
                               color: secondaryTextColor,
                             ),
                             maxLines: 1,
@@ -1505,15 +1798,21 @@ class ExpenseCard extends StatelessWidget {
                           ),
                         ),
                       ],
-                    ],
-                  ),
-                  const SizedBox(height: 2),
+                    ),
+                  ],
+                  SizedBox(height: betweenMetaRowsSpacing),
                   Row(
                     children: [
+                      Icon(
+                        Icons.calendar_today_outlined,
+                        size: 11,
+                        color: secondaryTextColor,
+                      ),
+                      const SizedBox(width: 4),
                       Text(
                         AppUtils.formatDateShort(expense.date),
                         style: GoogleFonts.poppins(
-                          fontSize: 10,
+                          fontSize: subMetaFontSize,
                           color: secondaryTextColor,
                         ),
                       ),
@@ -1521,7 +1820,7 @@ class ExpenseCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Icon(
                           Icons.account_balance_wallet,
-                          size: 10,
+                          size: 11,
                           color: secondaryTextColor,
                         ),
                         const SizedBox(width: 4),
@@ -1529,7 +1828,7 @@ class ExpenseCard extends StatelessWidget {
                           child: Text(
                             accountData.name,
                             style: GoogleFonts.poppins(
-                              fontSize: 10,
+                              fontSize: subMetaFontSize,
                               color: secondaryTextColor,
                             ),
                             maxLines: 1,
@@ -1542,26 +1841,15 @@ class ExpenseCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  AppUtils.formatCurrency(expense.amount,
-                      currencySymbol: currencySymbol),
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.errorColor,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.more_vert, size: 18),
-                  onPressed: () => _showExpenseMenu(context),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
+            const SizedBox(width: 4),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: IconButton(
+                icon: Icon(Icons.more_vert, size: trailingIconSize),
+                onPressed: () => _showExpenseMenu(context),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
             ),
           ],
         ),
@@ -1570,12 +1858,13 @@ class ExpenseCard extends StatelessWidget {
   }
 
   void _showExpenseMenu(BuildContext context) {
+    final parentContext = context;
     showModalBottomSheet(
-      context: context,
+      context: parentContext,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (context) => Container(
+      builder: (sheetContext) => Container(
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1584,9 +1873,9 @@ class ExpenseCard extends StatelessWidget {
               leading: const Icon(Icons.edit),
               title: const Text('Edit'),
               onTap: () {
-                Navigator.pop(context);
+                Navigator.pop(sheetContext);
                 Navigator.push(
-                  context,
+                  parentContext,
                   MaterialPageRoute(
                     builder: (context) =>
                         AddEditExpenseScreen(expense: expense),
@@ -1599,8 +1888,8 @@ class ExpenseCard extends StatelessWidget {
               title: const Text('Delete',
                   style: TextStyle(color: AppTheme.errorColor)),
               onTap: () {
-                Navigator.pop(context);
-                _confirmDelete(context);
+                Navigator.pop(sheetContext);
+                _confirmDelete(parentContext);
               },
             ),
           ],
@@ -1610,22 +1899,30 @@ class ExpenseCard extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context) {
+    final parentContext = context;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Expense'),
         content: const Text('Are you sure you want to delete this expense?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
               // Reverse balance adjustments before deleting
-              await _reverseTransactionEffects(context, expense);
-              context.read<ExpenseProvider>().deleteExpense(expense.id);
-              Navigator.pop(context);
+              await _reverseTransactionEffects(parentContext, expense);
+              await parentContext
+                  .read<ExpenseProvider>()
+                  .deleteExpense(expense.id);
+
+              onDeleted?.call(expense.id);
+
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext);
+              }
             },
             child: const Text('Delete',
                 style: TextStyle(color: AppTheme.errorColor)),
@@ -1727,74 +2024,277 @@ class ExpenseDetailScreen extends StatelessWidget {
 
   const ExpenseDetailScreen({super.key, required this.expense});
 
+  String _getTransactionTypeLabel() {
+    final transactionType = expense.transactionType ?? 'expense';
+    switch (transactionType) {
+      case 'expense':
+        return '💸 Expense';
+      case 'income':
+        return '💰 Income';
+      case 'transfer':
+        return '🔄 Transfer';
+      case 'payment':
+        return '💳 Payment';
+      default:
+        return transactionType;
+    }
+  }
+
+  String _getAccountName(BuildContext context) {
+    final accountProvider = context.read<PaymentAccountProvider>();
+
+    if (expense.accountId != null && expense.accountId!.isNotEmpty) {
+      final account = accountProvider.getAccountById(expense.accountId!);
+      return account?.name ?? 'Deleted Account';
+    }
+
+    return 'No Account';
+  }
+
+  String _getAccountType(BuildContext context) {
+    final accountProvider = context.read<PaymentAccountProvider>();
+
+    if (expense.accountId != null && expense.accountId!.isNotEmpty) {
+      final account = accountProvider.getAccountById(expense.accountId!);
+      return account?.accountType ?? 'Unknown Account Type';
+    }
+
+    return 'No Account Type';
+  }
+
+  bool _showsDestinationAccount() {
+    final transactionType = expense.transactionType ?? 'expense';
+    return (transactionType == 'transfer' || transactionType == 'payment') &&
+        expense.destinationAccountId != null &&
+        expense.destinationAccountId!.isNotEmpty;
+  }
+
+  String _getDestinationAccountName(BuildContext context) {
+    final accountProvider = context.read<PaymentAccountProvider>();
+    final destinationId = expense.destinationAccountId;
+
+    if (destinationId != null && destinationId.isNotEmpty) {
+      final account = accountProvider.getAccountById(destinationId);
+      return account?.name ?? 'Deleted Account';
+    }
+
+    return 'No Destination Account';
+  }
+
+  String _getDestinationAccountType(BuildContext context) {
+    final accountProvider = context.read<PaymentAccountProvider>();
+    final destinationId = expense.destinationAccountId;
+
+    if (destinationId != null && destinationId.isNotEmpty) {
+      final account = accountProvider.getAccountById(destinationId);
+      return account?.accountType ?? 'Unknown Account Type';
+    }
+
+    return 'No Destination Account Type';
+  }
+
   @override
   Widget build(BuildContext context) {
     final currencySymbol = context.watch<SettingsProvider>().currencySymbol;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(expense.title),
+        title: const Text('Transaction Details'),
         elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Text(
-                      AppUtils.formatCurrency(expense.amount,
-                          currencySymbol: currencySymbol),
-                      style: GoogleFonts.poppins(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.primaryColor,
-                      ),
+            // Amount Card
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isDarkMode
+                      ? [const Color(0xFF1E3A5F), const Color(0xFF2E4A6F)]
+                      : [
+                          AppTheme.primaryColor,
+                          AppTheme.primaryColor.withOpacity(0.8)
+                        ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  Text(
+                    AppUtils.formatCurrency(expense.amount,
+                        currencySymbol: currencySymbol),
+                    style: GoogleFonts.poppins(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
                       expense.category,
                       style: GoogleFonts.poppins(
                         fontSize: 14,
-                        color: AppTheme.textSecondaryColor,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
-            _DetailRow(
+            const SizedBox(height: 20),
+            // Transaction Details Card
+            _ModernDetailCard(
+              icon: Icons.receipt_long,
+              label: 'Transaction',
+              value: expense.title,
+              isDarkMode: isDarkMode,
+            ),
+            const SizedBox(height: 12),
+            _ModernDetailCard(
+              icon: Icons.calendar_today,
               label: 'Date',
               value: AppUtils.formatDate(expense.date),
+              isDarkMode: isDarkMode,
             ),
-            _DetailRow(
-              label: 'Payment Method',
-              value: expense.paymentMethod,
+            const SizedBox(height: 12),
+            _ModernDetailCard(
+              icon: Icons.swap_horiz,
+              label: 'Transaction Type',
+              value: _getTransactionTypeLabel(),
+              isDarkMode: isDarkMode,
             ),
-            if (expense.notes != null && expense.notes!.isNotEmpty)
-              _DetailRow(
+            const SizedBox(height: 12),
+            _ModernDetailCard(
+              icon: Icons.account_balance_wallet,
+              label: 'From Account',
+              value: _getAccountName(context),
+              isDarkMode: isDarkMode,
+            ),
+            const SizedBox(height: 12),
+            _ModernDetailCard(
+              icon: Icons.category,
+              label: 'From Account Type',
+              value: _getAccountType(context),
+              isDarkMode: isDarkMode,
+            ),
+            if (_showsDestinationAccount()) ...[
+              const SizedBox(height: 12),
+              _ModernDetailCard(
+                icon: Icons.call_made,
+                label: 'To Account',
+                value: _getDestinationAccountName(context),
+                isDarkMode: isDarkMode,
+              ),
+              const SizedBox(height: 12),
+              _ModernDetailCard(
+                icon: Icons.account_tree,
+                label: 'To Account Type',
+                value: _getDestinationAccountType(context),
+                isDarkMode: isDarkMode,
+              ),
+            ],
+            if (expense.notes != null && expense.notes!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _ModernDetailCard(
+                icon: Icons.notes,
                 label: 'Notes',
                 value: expense.notes!,
+                isDarkMode: isDarkMode,
               ),
+            ],
             if (expense.tags.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Text(
-                'Tags',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textColor,
+              const SizedBox(height: 20),
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: isDarkMode
+                        ? Colors.white.withOpacity(0.1)
+                        : Colors.grey.withOpacity(0.2),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children:
-                    expense.tags.map((tag) => Chip(label: Text(tag))).toList(),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.local_offer,
+                            size: 18,
+                            color: isDarkMode
+                                ? Colors.white70
+                                : AppTheme.textSecondaryColor,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Tags',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isDarkMode
+                                  ? Colors.white
+                                  : AppTheme.textColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: expense.tags
+                            .map((tag) => Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        AppTheme.primaryColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: AppTheme.primaryColor
+                                          .withOpacity(0.3),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    tag,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                  ),
+                                ))
+                            .toList(),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ],
@@ -1804,44 +2304,77 @@ class ExpenseDetailScreen extends StatelessWidget {
   }
 }
 
-class _DetailRow extends StatelessWidget {
+class _ModernDetailCard extends StatelessWidget {
+  final IconData icon;
   final String label;
   final String value;
+  final bool isDarkMode;
 
-  const _DetailRow({
+  const _ModernDetailCard({
+    required this.icon,
     required this.label,
     required this.value,
+    required this.isDarkMode,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: AppTheme.borderColor),
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isDarkMode
+              ? Colors.white.withOpacity(0.1)
+              : Colors.grey.withOpacity(0.2),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: AppTheme.textSecondaryColor,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: AppTheme.primaryColor,
+              ),
             ),
-          ),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textColor,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: isDarkMode
+                          ? Colors.white60
+                          : AppTheme.textSecondaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: isDarkMode ? Colors.white : AppTheme.textColor,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1879,6 +2412,15 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
   String selectedTransactionType =
       'expense'; // 'expense', 'income', 'transfer', 'payment'
   String? selectedDestinationAccountId;
+
+  String _getPreferredIncomeCategory(List<ExpenseCategory> categories) {
+    for (final category in categories) {
+      if (category.name.toLowerCase().contains('income')) {
+        return category.name;
+      }
+    }
+    return categories.isNotEmpty ? categories.first.name : 'Income';
+  }
 
   @override
   void initState() {
@@ -1933,18 +2475,15 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
             final account = accounts.firstWhere(
               (a) => a.id == widget.initialAccountId,
             );
-            selectedCategory = account.accountType
-                    .toLowerCase()
-                    .contains('credit')
-                ? 'Refund'
-                : (categories.isNotEmpty ? categories.first.name : 'Income');
-          } catch (e) {
             selectedCategory =
-                categories.isNotEmpty ? categories.first.name : 'Income';
+                account.accountType.toLowerCase().contains('credit')
+                    ? 'Refund'
+                    : _getPreferredIncomeCategory(categories);
+          } catch (e) {
+            selectedCategory = _getPreferredIncomeCategory(categories);
           }
         } else {
-          selectedCategory =
-              categories.isNotEmpty ? categories.first.name : 'Income';
+          selectedCategory = _getPreferredIncomeCategory(categories);
         }
       } else {
         selectedCategory =
@@ -2051,53 +2590,51 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            // Only show category if not coming from a specific account
-            if (widget.initialAccountId == null)
-              DropdownButtonFormField<String>(
-                value: categories.any((c) => c.name == selectedCategory)
-                    ? selectedCategory
-                    : (categories.isNotEmpty ? categories.first.name : null),
-                decoration: InputDecoration(
-                  labelText: 'Category',
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.settings, size: 20),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const ManageExpenseCategoriesScreen(),
-                        ),
-                      );
-                    },
-                  ),
+            DropdownButtonFormField<String>(
+              value: categories.any((c) => c.name == selectedCategory)
+                  ? selectedCategory
+                  : (categories.isNotEmpty ? categories.first.name : null),
+              decoration: InputDecoration(
+                labelText: 'Category',
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.settings, size: 20),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const ManageExpenseCategoriesScreen(),
+                      ),
+                    );
+                  },
                 ),
-                items: categories.isEmpty
-                    ? [
-                        const DropdownMenuItem(
-                          value: 'Others',
-                          child: Text('Others'),
-                        )
-                      ]
-                    : categories
-                        .map((category) => DropdownMenuItem(
-                              value: category.name,
-                              child: Row(
-                                children: [
-                                  Text(category.icon,
-                                      style: GoogleFonts.poppins(fontSize: 18)),
-                                  const SizedBox(width: 8),
-                                  Text(category.name),
-                                ],
-                              ),
-                            ))
-                        .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => selectedCategory = value);
-                  }
-                },
               ),
+              items: categories.isEmpty
+                  ? [
+                      const DropdownMenuItem(
+                        value: 'Others',
+                        child: Text('Others'),
+                      )
+                    ]
+                  : categories
+                      .map((category) => DropdownMenuItem(
+                            value: category.name,
+                            child: Row(
+                              children: [
+                                Text(category.icon,
+                                    style: GoogleFonts.poppins(fontSize: 18)),
+                                const SizedBox(width: 8),
+                                Text(category.name),
+                              ],
+                            ),
+                          ))
+                      .toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => selectedCategory = value);
+                }
+              },
+            ),
             const SizedBox(height: 16),
             // Only show account type and account selectors if not coming from a specific account
             if (widget.initialAccountId == null)
@@ -2338,6 +2875,15 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                             setState(() {
                               selectedTransactionType = value;
                               selectedDestinationAccountId = null;
+                              final categories =
+                                  context.read<ExpenseProvider>().categories;
+                              if (value == 'income') {
+                                selectedCategory = isCreditCard
+                                    ? 'Refund'
+                                    : _getPreferredIncomeCategory(categories);
+                              } else if (value == 'payment') {
+                                selectedCategory = 'Credit Card Payment';
+                              }
                             });
                           }
                         },

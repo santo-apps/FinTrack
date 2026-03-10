@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
+import 'package:collection/collection.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/database/hive_service.dart';
@@ -15,6 +16,7 @@ import 'package:fintrack/features/expense/data/models/expense_model.dart';
 import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
 import 'package:fintrack/features/accounts/data/models/payment_account_model.dart';
 import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
+import 'package:fintrack/features/subscription/data/models/subscription_model.dart';
 import 'package:fintrack/features/subscription/presentation/providers/subscription_provider.dart';
 
 class BillListScreen extends StatefulWidget {
@@ -414,6 +416,29 @@ class _BillListScreenState extends State<BillListScreen> {
     final isPending = reminder.status == BillReminderStatus.pending;
     final isPaid = reminder.status == BillReminderStatus.completed;
     final daysUntilDue = reminder.getDaysUntilDue();
+    final dueStatusText = daysUntilDue == 0
+        ? 'Due today'
+        : daysUntilDue == 1
+            ? 'Due in 1 day'
+            : 'Due in $daysUntilDue days';
+
+    if (isPending) {
+      final dueDay = DateTime(
+        reminder.dueDate.year,
+        reminder.dueDate.month,
+        reminder.dueDate.day,
+      );
+      final today = DateTime.now();
+      final todayDay = DateTime(today.year, today.month, today.day);
+      assert(() {
+        debugPrint(
+          '🧪 DueDateCheck | ${reminder.name} | raw=${reminder.dueDate.toIso8601String()} | '
+          'dueDay=${dueDay.toIso8601String()} | today=${todayDay.toIso8601String()} | '
+          'daysUntilDue=$daysUntilDue | label=$dueStatusText',
+        );
+        return true;
+      }());
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -502,11 +527,7 @@ class _BillListScreenState extends State<BillListScreen> {
                       ),
                       if (isPending && daysUntilDue >= 0)
                         Text(
-                          daysUntilDue == 0
-                              ? 'Due today'
-                              : daysUntilDue == 1
-                                  ? 'Due in 1 day'
-                                  : 'Due in $daysUntilDue days',
+                          dueStatusText,
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -531,6 +552,7 @@ class _BillListScreenState extends State<BillListScreen> {
                     label: const Text('Mark as Paid'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
                     ),
                   ),
                 ),
@@ -803,6 +825,8 @@ class _BillListScreenState extends State<BillListScreen> {
           );
           await Provider.of<LoanProvider>(context, listen: false)
               .updateLoan(updatedLoan);
+          // Refresh loan provider to ensure UI updates
+          await Provider.of<LoanProvider>(context, listen: false).refreshData();
           break;
         case BillReminderType.creditCard:
           await _promptCreditCardPendingAmount(reminder);
@@ -818,11 +842,19 @@ class _BillListScreenState extends State<BillListScreen> {
               subscription.copyWith(renewalDate: previousRenewalDate);
           await Provider.of<SubscriptionProvider>(context, listen: false)
               .updateSubscription(updatedSubscription);
+          // Refresh subscription provider to ensure UI updates
+          await Provider.of<SubscriptionProvider>(context, listen: false)
+              .refreshData();
           break;
       }
 
       if (mounted) {
+        // Refresh bill provider to update the reminder list
         await Provider.of<BillProvider>(context, listen: false).refreshData();
+
+        // Force a rebuild by setting state if needed
+        setState(() {});
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -906,6 +938,9 @@ class _BillListScreenState extends State<BillListScreen> {
 
               await Provider.of<PaymentAccountProvider>(context, listen: false)
                   .updateAccount(updatedCard);
+              // Refresh payment account provider to ensure UI updates
+              Provider.of<PaymentAccountProvider>(context, listen: false)
+                  .refreshData();
               await Provider.of<BillProvider>(context, listen: false)
                   .refreshData();
 
@@ -1173,8 +1208,14 @@ class _BillListScreenState extends State<BillListScreen> {
         paidDate: DateTime.now(),
       );
 
+      // Check if payment account is a credit card
+      final isCreditCard =
+          selectedAccount.accountType.toLowerCase().contains('credit');
       final updatedAccount = selectedAccount.copyWith(
-        balance: selectedAccount.balance - bill.amount,
+        balance: isCreditCard
+            ? selectedAccount.balance +
+                bill.amount // Credit card: increase debt
+            : selectedAccount.balance - bill.amount, // Other: decrease balance
       );
 
       if (mounted) {
@@ -1225,8 +1266,13 @@ class _BillListScreenState extends State<BillListScreen> {
         paidDate: null,
       );
 
+      // Check if payment account is a credit card
+      final isCreditCard =
+          paymentAccount.accountType.toLowerCase().contains('credit');
       final restoredAccount = paymentAccount.copyWith(
-        balance: paymentAccount.balance + bill.amount,
+        balance: isCreditCard
+            ? paymentAccount.balance - bill.amount // Credit card: decrease debt
+            : paymentAccount.balance + bill.amount, // Other: restore balance
       );
 
       await Provider.of<ExpenseProvider>(context, listen: false)
@@ -1476,8 +1522,15 @@ class _BillListScreenState extends State<BillListScreen> {
         transactionType: 'payment',
       );
 
+      // Check if payment account is a credit card
+      final isCreditCard =
+          paymentAccount.accountType.toLowerCase().contains('credit');
       final updatedPaymentAccount = paymentAccount.copyWith(
-        balance: paymentAccount.balance - loan.monthlyEmi,
+        balance: isCreditCard
+            ? paymentAccount.balance +
+                loan.monthlyEmi // Credit card: increase debt
+            : paymentAccount.balance -
+                loan.monthlyEmi, // Other: decrease balance
       );
 
       await Provider.of<LoanProvider>(context, listen: false)
@@ -1524,8 +1577,15 @@ class _BillListScreenState extends State<BillListScreen> {
     String expenseId,
   ) async {
     try {
+      // Check if payment account is a credit card
+      final isCreditCard =
+          paymentAccount.accountType.toLowerCase().contains('credit');
       final restoredPaymentAccount = paymentAccount.copyWith(
-        balance: paymentAccount.balance + loan.monthlyEmi,
+        balance: isCreditCard
+            ? paymentAccount.balance -
+                loan.monthlyEmi // Credit card: decrease debt
+            : paymentAccount.balance +
+                loan.monthlyEmi, // Other: restore balance
       );
 
       final updatedLoan = loan.copyWith(
@@ -1893,133 +1953,321 @@ class _BillListScreenState extends State<BillListScreen> {
   }
 
   void _markSubscriptionPaid(BillReminder reminder) {
+    final accounts = HiveService.getAllPaymentAccounts();
+
+    if (accounts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Please add an account first',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+      return;
+    }
+
+    final accountTypes =
+        <String>{...accounts.map((a) => a.accountType)}.toList()..sort();
+    String? selectedType = accountTypes.isNotEmpty ? accountTypes.first : null;
+    String? selectedAccountId;
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    'Mark Subscription as Paid',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          final filteredByType = accountTypes.isEmpty
+              ? []
+              : accounts.where((a) => a.accountType == selectedType).toList();
+
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              left: 16,
+              right: 16,
+              top: 16,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Pay Subscription',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 24),
+                  Text(
+                    'Select Account Type:',
                     style: GoogleFonts.poppins(
-                      fontSize: 20,
                       fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            Text(
-              'This will advance the renewal date for ${reminder.name}.',
-              style: GoogleFonts.poppins(fontSize: 16),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: selectedType,
+                    items: accountTypes
+                        .map((type) => DropdownMenuItem(
+                              value: type,
+                              child: Text(type, style: GoogleFonts.poppins()),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedType = value;
+                        selectedAccountId = null;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                     ),
-                    child: Text('Cancel', style: GoogleFonts.poppins()),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final subscriptions = HiveService.getAllSubscriptions();
-                      final subscription = subscriptions.firstWhere(
-                        (s) => s.id == reminder.sourceId,
-                      );
-
-                      DateTime nextRenewalDate = subscription.renewalDate;
-                      switch (subscription.billingCycle.toLowerCase()) {
-                        case 'weekly':
-                          nextRenewalDate =
-                              nextRenewalDate.add(const Duration(days: 7));
-                          break;
-                        case 'monthly':
-                          nextRenewalDate = DateTime(
-                            nextRenewalDate.year,
-                            nextRenewalDate.month + 1,
-                            nextRenewalDate.day,
-                          );
-                          break;
-                        case 'quarterly':
-                          nextRenewalDate = DateTime(
-                            nextRenewalDate.year,
-                            nextRenewalDate.month + 3,
-                            nextRenewalDate.day,
-                          );
-                          break;
-                        case 'yearly':
-                        case 'annual':
-                          nextRenewalDate = DateTime(
-                            nextRenewalDate.year + 1,
-                            nextRenewalDate.month,
-                            nextRenewalDate.day,
-                          );
-                          break;
-                      }
-
-                      final updatedSubscription =
-                          subscription.copyWith(renewalDate: nextRenewalDate);
-                      await Provider.of<SubscriptionProvider>(context,
-                              listen: false)
-                          .updateSubscription(updatedSubscription);
-
-                      if (mounted) {
-                        await Provider.of<BillProvider>(context, listen: false)
-                            .refreshData();
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Subscription renewal date updated',
-                              style: GoogleFonts.poppins(),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Select Account:',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (filteredByType.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'No accounts found',
+                        style: GoogleFonts.poppins(
+                            color: Colors.grey, fontSize: 13),
+                      ),
+                    )
+                  else
+                    DropdownButtonFormField<String>(
+                      value: selectedAccountId,
+                      items: filteredByType
+                          .map((account) => DropdownMenuItem<String>(
+                                value: account.id,
+                                child: Text(
+                                  '${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})',
+                                  style: GoogleFonts.poppins(),
+                                ),
+                              ))
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedAccountId = value;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                      ),
+                      hint: Text('Choose account',
+                          style: GoogleFonts.poppins(fontSize: 13)),
+                    ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: Text('Cancel', style: GoogleFonts.poppins()),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          onPressed: selectedAccountId == null
+                              ? null
+                              : () {
+                                  Navigator.pop(context);
+                                  final selectedAccount = accounts.firstWhere(
+                                      (a) => a.id == selectedAccountId);
+                                  _processSubscriptionPayment(
+                                      reminder, selectedAccount);
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryColor,
+                            disabledBackgroundColor: Colors.grey.shade300,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: Text(
+                            'Confirm Payment',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: Text(
-                      'Mark as Paid',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
+  }
+
+  Future<void> _processSubscriptionPayment(
+    BillReminder reminder,
+    PaymentAccount selectedAccount,
+  ) async {
+    try {
+      final subscriptions = HiveService.getAllSubscriptions();
+      final subscription = subscriptions.firstWhere(
+        (s) => s.id == reminder.sourceId,
+      );
+
+      // Create expense record to track this payment
+      // The bill provider will detect this expense to mark the period as paid
+      final expenseId = const Uuid().v4();
+      final expense = Expense(
+        id: expenseId,
+        title: 'Subscription Payment - ${subscription.name}',
+        category: 'Subscriptions',
+        amount: subscription.cost,
+        date: DateTime.now(),
+        currency: subscription.currency,
+        paymentMethod: 'Bank Transfer',
+        accountId: selectedAccount.id,
+        notes: 'Paid subscription: ${subscription.name}',
+        transactionType: 'payment',
+      );
+
+      // Update account balance
+      // Check if payment account is a credit card
+      final isCreditCard =
+          selectedAccount.accountType.toLowerCase().contains('credit');
+      final updatedAccount = selectedAccount.copyWith(
+        balance: isCreditCard
+            ? selectedAccount.balance +
+                subscription.cost // Credit card: increase debt
+            : selectedAccount.balance -
+                subscription.cost, // Other: decrease balance
+      );
+
+      if (mounted) {
+        // No need to update subscription - payment is tracked via expense record
+        await Provider.of<ExpenseProvider>(context, listen: false)
+            .addExpense(expense);
+        await Provider.of<PaymentAccountProvider>(context, listen: false)
+            .updateAccount(updatedAccount);
+        await Provider.of<BillProvider>(context, listen: false).refreshData();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Subscription payment recorded',
+              style: GoogleFonts.poppins(),
+            ),
+            action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () => _reverseSubscriptionPayment(
+                subscription,
+                selectedAccount,
+                expenseId,
+              ),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e', style: GoogleFonts.poppins()),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _reverseSubscriptionPayment(
+    Subscription subscription,
+    PaymentAccount paymentAccount,
+    String expenseId,
+  ) async {
+    try {
+      // Restore account balance
+      // Check if payment account is a credit card
+      final isCreditCard =
+          paymentAccount.accountType.toLowerCase().contains('credit');
+      final restoredAccount = paymentAccount.copyWith(
+        balance: isCreditCard
+            ? paymentAccount.balance -
+                subscription.cost // Credit card: decrease debt
+            : paymentAccount.balance +
+                subscription.cost, // Other: restore balance
+      );
+
+      // Delete expense record - this will automatically mark period as unpaid
+      await Provider.of<ExpenseProvider>(context, listen: false)
+          .deleteExpense(expenseId);
+      await Provider.of<PaymentAccountProvider>(context, listen: false)
+          .updateAccount(restoredAccount);
+
+      if (mounted) {
+        await Provider.of<BillProvider>(context, listen: false).refreshData();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Subscription payment reversed',
+              style: GoogleFonts.poppins(),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error reversing payment: $e',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
   }
 
   void _showAddManualBillDialog(BuildContext context) {
@@ -2031,68 +2279,159 @@ class _BillListScreenState extends State<BillListScreen> {
   }
 
   void _showReminderDetails(BillReminder reminder) {
+    // Fetch payment details for completed reminders
+    String? paymentAccountName;
+    String? paymentType;
+
+    if (reminder.status == BillReminderStatus.completed) {
+      final expenseProvider =
+          Provider.of<ExpenseProvider>(context, listen: false);
+      final accountProvider =
+          Provider.of<PaymentAccountProvider>(context, listen: false);
+
+      // Find the expense associated with this bill payment
+      // Try multiple strategies to find the matching expense
+      Expense? expense;
+
+      // Strategy 1: Match by notes containing the name and amount (any transaction type)
+      expense = expenseProvider.expenses.firstWhereOrNull(
+        (e) =>
+            (e.notes?.contains(reminder.name) ?? false) &&
+            (e.amount - reminder.amount).abs() <
+                0.01, // Allow small floating point differences
+      );
+
+      // Strategy 2: Match by title containing the name and amount
+      expense ??= expenseProvider.expenses.firstWhereOrNull(
+        (e) =>
+            e.title.contains(reminder.name) &&
+            (e.amount - reminder.amount).abs() < 0.01,
+      );
+
+      // Strategy 3: Match by category and amount (for specific payment categories)
+      if (expense == null) {
+        final categories = [
+          'Bills & Utilities',
+          'Subscriptions',
+          'Loan Repayment',
+          'Credit Card Payment'
+        ];
+        expense = expenseProvider.expenses.firstWhereOrNull(
+          (e) =>
+              categories.contains(e.category) &&
+              (e.amount - reminder.amount).abs() < 0.01,
+        );
+      }
+
+      if (expense != null && expense.accountId != null) {
+        paymentType = expense.paymentMethod;
+        final account = accountProvider.accounts.firstWhereOrNull(
+          (a) => a.id == expense!.accountId,
+        );
+        if (account != null) {
+          paymentAccountName = account.name;
+        }
+      }
+    }
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
+      builder: (context) => SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      reminder.name,
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              _buildDetailRow('Type', reminder.getTypeLabel()),
+              _buildDetailRow('Amount',
+                  '${reminder.currency} ${reminder.amount.toStringAsFixed(2)}'),
+              _buildDetailRow('Due Date', _formatDate(reminder.dueDate)),
+              _buildDetailRow('Status', reminder.getStatusLabel()),
+              if (reminder.status == BillReminderStatus.completed &&
+                  paymentType == null &&
+                  paymentAccountName == null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline,
+                            size: 20, color: Colors.orange.shade700),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Payment details not available for this transaction',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: Colors.orange.shade900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              if (paymentType != null)
+                _buildDetailRow('Payment Type', paymentType),
+              if (paymentAccountName != null)
+                _buildDetailRow('Payment Account', paymentAccountName),
+              if (reminder.notes != null)
+                _buildDetailRow('Notes', reminder.notes!),
+              if (reminder.lender != null)
+                _buildDetailRow('Lender', reminder.lender!),
+              if (reminder.accountName != null)
+                _buildDetailRow('Account', reminder.accountName!),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
                   child: Text(
-                    reminder.name,
+                    'Close',
                     style: GoogleFonts.poppins(
-                      fontSize: 20,
+                      color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            _buildDetailRow('Type', reminder.getTypeLabel()),
-            _buildDetailRow('Amount',
-                '${reminder.currency} ${reminder.amount.toStringAsFixed(2)}'),
-            _buildDetailRow('Due Date', _formatDate(reminder.dueDate)),
-            _buildDetailRow('Status', reminder.getStatusLabel()),
-            if (reminder.notes != null)
-              _buildDetailRow('Notes', reminder.notes!),
-            if (reminder.lender != null)
-              _buildDetailRow('Lender', reminder.lender!),
-            if (reminder.accountName != null)
-              _buildDetailRow('Account', reminder.accountName!),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: Text(
-                  'Close',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -41,7 +41,10 @@ class BillReminder {
   }
 
   int getDaysUntilDue() {
-    return dueDate.difference(DateTime.now()).inDays;
+    final today = DateTime.now();
+    final startOfToday = DateTime(today.year, today.month, today.day);
+    final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    return dueDay.difference(startOfToday).inDays;
   }
 
   String getTypeLabel() {

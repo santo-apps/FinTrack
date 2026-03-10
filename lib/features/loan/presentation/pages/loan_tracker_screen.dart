@@ -238,9 +238,9 @@ class _LoanTrackerScreenState extends State<LoanTrackerScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(20),
             topRight: Radius.circular(20),
           ),
@@ -400,7 +400,7 @@ class _LoanCardState extends State<_LoanCard> {
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.textColor,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -409,7 +409,9 @@ class _LoanCardState extends State<_LoanCard> {
                               '${loan.interestRate.toStringAsFixed(2)}% interest',
                               style: GoogleFonts.poppins(
                                 fontSize: 10,
-                                color: AppTheme.textSecondaryColor,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -488,7 +490,7 @@ class _LoanCardState extends State<_LoanCard> {
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 6,
-                  backgroundColor: AppTheme.borderColor,
+                  backgroundColor: Theme.of(context).colorScheme.outlineVariant,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     loan.isCompleted
                         ? AppTheme.successColor
@@ -519,7 +521,7 @@ class _LoanCardState extends State<_LoanCard> {
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
-                        color: AppTheme.textSecondaryColor,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     Text(
@@ -616,7 +618,7 @@ class _LoanCardState extends State<_LoanCard> {
                         'Repayment Progress',
                         style: GoogleFonts.poppins(
                           fontSize: 10,
-                          color: AppTheme.textSecondaryColor,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       Text(
@@ -635,7 +637,8 @@ class _LoanCardState extends State<_LoanCard> {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 6,
-                      backgroundColor: AppTheme.borderColor,
+                      backgroundColor:
+                          Theme.of(context).colorScheme.outlineVariant,
                       valueColor: AlwaysStoppedAnimation<Color>(
                         loan.isCompleted
                             ? AppTheme.successColor
@@ -706,7 +709,7 @@ class _DetailItem extends StatelessWidget {
           label,
           style: GoogleFonts.poppins(
             fontSize: 9,
-            color: AppTheme.textSecondaryColor,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -716,7 +719,7 @@ class _DetailItem extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: valueColor ?? AppTheme.textColor,
+            color: valueColor ?? Theme.of(context).colorScheme.onSurface,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,

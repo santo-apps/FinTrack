@@ -6,6 +6,8 @@ enum BudgetRecurrenceType { oneTime, monthly }
 
 @HiveType(typeId: 2)
 class Budget extends HiveObject {
+  static const Object _unset = Object();
+
   @HiveField(0)
   String id;
 
@@ -67,9 +69,9 @@ class Budget extends HiveObject {
     bool? enableAlerts,
     int? month,
     int? year,
-    String? recurrenceType,
-    DateTime? endDate,
-    String? baselineId,
+    Object? recurrenceType = _unset,
+    Object? endDate = _unset,
+    Object? baselineId = _unset,
   }) {
     return Budget(
       id: id ?? this.id,
@@ -81,9 +83,12 @@ class Budget extends HiveObject {
       enableAlerts: enableAlerts ?? this.enableAlerts,
       month: month ?? this.month,
       year: year ?? this.year,
-      recurrenceType: recurrenceType ?? this.recurrenceType,
-      endDate: endDate ?? this.endDate,
-      baselineId: baselineId ?? this.baselineId,
+      recurrenceType: recurrenceType == _unset
+          ? this.recurrenceType
+          : recurrenceType as String?,
+      endDate: endDate == _unset ? this.endDate : endDate as DateTime?,
+      baselineId:
+          baselineId == _unset ? this.baselineId : baselineId as String?,
     );
   }
 
