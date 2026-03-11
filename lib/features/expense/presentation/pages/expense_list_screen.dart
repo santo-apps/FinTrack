@@ -2590,52 +2590,54 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: categories.any((c) => c.name == selectedCategory)
-                  ? selectedCategory
-                  : (categories.isNotEmpty ? categories.first.name : null),
-              decoration: InputDecoration(
-                labelText: 'Category',
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.settings, size: 20),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const ManageExpenseCategoriesScreen(),
-                      ),
-                    );
-                  },
+            // Only show category for expense/transfer/payment types, not for income/refund
+            if (selectedTransactionType != 'income')
+              DropdownButtonFormField<String>(
+                value: categories.any((c) => c.name == selectedCategory)
+                    ? selectedCategory
+                    : (categories.isNotEmpty ? categories.first.name : null),
+                decoration: InputDecoration(
+                  labelText: 'Category',
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.settings, size: 20),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const ManageExpenseCategoriesScreen(),
+                        ),
+                      );
+                    },
+                  ),
                 ),
+                items: categories.isEmpty
+                    ? [
+                        const DropdownMenuItem(
+                          value: 'Others',
+                          child: Text('Others'),
+                        )
+                      ]
+                    : categories
+                        .map((category) => DropdownMenuItem(
+                              value: category.name,
+                              child: Row(
+                                children: [
+                                  Text(category.icon,
+                                      style: GoogleFonts.poppins(fontSize: 18)),
+                                  const SizedBox(width: 8),
+                                  Text(category.name),
+                                ],
+                              ),
+                            ))
+                        .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => selectedCategory = value);
+                  }
+                },
               ),
-              items: categories.isEmpty
-                  ? [
-                      const DropdownMenuItem(
-                        value: 'Others',
-                        child: Text('Others'),
-                      )
-                    ]
-                  : categories
-                      .map((category) => DropdownMenuItem(
-                            value: category.name,
-                            child: Row(
-                              children: [
-                                Text(category.icon,
-                                    style: GoogleFonts.poppins(fontSize: 18)),
-                                const SizedBox(width: 8),
-                                Text(category.name),
-                              ],
-                            ),
-                          ))
-                      .toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() => selectedCategory = value);
-                }
-              },
-            ),
-            const SizedBox(height: 16),
+            if (selectedTransactionType != 'income') const SizedBox(height: 16),
             // Only show account type and account selectors if not coming from a specific account
             if (widget.initialAccountId == null)
               Consumer2<PaymentAccountProvider, AccountTypeProvider>(

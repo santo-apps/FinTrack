@@ -17,17 +17,11 @@ class BudgetProvider extends ChangeNotifier {
   }
 
   Budget? getBudgetForMonth(int month, int year) {
-    debugPrint('[BudgetProvider] Looking for budget for $month/$year');
-    debugPrint('[BudgetProvider] Total budgets loaded: ${_budgets.length}');
     for (final budget in _budgets) {
-      debugPrint(
-          '[BudgetProvider] Budget: ${budget.id}, month=${budget.month}, year=${budget.year}, baselineId=${budget.baselineId}');
       if (budget.month == month && budget.year == year) {
-        debugPrint('[BudgetProvider] Found matching budget!');
         return budget;
       }
     }
-    debugPrint('[BudgetProvider] No budget found for $month/$year');
     return null;
   }
 
@@ -49,25 +43,14 @@ class BudgetProvider extends ChangeNotifier {
       final existing = getBudgetForMonth(month, year);
       final now = DateTime.now();
 
-      debugPrint('[BudgetProvider] createOrUpdateBudget called:');
-      debugPrint('  - month=$month, year=$year');
-      debugPrint('  - recurrenceType=$recurrenceType');
-      debugPrint('  - endDate=$endDate');
-      debugPrint('  - existing=$existing');
-
       // Check if this is a recurring budget setup
       final isConvertingToRecurring = recurrenceType == 'monthly';
       final isEditingExisting = existing != null && !isConvertingToRecurring;
-
-      debugPrint(
-          '[BudgetProvider] isConvertingToRecurring=$isConvertingToRecurring, isEditingExisting=$isEditingExisting');
 
       if (isConvertingToRecurring) {
         // Create base budget for this month and all future months until endDate
         // First, delete the existing one-time budget if it exists (no baselineId)
         if (existing != null && existing.baselineId == null) {
-          debugPrint(
-              '[BudgetProvider] Deleting existing one-time budget before creating recurring series');
           await HiveService.deleteBudget(existing.id);
           _budgets.removeWhere((b) => b.id == existing.id);
         }
@@ -76,13 +59,8 @@ class BudgetProvider extends ChangeNotifier {
         final endDateToUse =
             endDate ?? DateTime(year + 10, month); // Default 10 years
 
-        debugPrint(
-            '[BudgetProvider] Creating recurring budget series with baselineId: $baselineId');
-        debugPrint('[BudgetProvider] End date: $endDateToUse');
-
         int currentMonth = month;
         int currentYear = year;
-        int budgetCount = 0;
 
         while (DateTime(currentYear, currentMonth, 1).isBefore(
             DateTime(endDateToUse.year, endDateToUse.month, 1)
@@ -99,11 +77,8 @@ class BudgetProvider extends ChangeNotifier {
             endDate: endDateToUse,
             baselineId: baselineId,
           );
-          debugPrint(
-              '[BudgetProvider] Creating budget ${budget.id} for $currentMonth/$currentYear');
           await HiveService.updateBudget(budget);
           _budgets.add(budget);
-          budgetCount++;
 
           currentMonth++;
           if (currentMonth > 12) {
@@ -111,7 +86,6 @@ class BudgetProvider extends ChangeNotifier {
             currentYear++;
           }
         }
-        debugPrint('[BudgetProvider] Created $budgetCount recurring budgets');
       } else if (isEditingExisting) {
         // Update only this specific month's budget
         final updated = existing.copyWith(
@@ -268,10 +242,5 @@ class BudgetProvider extends ChangeNotifier {
     _budgets
       ..clear()
       ..addAll(HiveService.getAllBudgets());
-    debugPrint('[BudgetProvider] Loaded ${_budgets.length} budgets from Hive');
-    for (final budget in _budgets) {
-      debugPrint(
-          '[BudgetProvider] - ${budget.id}: ${budget.month}/${budget.year}, baselineId=${budget.baselineId}, recurrenceType=${budget.recurrenceType}');
-    }
   }
 }
