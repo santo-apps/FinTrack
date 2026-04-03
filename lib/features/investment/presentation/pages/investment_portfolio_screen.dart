@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/features/investment/data/models/investment_model.dart';
 import 'package:fintrack/features/investment/presentation/providers/investment_provider.dart';
@@ -57,171 +56,181 @@ class _InvestmentPortfolioScreenState extends State<InvestmentPortfolioScreen> {
               ],
             )
           : null,
-      body: Consumer2<InvestmentProvider, SettingsProvider>(
-        builder: (context, invProvider, settingsProvider, _) {
-          final currencySymbol = settingsProvider.currencySymbol;
-          final investments = invProvider.investments;
+      body: SafeArea(
+        top: false,
+        child: Consumer2<InvestmentProvider, SettingsProvider>(
+          builder: (context, invProvider, settingsProvider, _) {
+            final currencySymbol = settingsProvider.currencySymbol;
+            final investments = invProvider.investments;
 
-          if (investments.isEmpty) {
-            return EmptyStateWidget(
-              icon: Icons.trending_up,
-              title: 'No Investments',
-              description: 'Start building your investment portfolio',
-              actionLabel: 'Add Investment',
-              onAction: () => _showAddEditDialog(context),
-            );
-          }
+            if (investments.isEmpty) {
+              return EmptyStateWidget(
+                icon: Icons.trending_up,
+                title: 'No Investments',
+                description: 'Start building your investment portfolio',
+                actionLabel: 'Add Investment',
+                onAction: () => _showAddEditDialog(context),
+              );
+            }
 
-          double totalInvestment = 0;
-          double currentValue = 0;
-          double totalGainLoss = 0;
+            double totalInvestment = 0;
+            double currentValue = 0;
+            double totalGainLoss = 0;
 
-          for (var inv in investments) {
-            totalInvestment += inv.getTotalInvestmentValue();
-            currentValue += inv.getCurrentValue();
-            totalGainLoss += inv.getGainLoss();
-          }
+            for (var inv in investments) {
+              totalInvestment += inv.getTotalInvestmentValue();
+              currentValue += inv.getCurrentValue();
+              totalGainLoss += inv.getGainLoss();
+            }
 
-          final gainLossPercentage = totalInvestment > 0
-              ? ((totalGainLoss / totalInvestment) * 100)
-              : 0;
+            final gainLossPercentage = totalInvestment > 0
+                ? ((totalGainLoss / totalInvestment) * 100)
+                : 0;
 
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 240,
-                  child: Column(
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.all(16),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: totalGainLoss >= 0
-                                ? [Colors.green.shade400, Colors.green.shade600]
-                                : [Colors.red.shade400, Colors.red.shade600],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 240,
+                    child: Column(
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: totalGainLoss >= 0
+                                  ? [
+                                      Colors.green.shade400,
+                                      Colors.green.shade600
+                                    ]
+                                  : [Colors.red.shade400, Colors.red.shade600],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Portfolio Value',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(color: Colors.white70),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '$currencySymbol${currentValue.toStringAsFixed(2)}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineMedium
-                                  ?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Portfolio Value',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: Colors.white70),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '$currencySymbol${currentValue.toStringAsFixed(2)}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Invested',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(color: Colors.white70),
+                                      ),
+                                      Text(
+                                        '$currencySymbol${totalInvestment.toStringAsFixed(2)}',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(color: Colors.white),
+                                      ),
+                                    ],
                                   ),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Invested',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(color: Colors.white70),
-                                    ),
-                                    Text(
-                                      '$currencySymbol${totalInvestment.toStringAsFixed(2)}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(color: Colors.white),
-                                    ),
-                                  ],
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      'Gain/Loss',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(color: Colors.white70),
-                                    ),
-                                    Text(
-                                      '${totalGainLoss >= 0 ? '+' : ''}$currencySymbol${totalGainLoss.toStringAsFixed(2)} (${gainLossPercentage.toStringAsFixed(2)}%)',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(color: Colors.white),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        'Gain/Loss',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(color: Colors.white70),
+                                      ),
+                                      Text(
+                                        '${totalGainLoss >= 0 ? '+' : ''}$currencySymbol${totalGainLoss.toStringAsFixed(2)} (${gainLossPercentage.toStringAsFixed(2)}%)',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(color: Colors.white),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Your Investments',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            Text(
-                              '${investments.length}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(color: Colors.grey),
-                            ),
-                          ],
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Your Investments',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              Text(
+                                '${investments.length}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: Colors.grey),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                ListView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: investments.length,
-                  itemBuilder: (context, index) {
-                    final inv = investments[index];
-                    return _InvestmentCard(
-                      investment: inv,
-                      onEdit: () => _showAddEditDialog(context, inv),
-                      onDelete: () => _deleteInvestment(context, inv),
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          );
-        },
+                  ListView.builder(
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: investments.length,
+                    itemBuilder: (context, index) {
+                      final inv = investments[index];
+                      return _InvestmentCard(
+                        investment: inv,
+                        onEdit: () => _showAddEditDialog(context, inv),
+                        onDelete: () => _deleteInvestment(context, inv),
+                      );
+                    },
+                  ),
+                  SizedBox(height: contentBottomPadding(context)),
+                ],
+              ),
+            );
+          },
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        mini: true,
-        heroTag: 'investment_portfolio_fab_add',
-        onPressed: () => _showAddEditDialog(context),
-        child: const Icon(Icons.add),
+      floatingActionButton: AdaptiveBottomFab(
+        child: FloatingActionButton(
+          mini: true,
+          heroTag: 'investment_portfolio_fab_add',
+          onPressed: () => _showAddEditDialog(context),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -230,6 +239,7 @@ class _InvestmentPortfolioScreenState extends State<InvestmentPortfolioScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -515,7 +525,8 @@ class _AddEditInvestmentScreenState extends State<AddEditInvestmentScreen> {
       child: SingleChildScrollView(
         child: Container(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom +
+                effectiveBottomInset(context),
             left: 16,
             right: 16,
             top: 24,
@@ -531,7 +542,8 @@ class _AddEditInvestmentScreenState extends State<AddEditInvestmentScreen> {
                     widget.investment != null
                         ? 'Edit Investment'
                         : 'Add Investment',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                     ),

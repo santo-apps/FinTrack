@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 
 class AppTheme {
   // Colors
@@ -25,10 +25,17 @@ class AppTheme {
   static const Color darkTextSecondaryColor = Color(0xFFD1D5DB);
 
   static ThemeData lightTheme() {
+    final base = ThemeData.light();
+    final textTheme = base.textTheme.apply(
+      fontFamily: 'Poppins',
+      bodyColor: textColor,
+      displayColor: textColor,
+    );
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      fontFamily: GoogleFonts.poppins().fontFamily,
+      fontFamily: 'Poppins',
       colorScheme: const ColorScheme.light(
         primary: primaryColor,
         secondary: secondaryColor,
@@ -37,14 +44,33 @@ class AppTheme {
         brightness: Brightness.light,
       ),
       scaffoldBackgroundColor: backgroundColor,
-      textTheme: GoogleFonts.poppinsTextTheme(ThemeData.light().textTheme),
-      primaryTextTheme:
-          GoogleFonts.poppinsTextTheme(ThemeData.light().textTheme),
+      textTheme: textTheme,
+      primaryTextTheme: textTheme,
       appBarTheme: AppBarTheme(
         backgroundColor: surfaceColor,
         elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.poppins(
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: surfaceColor,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+          systemNavigationBarColor: Colors.white,
+          systemNavigationBarIconBrightness: Brightness.dark,
+          systemNavigationBarDividerColor: Colors.white,
+          systemStatusBarContrastEnforced: false,
+          systemNavigationBarContrastEnforced: false,
+        ),
+        toolbarTextStyle: const TextStyle(
+          fontFamily: 'Poppins',
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: textColor,
+        ),
+        titleTextStyle: const TextStyle(
+          fontFamily: 'Poppins',
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: textColor,
@@ -80,11 +106,11 @@ class AppTheme {
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        labelStyle: GoogleFonts.poppins(
+        labelStyle: const TextStyle(
           color: textSecondaryColor,
           fontSize: 14,
         ),
-        hintStyle: GoogleFonts.poppins(
+        hintStyle: const TextStyle(
           color: textSecondaryColor,
           fontSize: 14,
         ),
@@ -96,41 +122,41 @@ class AppTheme {
         shape: const CircleBorder(),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        style: ButtonStyle(
+          backgroundColor: const WidgetStatePropertyAll(primaryColor),
+          foregroundColor: const WidgetStatePropertyAll(Colors.white),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
-          textStyle: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
+          textStyle: const WidgetStatePropertyAll(
+              TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: primaryColor,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          textStyle: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
+        style: ButtonStyle(
+          foregroundColor: const WidgetStatePropertyAll(primaryColor),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
+          textStyle: const WidgetStatePropertyAll(
+              TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: primaryColor,
-          side: const BorderSide(color: primaryColor),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        style: ButtonStyle(
+          foregroundColor: const WidgetStatePropertyAll(primaryColor),
+          side: const WidgetStatePropertyAll(BorderSide(color: primaryColor)),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
-          textStyle: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
+          textStyle: const WidgetStatePropertyAll(
+              TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -138,17 +164,37 @@ class AppTheme {
         selectedItemColor: primaryColor,
         unselectedItemColor: textSecondaryColor,
         showUnselectedLabels: true,
-        elevation: 8,
+        elevation: 0,
         type: BottomNavigationBarType.fixed,
+        selectedLabelStyle: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      tabBarTheme: const TabBarTheme(
+        dividerColor: Colors.transparent,
+        labelStyle: TextStyle(fontWeight: FontWeight.w600),
+        unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w500),
       ),
     );
   }
 
   static ThemeData darkTheme() {
+    final base = ThemeData.dark();
+    final textTheme = base.textTheme.apply(
+      fontFamily: 'Poppins',
+      bodyColor: darkTextColor,
+      displayColor: darkTextColor,
+    );
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      fontFamily: GoogleFonts.poppins().fontFamily,
+      fontFamily: 'Poppins',
       colorScheme: const ColorScheme.dark(
         primary: primaryColor,
         secondary: secondaryColor,
@@ -157,14 +203,33 @@ class AppTheme {
         brightness: Brightness.dark,
       ),
       scaffoldBackgroundColor: darkBackgroundColor,
-      textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
-      primaryTextTheme:
-          GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
+      textTheme: textTheme,
+      primaryTextTheme: textTheme,
       appBarTheme: AppBarTheme(
         backgroundColor: darkSurfaceColor,
         elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.poppins(
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: darkSurfaceColor,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+          systemNavigationBarColor: Colors.black,
+          systemNavigationBarIconBrightness: Brightness.light,
+          systemNavigationBarDividerColor: Colors.black,
+          systemStatusBarContrastEnforced: false,
+          systemNavigationBarContrastEnforced: false,
+        ),
+        toolbarTextStyle: const TextStyle(
+          fontFamily: 'Poppins',
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: darkTextColor,
+        ),
+        titleTextStyle: const TextStyle(
+          fontFamily: 'Poppins',
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: darkTextColor,
@@ -196,11 +261,11 @@ class AppTheme {
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        labelStyle: GoogleFonts.poppins(
+        labelStyle: const TextStyle(
           color: darkTextSecondaryColor,
           fontSize: 14,
         ),
-        hintStyle: GoogleFonts.poppins(
+        hintStyle: const TextStyle(
           color: darkTextSecondaryColor,
           fontSize: 14,
         ),
@@ -210,6 +275,65 @@ class AppTheme {
         foregroundColor: Colors.white,
         elevation: 4,
         shape: CircleBorder(),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ButtonStyle(
+          backgroundColor: const WidgetStatePropertyAll(primaryColor),
+          foregroundColor: const WidgetStatePropertyAll(Colors.white),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          textStyle: const WidgetStatePropertyAll(
+              TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: ButtonStyle(
+          foregroundColor: const WidgetStatePropertyAll(primaryColor),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
+          textStyle: const WidgetStatePropertyAll(
+              TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: ButtonStyle(
+          foregroundColor: const WidgetStatePropertyAll(primaryColor),
+          side: const WidgetStatePropertyAll(BorderSide(color: primaryColor)),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          textStyle: const WidgetStatePropertyAll(
+              TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        ),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: darkSurfaceColor,
+        selectedItemColor: primaryColor,
+        unselectedItemColor: darkTextSecondaryColor,
+        showUnselectedLabels: true,
+        elevation: 0,
+        type: BottomNavigationBarType.fixed,
+        selectedLabelStyle: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      tabBarTheme: const TabBarTheme(
+        dividerColor: Colors.transparent,
+        labelStyle: TextStyle(fontWeight: FontWeight.w600),
+        unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w500),
       ),
     );
   }

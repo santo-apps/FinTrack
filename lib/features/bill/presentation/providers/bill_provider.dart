@@ -158,9 +158,14 @@ class BillProvider extends ChangeNotifier {
     }
 
     final filtered = allReminders.where((reminder) {
-      // Match by due date month for all reminders
-      final matches = reminder.dueDate.year == month.year &&
-          reminder.dueDate.month == month.month;
+      // For completed reminders, month should follow payment date when present.
+      final monthAnchor = reminder.status == BillReminderStatus.completed &&
+              reminder.paidDate != null
+          ? reminder.paidDate!
+          : reminder.dueDate;
+
+      final matches =
+          monthAnchor.year == month.year && monthAnchor.month == month.month;
 
       if (kDebugMode && !matches) {
         print('  ❌ Filtered out: ${reminder.name} (${reminder.dueDate})');
@@ -206,6 +211,28 @@ class BillProvider extends ChangeNotifier {
   // Convert Bills to BillReminders
   List<BillReminder> _getRemindersFromBills() {
     return _bills.map((bill) {
+      DateTime dueDate = bill.dueDate;
+      if (bill.isRecurring) {
+        final today = DateTime.now();
+        final todayDay = DateTime(today.year, today.month, today.day);
+        while (dueDate.isBefore(todayDay)) {
+          switch ((bill.recurringFrequency ?? 'monthly').toLowerCase()) {
+            case 'weekly':
+              dueDate = dueDate.add(const Duration(days: 7));
+              break;
+            case 'yearly':
+            case 'annual':
+              dueDate = DateTime(dueDate.year + 1, dueDate.month, dueDate.day);
+              break;
+            case 'quarterly':
+              dueDate = DateTime(dueDate.year, dueDate.month + 3, dueDate.day);
+              break;
+            default:
+              dueDate = DateTime(dueDate.year, dueDate.month + 1, dueDate.day);
+          }
+        }
+      }
+
       BillReminderStatus status;
       if (bill.isPaid) {
         status = BillReminderStatus.completed;
@@ -220,7 +247,7 @@ class BillProvider extends ChangeNotifier {
         sourceId: bill.id,
         name: bill.name,
         amount: bill.amount,
-        dueDate: bill.dueDate,
+        dueDate: dueDate,
         currency: bill.currency,
         type: BillReminderType.bill,
         status: status,
@@ -234,6 +261,7 @@ class BillProvider extends ChangeNotifier {
   // Convert Credit Cards to BillReminders
   List<BillReminder> _getRemindersFromCreditCards() {
     final accounts = HiveService.getAllPaymentAccounts();
+    final expenses = HiveService.getAllExpenses();
     final now = DateTime.now();
     final startOfToday = DateTime(now.year, now.month, now.day);
 
@@ -288,6 +316,20 @@ class BillProvider extends ChangeNotifier {
         status = BillReminderStatus.pending;
       }
 
+      DateTime? paidDate;
+      if (status == BillReminderStatus.completed) {
+        final cardPayments = expenses.where((e) {
+          final isPayment = (e.transactionType ?? 'expense') == 'payment';
+          final cardMatch = e.destinationAccountId == card.id ||
+              e.title.contains('Credit Card Payment - ${card.name}');
+          return isPayment && cardMatch;
+        }).toList()
+          ..sort((a, b) => a.date.compareTo(b.date));
+        if (cardPayments.isNotEmpty) {
+          paidDate = cardPayments.last.date;
+        }
+      }
+
       reminders.add(BillReminder(
         id: 'card_${card.id}_${nextBillingDate.toString()}',
         sourceId: card.id,
@@ -297,6 +339,7 @@ class BillProvider extends ChangeNotifier {
         currency: card.currency,
         type: BillReminderType.creditCard,
         status: status,
+        paidDate: paidDate,
         accountName: card.name,
         notes: card.dueDate == null && card.billingCycleDay == null
             ? 'Credit card bill payment (set due date for accurate reminder)'
@@ -369,6 +412,7 @@ class BillProvider extends ChangeNotifier {
         currency: loan.currency,
         type: BillReminderType.loan,
         status: status,
+        paidDate: isPaidThisMonth ? lastPayment : null,
         lender: loan.lender,
         notes: 'Monthly EMI payment',
       ));
@@ -407,6 +451,7 @@ class BillProvider extends ChangeNotifier {
       // Determine if the current billing period has been paid
       // by checking for expense records for this subscription in current period
       bool currentPeriodPaid = false;
+      DateTime? paidDate;
 
       // Calculate the date range for the current billing period
       DateTime periodStart;
@@ -450,11 +495,21 @@ class BillProvider extends ChangeNotifier {
           );
       }
 
+      // A payment exactly on the previous cycle due date belongs to the
+      // previous cycle, not the current one.
+      periodStart = periodStart.add(const Duration(days: 1));
+
       // Check for expense records matching this subscription in the current period
       final expenses =
-          HiveService.getExpensesInDateRange(periodStart, periodEnd);
-      currentPeriodPaid = expenses.any((expense) => expense.title
-          .contains('Subscription Payment - ${subscription.name}'));
+          HiveService.getExpensesInDateRange(periodStart, periodEnd)
+              .where((expense) => expense.title
+                  .contains('Subscription Payment - ${subscription.name}'))
+              .toList()
+            ..sort((a, b) => a.date.compareTo(b.date));
+      currentPeriodPaid = expenses.isNotEmpty;
+      if (currentPeriodPaid) {
+        paidDate = expenses.last.date;
+      }
 
       // Determine status
       if (currentPeriodPaid) {
@@ -485,6 +540,7 @@ class BillProvider extends ChangeNotifier {
         currency: subscription.currency,
         type: BillReminderType.subscription,
         status: status,
+        paidDate: paidDate,
         notes: subscription.notes,
         billingCycle: subscription.billingCycle,
       );

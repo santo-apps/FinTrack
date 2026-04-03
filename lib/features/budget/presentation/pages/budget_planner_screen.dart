@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
@@ -73,170 +72,179 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
               ],
             )
           : null,
-      body: Consumer3<BudgetProvider, ExpenseProvider, SettingsProvider>(
-        builder:
-            (context, budgetProvider, expenseProvider, settingsProvider, _) {
-          final currencySymbol = settingsProvider.currencySymbol;
-          final budget = budgetProvider.getBudgetForMonth(
-            _selectedMonth.month,
-            _selectedMonth.year,
-          );
-          final categories = expenseProvider.categories;
+      body: SafeArea(
+        top: false,
+        child: Consumer3<BudgetProvider, ExpenseProvider, SettingsProvider>(
+          builder:
+              (context, budgetProvider, expenseProvider, settingsProvider, _) {
+            final currencySymbol = settingsProvider.currencySymbol;
+            final budget = budgetProvider.getBudgetForMonth(
+              _selectedMonth.month,
+              _selectedMonth.year,
+            );
+            final categories = expenseProvider.categories;
 
-          // Get expenses for the selected month
-          final monthExpenses = expenseProvider.expenses.where((expense) {
-            return expense.date.year == _selectedMonth.year &&
-                expense.date.month == _selectedMonth.month;
-          }).toList();
+            // Get expenses for the selected month
+            final monthExpenses = expenseProvider.expenses.where((expense) {
+              return expense.date.year == _selectedMonth.year &&
+                  expense.date.month == _selectedMonth.month;
+            }).toList();
 
-          // Calculate spending by category
-          final Map<String, double> categorySpending = {};
-          for (var expense in monthExpenses) {
-            categorySpending[expense.category] =
-                (categorySpending[expense.category] ?? 0) + expense.amount;
-          }
+            // Calculate spending by category
+            final Map<String, double> categorySpending = {};
+            for (var expense in monthExpenses) {
+              categorySpending[expense.category] =
+                  (categorySpending[expense.category] ?? 0) + expense.amount;
+            }
 
-          // Calculate totals
-          final totalBudget =
-              budget?.categoryLimits.values.fold<double>(0, (sum, amount) {
-                    return sum + amount;
-                  }) ??
-                  0;
-          final totalSpent = categorySpending.values
-              .fold<double>(0, (sum, amount) => sum + amount);
-          final budgetedCategories = budget?.categoryLimits.keys.toList() ?? [];
+            // Calculate totals
+            final totalBudget = budget?.categoryLimits.values
+                    .fold<double>(0, (sum, amount) => sum + amount) ??
+                0;
+            final totalSpent = categorySpending.values
+                .fold<double>(0, (sum, amount) => sum + amount);
+            final budgetedCategories =
+                budget?.categoryLimits.keys.toList() ?? [];
 
-          return CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Column(
-                  children: [
-                    _buildMonthNavigation(),
-                    _buildSummaryCard(
-                      context,
-                      totalBudget,
-                      totalSpent,
-                      currencySymbol,
-                      budgetedCategories,
-                      categorySpending,
-                    ),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            return CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      _buildMonthNavigation(),
+                      _buildSummaryCard(
+                        context,
+                        totalBudget,
+                        totalSpent,
+                        currencySymbol,
+                        budgetedCategories,
+                        categorySpending,
+                      ),
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Category Budgets',
+                              style: TextStyle(fontFamily: 'Poppins', 
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add_circle_outline),
+                              onPressed: () => _showAddBudgetDialog(
+                                context,
+                                categories,
+                                budget,
+                              ),
+                              tooltip: 'Add Budget',
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                    ],
+                  ),
+                ),
+                if (budgetedCategories.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          Icon(
+                            Icons.pie_chart_outline,
+                            size: 64,
+                            color: AppTheme.textSecondaryColor.withOpacity(0.5),
+                          ),
+                          const SizedBox(height: 12),
                           Text(
-                            'Category Budgets',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                            'No budgets set for this month',
+                            style: TextStyle(fontFamily: 'Poppins', 
+                              fontSize: 14,
+                              color: AppTheme.textSecondaryColor,
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.add_circle_outline),
+                          const SizedBox(height: 6),
+                          TextButton.icon(
                             onPressed: () => _showAddBudgetDialog(
                               context,
                               categories,
                               budget,
                             ),
-                            tooltip: 'Add Budget',
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Budget'),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                  ],
-                ),
-              ),
-              if (budgetedCategories.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.pie_chart_outline,
-                          size: 64,
-                          color: AppTheme.textSecondaryColor.withOpacity(0.5),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No budgets set for this month',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: AppTheme.textSecondaryColor,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        TextButton.icon(
-                          onPressed: () => _showAddBudgetDialog(
+                  )
+                else
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(
+                      12,
+                      0,
+                      12,
+                      contentBottomPadding(context),
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final category = budgetedCategories[index];
+                          final budgetAmount =
+                              budget!.categoryLimits[category] ?? 0;
+                          final spentAmount = categorySpending[category] ?? 0;
+                          final percentage = budgetAmount > 0
+                              ? (spentAmount / budgetAmount).clamp(0.0, 1.0)
+                              : 0.0;
+
+                          final categoryData = categories.firstWhere(
+                            (c) => c.name == category,
+                            orElse: () => categories.first,
+                          );
+
+                          return _buildBudgetCard(
                             context,
-                            categories,
-                            budget,
-                          ),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Budget'),
-                        ),
-                      ],
+                            category,
+                            budgetAmount,
+                            spentAmount,
+                            percentage,
+                            currencySymbol,
+                            categoryData.icon,
+                            categoryData.color,
+                            monthExpenses
+                                .where((e) => e.category == category)
+                                .toList(),
+                          );
+                        },
+                        childCount: budgetedCategories.length,
+                      ),
                     ),
                   ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final category = budgetedCategories[index];
-                        final budgetAmount =
-                            budget!.categoryLimits[category] ?? 0;
-                        final spentAmount = categorySpending[category] ?? 0;
-                        final percentage = budgetAmount > 0
-                            ? (spentAmount / budgetAmount).clamp(0.0, 1.0)
-                            : 0.0;
-
-                        final categoryData = categories.firstWhere(
-                          (c) => c.name == category,
-                          orElse: () => categories.first,
-                        );
-
-                        return _buildBudgetCard(
-                          context,
-                          category,
-                          budgetAmount,
-                          spentAmount,
-                          percentage,
-                          currencySymbol,
-                          categoryData.icon,
-                          categoryData.color,
-                          monthExpenses
-                              .where((e) => e.category == category)
-                              .toList(),
-                        );
-                      },
-                      childCount: budgetedCategories.length,
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        mini: true,
-        heroTag: 'budget_planner_fab_add',
-        onPressed: () {
-          final categories = context.read<ExpenseProvider>().categories;
-          final budget = context.read<BudgetProvider>().getBudgetForMonth(
-                _selectedMonth.month,
-                _selectedMonth.year,
-              );
-          _showAddBudgetDialog(context, categories, budget);
-        },
-        tooltip: 'Add Budget',
-        child: const Icon(Icons.add),
+      floatingActionButton: AdaptiveBottomFab(
+        child: FloatingActionButton(
+          mini: true,
+          heroTag: 'budget_planner_fab_add',
+          onPressed: () {
+            final categories = context.read<ExpenseProvider>().categories;
+            final budget = context.read<BudgetProvider>().getBudgetForMonth(
+                  _selectedMonth.month,
+                  _selectedMonth.year,
+                );
+            _showAddBudgetDialog(context, categories, budget);
+          },
+          tooltip: 'Add Budget',
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -273,7 +281,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
             },
             child: Text(
               _getMonthYearString(_selectedMonth),
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -360,7 +368,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                 children: [
                   Text(
                     'Summary',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 12,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Theme.of(context).colorScheme.onSurface
@@ -392,7 +400,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                           children: [
                             Text(
                               'Total Budget',
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(fontFamily: 'Poppins', 
                                 fontSize: 12,
                                 color: Theme.of(context).brightness ==
                                         Brightness.dark
@@ -406,7 +414,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                             Text(
                               AppUtils.formatCurrency(totalBudget,
                                   currencySymbol: currencySymbol),
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(fontFamily: 'Poppins', 
                                 fontSize: 24,
                                 fontWeight: FontWeight.w700,
                                 color: Theme.of(context).brightness ==
@@ -426,7 +434,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                       children: [
                                         Text(
                                           'Spent',
-                                          style: GoogleFonts.poppins(
+                                          style: TextStyle(fontFamily: 'Poppins', 
                                             fontSize: 11,
                                             color: Theme.of(context)
                                                         .brightness ==
@@ -440,7 +448,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                         Text(
                                           AppUtils.formatCurrency(totalSpent,
                                               currencySymbol: currencySymbol),
-                                          style: GoogleFonts.poppins(
+                                          style: TextStyle(fontFamily: 'Poppins', 
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
                                             color:
@@ -462,7 +470,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                       children: [
                                         Text(
                                           'Remaining',
-                                          style: GoogleFonts.poppins(
+                                          style: TextStyle(fontFamily: 'Poppins', 
                                             fontSize: 11,
                                             color: Theme.of(context)
                                                         .brightness ==
@@ -476,7 +484,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                         Text(
                                           AppUtils.formatCurrency(remaining,
                                               currencySymbol: currencySymbol),
-                                          style: GoogleFonts.poppins(
+                                          style: TextStyle(fontFamily: 'Poppins', 
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
                                             color: remaining >= 0
@@ -539,7 +547,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                 const SizedBox(height: 6),
                 Text(
                   '${(percentage * 100).toStringAsFixed(1)}% of budget used',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 11,
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Theme.of(context).colorScheme.onSurfaceVariant
@@ -630,9 +638,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
-      onDismissed: (direction) {
-        _confirmDeleteBudget(context, category);
-      },
+      confirmDismiss: (_) => _confirmDeleteBudget(context, category),
       child: GestureDetector(
         onTap: () => _showCategoryExpenses(
           context,
@@ -644,11 +650,19 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
         ),
         child: Container(
           margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Theme.of(context).dividerColor),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(
+                  Theme.of(context).brightness == Brightness.dark ? 0.0 : 0.06,
+                ),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -656,37 +670,40 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
               Row(
                 children: [
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: categoryColor.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
                       child: Text(
                         icon,
-                        style: GoogleFonts.poppins(fontSize: 18),
+                        style: TextStyle(fontFamily: 'Poppins', fontSize: 20),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           category,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
+                          style: TextStyle(fontFamily: 'Poppins', 
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
                           '${categoryExpenses.length} expense${categoryExpenses.length != 1 ? 's' : ''}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            color: AppTheme.textSecondaryColor,
+                          style: TextStyle(fontFamily: 'Poppins', 
+                            fontSize: 12,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -698,19 +715,19 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                       Text(
                         AppUtils.formatCurrency(spentAmount,
                             currencySymbol: currencySymbol),
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
+                        style: TextStyle(fontFamily: 'Poppins', 
+                          fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: isOverBudget
                               ? AppTheme.errorColor
-                              : AppTheme.textColor,
+                              : Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       Text(
                         'of ${AppUtils.formatCurrency(budgetAmount, currencySymbol: currencySymbol)}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: AppTheme.textSecondaryColor,
+                        style: TextStyle(fontFamily: 'Poppins', 
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -760,9 +777,9 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                 children: [
                   Text(
                     '${(percentage * 100).toStringAsFixed(1)}% used',
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: AppTheme.textSecondaryColor,
+                    style: TextStyle(fontFamily: 'Poppins', 
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   if (isOverBudget)
@@ -775,7 +792,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                       ),
                       child: Text(
                         'Over by ${AppUtils.formatCurrency(spentAmount - budgetAmount, currencySymbol: currencySymbol)}',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.errorColor,
@@ -901,7 +918,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                         const SizedBox(width: 12),
                         Text(
                           'Tap to change color',
-                          style: GoogleFonts.poppins(fontSize: 14),
+                          style: TextStyle(fontFamily: 'Poppins', fontSize: 14),
                         ),
                       ],
                     ),
@@ -985,6 +1002,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
     showModalBottomSheet(
         context: context,
         isScrollControlled: true,
+        useSafeArea: true,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
@@ -1006,7 +1024,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                   left: 16,
                   right: 16,
                   top: 16,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                  bottom: MediaQuery.of(context).viewInsets.bottom +
+                      effectiveBottomInset(context),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1028,7 +1047,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                     const SizedBox(height: 16),
                     Text(
                       'Add Category Budget',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
                       ),
@@ -1050,7 +1069,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                   leading: cat == null
                                       ? null
                                       : Text(cat.icon,
-                                          style: GoogleFonts.poppins(
+                                          style: TextStyle(fontFamily: 'Poppins', 
                                               fontSize: 20)),
                                   title: Text(item),
                                 );
@@ -1071,7 +1090,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                               return Row(
                                 children: [
                                   Text(cat.icon,
-                                      style: GoogleFonts.poppins(fontSize: 18)),
+                                      style: TextStyle(fontFamily: 'Poppins', fontSize: 18)),
                                   const SizedBox(width: 8),
                                   Text(cat.name),
                                 ],
@@ -1138,7 +1157,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                             Expanded(
                               child: Text(
                                 errorMsg!,
-                                style: GoogleFonts.poppins(
+                                style: TextStyle(fontFamily: 'Poppins', 
                                     fontSize: 12, color: Colors.red),
                               ),
                             ),
@@ -1150,7 +1169,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                       const SizedBox(height: 16),
                       Text(
                         'Recurrence',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1162,7 +1181,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                             title: const Text('One-Time'),
                             subtitle: Text(
                               'Budget for ${_getMonthYearString(_selectedMonth)} only',
-                              style: GoogleFonts.poppins(fontSize: 12),
+                              style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
                             ),
                             value: 'oneTime',
                             groupValue: recurrenceType,
@@ -1179,7 +1198,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                             title: const Text('Monthly Recurring'),
                             subtitle: Text(
                               'Repeat every month from now onwards',
-                              style: GoogleFonts.poppins(fontSize: 12),
+                              style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
                             ),
                             value: 'monthly',
                             groupValue: recurrenceType,
@@ -1202,7 +1221,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                 endDate == null
                                     ? 'No end date'
                                     : 'Until ${endDate!.year}-${endDate!.month.toString().padLeft(2, "0")}',
-                                style: GoogleFonts.poppins(fontSize: 13),
+                                style: TextStyle(fontFamily: 'Poppins', fontSize: 13),
                               ),
                             ),
                             TextButton(
@@ -1327,7 +1346,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
       builder: (context) => AlertDialog(
         title: Text(
           'Edit Budget: $category',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
         ),
         content: TextField(
           controller: amountController,
@@ -1390,55 +1409,29 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
     );
   }
 
-  void _confirmDeleteBudget(
+  Future<bool> _confirmDeleteBudget(
     BuildContext context,
     String category,
-  ) {
-    showDialog(
+  ) async {
+    final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
           'Delete Budget',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
         ),
         content: Text(
           'Are you sure you want to delete the budget for $category?',
-          style: GoogleFonts.poppins(),
+          style: TextStyle(fontFamily: 'Poppins', ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
-              final budgetProvider = context.read<BudgetProvider>();
-              final budget = budgetProvider.getBudgetForMonth(
-                _selectedMonth.month,
-                _selectedMonth.year,
-              );
-              if (budget != null) {
-                final newLimits =
-                    Map<String, double>.from(budget.categoryLimits);
-                newLimits.remove(category);
-                budgetProvider.saveBudget(budget.copyWith(
-                  categoryLimits: newLimits,
-                  updatedAt: DateTime.now(),
-                ));
-
-                // If this is part of a recurring series, update all future months
-                if (budget.recurrenceType == 'monthly' &&
-                    budget.baselineId != null) {
-                  budgetProvider.updateRecurringSeries(
-                    budget.baselineId!,
-                    newLimits,
-                  );
-                }
-              }
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Budget deleted')),
-              );
+              Navigator.pop(context, true);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -1449,6 +1442,40 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
         ],
       ),
     );
+
+    if (shouldDelete != true) {
+      return false;
+    }
+
+    if (!mounted) {
+      return false;
+    }
+
+    final budgetProvider = context.read<BudgetProvider>();
+    final budget = budgetProvider.getBudgetForMonth(
+      _selectedMonth.month,
+      _selectedMonth.year,
+    );
+    if (budget != null) {
+      final newLimits = Map<String, double>.from(budget.categoryLimits);
+      newLimits.remove(category);
+      budgetProvider.saveBudget(budget.copyWith(
+        categoryLimits: newLimits,
+        updatedAt: DateTime.now(),
+      ));
+
+      if (budget.recurrenceType == 'monthly' && budget.baselineId != null) {
+        budgetProvider.updateRecurringSeries(
+          budget.baselineId!,
+          newLimits,
+        );
+      }
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Budget deleted')),
+    );
+    return true;
   }
 
   void _confirmDeleteAllBudgets(BuildContext context) {
@@ -1465,7 +1492,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
       builder: (context) => AlertDialog(
         title: Text(
           'Delete Budget',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1473,7 +1500,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
           children: [
             Text(
               'Delete budget for ${_getMonthYearString(_selectedMonth)}?',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(fontFamily: 'Poppins', ),
             ),
             if (budget.recurrenceType == 'monthly' &&
                 budget.baselineId != null) ...[
@@ -1489,7 +1516,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                   children: [
                     Text(
                       'This is a recurring budget. Choose:',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -1497,12 +1524,12 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                     const SizedBox(height: 8),
                     Text(
                       '• This month only: Delete just ${_getMonthYearString(_selectedMonth)}',
-                      style: GoogleFonts.poppins(fontSize: 12),
+                      style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '• All future: Delete this and all future recurring instances',
-                      style: GoogleFonts.poppins(fontSize: 12),
+                      style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
                     ),
                   ],
                 ),
@@ -1587,6 +1614,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -1626,7 +1654,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                         ),
                         child: Center(
                           child: Text(icon,
-                              style: GoogleFonts.poppins(fontSize: 24)),
+                              style: TextStyle(fontFamily: 'Poppins', fontSize: 24)),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1636,14 +1664,14 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                           children: [
                             Text(
                               category,
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(fontFamily: 'Poppins', 
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                             Text(
                               '${expenses.length} expense${expenses.length != 1 ? 's' : ''}',
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(fontFamily: 'Poppins', 
                                 fontSize: 14,
                                 color: AppTheme.textSecondaryColor,
                               ),
@@ -1661,7 +1689,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                   ? Center(
                       child: Text(
                         'No expenses in this category',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 14,
                           color: AppTheme.textSecondaryColor,
                         ),
@@ -1669,7 +1697,12 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                     )
                   : ListView.builder(
                       controller: scrollController,
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.fromLTRB(
+                        16,
+                        16,
+                        16,
+                        contentBottomPadding(context, hasFab: false),
+                      ),
                       itemCount: expenses.length,
                       itemBuilder: (context, index) {
                         final expense = expenses[index];
@@ -1690,7 +1723,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                   children: [
                                     Text(
                                       expense.title,
-                                      style: GoogleFonts.poppins(
+                                      style: TextStyle(fontFamily: 'Poppins', 
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -1698,7 +1731,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                     const SizedBox(height: 4),
                                     Text(
                                       AppUtils.formatDateShort(expense.date),
-                                      style: GoogleFonts.poppins(
+                                      style: TextStyle(fontFamily: 'Poppins', 
                                         fontSize: 12,
                                         color: AppTheme.textSecondaryColor,
                                       ),
@@ -1709,7 +1742,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                               Text(
                                 AppUtils.formatCurrency(expense.amount,
                                     currencySymbol: currencySymbol),
-                                style: GoogleFonts.poppins(
+                                style: TextStyle(fontFamily: 'Poppins', 
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                   color: AppTheme.errorColor,

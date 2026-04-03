@@ -12,7 +12,12 @@ class SettingsAboutScreen extends StatelessWidget {
         showBackButton: true,
       ),
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          20,
+          16,
+          contentBottomPadding(context, hasFab: false),
+        ),
         children: [
           // App Logo & Branding
           Center(
@@ -166,7 +171,7 @@ class SettingsAboutScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
         ],
       ),
     );

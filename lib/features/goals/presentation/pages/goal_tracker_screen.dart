@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/features/goals/data/models/financial_goal_model.dart';
 import 'package:fintrack/features/goals/presentation/providers/goal_provider.dart';
@@ -62,168 +61,166 @@ class _GoalTrackerScreenState extends State<GoalTrackerScreen> {
           }
 
           return SingleChildScrollView(
-            child: Column(
-              children: [
-                if (activeGoals.isNotEmpty) ...[
-                  Container(
-                    margin: const EdgeInsets.all(16),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Theme.of(context).primaryColor,
-                          Theme.of(context).primaryColor.withOpacity(0.8)
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: contentBottomPadding(context),
+              ),
+              child: Column(
+                children: [
+                  if (activeGoals.isNotEmpty) ...[
+                    Container(
+                      margin: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Theme.of(context).primaryColor,
+                            Theme.of(context).primaryColor.withOpacity(0.8)
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Overall Progress',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(color: Colors.white70),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '$currencySymbol${totalSaved.toStringAsFixed(2)} / $currencySymbol${totalTarget.toStringAsFixed(2)}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Overall Progress',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(color: Colors.white70),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '$currencySymbol${totalSaved.toStringAsFixed(2)} / $currencySymbol${totalTarget.toStringAsFixed(2)}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 16),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: LinearProgressIndicator(
+                              value: totalTarget > 0
+                                  ? (totalSaved / totalTarget).clamp(0, 1)
+                                  : 0,
+                              minHeight: 8,
+                              backgroundColor: Colors.white24,
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                Colors.white,
                               ),
-                        ),
-                        const SizedBox(height: 16),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: LinearProgressIndicator(
-                            value: totalTarget > 0
-                                ? (totalSaved / totalTarget).clamp(0, 1)
-                                : 0,
-                            minHeight: 8,
-                            backgroundColor: Colors.white24,
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              Colors.white,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${((totalSaved / totalTarget) * 100).clamp(0, 100).toStringAsFixed(1)}% complete',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Active Goals (${activeGoals.length})',
-                        style: Theme.of(context).textTheme.titleMedium,
+                          const SizedBox(height: 8),
+                          Text(
+                            '${((totalSaved / totalTarget) * 100).clamp(0, 100).toStringAsFixed(1)}% complete',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(color: Colors.white),
+                          ),
+                        ],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.add),
-                        onPressed: () => _showAddEditDialog(context),
-                      ),
-                    ],
-                  ),
-                ),
-                ListView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: activeGoals.length,
-                  itemBuilder: (context, index) {
-                    final goal = activeGoals[index];
-                    return _GoalCard(
-                      goal: goal,
-                      onEdit: () => _showAddEditDialog(context, goal),
-                      onDelete: () => _deleteGoal(context, goal),
-                      onAddAmount: () => _showAddProgressDialog(context, goal),
-                      currencySymbol: currencySymbol,
-                    );
-                  },
-                ),
-                if (goals.where((g) => g.isCompleted).isNotEmpty) ...[
-                  const SizedBox(height: 24),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Completed Goals',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ],
                     ),
-                  ),
+                  ],
                   ListView.builder(
                     physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: goals.where((g) => g.isCompleted).length,
+                    itemCount: activeGoals.length,
                     itemBuilder: (context, index) {
-                      final goal =
-                          goals.where((g) => g.isCompleted).toList()[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    goal.goalName,
-                                    style:
-                                        Theme.of(context).textTheme.titleSmall,
-                                  ),
-                                  const Icon(Icons.check_circle,
-                                      color: Colors.green),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Completed: ${_formatDate(goal.completedDate!)}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                        ),
+                      final goal = activeGoals[index];
+                      return _GoalCard(
+                        goal: goal,
+                        onEdit: () => _showAddEditDialog(context, goal),
+                        onDelete: () => _deleteGoal(context, goal),
+                        onAddAmount: () =>
+                            _showAddProgressDialog(context, goal),
+                        currencySymbol: currencySymbol,
                       );
                     },
                   ),
+                  if (goals.where((g) => g.isCompleted).isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Completed Goals',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ],
+                      ),
+                    ),
+                    ListView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: goals.where((g) => g.isCompleted).length,
+                      itemBuilder: (context, index) {
+                        final goal =
+                            goals.where((g) => g.isCompleted).toList()[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => _showGoalDetailsDialog(context, goal),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        goal.goalName,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall,
+                                      ),
+                                      const Icon(Icons.check_circle,
+                                          color: Colors.green),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Completed: ${_formatDate(goal.completedDate!)}',
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: 16),
                 ],
-                const SizedBox(height: 16),
-              ],
+              ),
             ),
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        mini: true,
-        heroTag: 'goal_tracker_fab_add',
-        onPressed: () => _showAddEditDialog(context),
-        tooltip: 'Add Goal',
-        child: const Icon(Icons.add),
+      floatingActionButton: AdaptiveBottomFab(
+        child: FloatingActionButton(
+          mini: true,
+          heroTag: 'goal_tracker_fab_add',
+          onPressed: () => _showAddEditDialog(context),
+          tooltip: 'Add Goal',
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -232,6 +229,7 @@ class _GoalTrackerScreenState extends State<GoalTrackerScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       builder: (context) => AddEditGoalScreen(goal: goal),
     );
   }
@@ -272,6 +270,39 @@ class _GoalTrackerScreenState extends State<GoalTrackerScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  void _showGoalDetailsDialog(BuildContext context, FinancialGoal goal) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(goal.goalName),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Category: ${goal.category}'),
+            const SizedBox(height: 6),
+            Text('Target: ${goal.targetAmount.toStringAsFixed(2)}'),
+            const SizedBox(height: 6),
+            Text('Saved: ${goal.currentAmount.toStringAsFixed(2)}'),
+            const SizedBox(height: 6),
+            if (goal.completedDate != null)
+              Text('Completed: ${_formatDate(goal.completedDate!)}'),
+            if ((goal.description ?? '').isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text('Notes: ${goal.description}'),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -486,7 +517,8 @@ class _AddEditGoalScreenState extends State<AddEditGoalScreen> {
       child: SingleChildScrollView(
         child: Container(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom +
+                effectiveBottomInset(context),
             left: 16,
             right: 16,
             top: 24,
@@ -500,7 +532,7 @@ class _AddEditGoalScreenState extends State<AddEditGoalScreen> {
                 children: [
                   Text(
                     widget.goal != null ? 'Edit Goal' : 'Create Goal',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                     ),

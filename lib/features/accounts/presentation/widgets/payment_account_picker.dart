@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/features/accounts/data/models/payment_account_model.dart';
@@ -41,7 +40,7 @@ class PaymentAccountPicker extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'No payment accounts available. Please add one first.',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 13,
                       color: AppTheme.errorColor,
                     ),
@@ -58,7 +57,7 @@ class PaymentAccountPicker extends StatelessWidget {
             if (label != null) ...[
               Text(
                 label!,
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textColor,
@@ -86,7 +85,7 @@ class PaymentAccountPicker extends StatelessWidget {
                           children: [
                             Text(
                               selectedAccount?.name ?? 'Select Payment Account',
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(fontFamily: 'Poppins', 
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: selectedAccount != null
@@ -98,7 +97,7 @@ class PaymentAccountPicker extends StatelessWidget {
                               const SizedBox(height: 2),
                               Text(
                                 selectedAccount!.typeLabel,
-                                style: GoogleFonts.poppins(
+                                style: TextStyle(fontFamily: 'Poppins', 
                                   fontSize: 12,
                                   color: AppTheme.textSecondaryColor,
                                 ),
@@ -165,6 +164,7 @@ class PaymentAccountPicker extends StatelessWidget {
   void _showAccountPicker(BuildContext context, List<PaymentAccount> accounts) {
     showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -187,7 +187,7 @@ class PaymentAccountPicker extends StatelessWidget {
             ),
             Text(
               'Select Payment Account',
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.textColor,
@@ -241,7 +241,7 @@ class PaymentAccountPicker extends StatelessWidget {
                           Expanded(
                             child: Text(
                               account.name,
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(fontFamily: 'Poppins', 
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: AppTheme.textColor,
@@ -260,7 +260,7 @@ class PaymentAccountPicker extends StatelessWidget {
                               ),
                               child: Text(
                                 'Default',
-                                style: GoogleFonts.poppins(
+                                style: TextStyle(fontFamily: 'Poppins', 
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
                                   color: AppTheme.successColor,
@@ -274,7 +274,7 @@ class PaymentAccountPicker extends StatelessWidget {
                             (account.bankName != null
                                 ? ' • ${account.bankName}'
                                 : ''),
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 12,
                           color: AppTheme.textSecondaryColor,
                         ),

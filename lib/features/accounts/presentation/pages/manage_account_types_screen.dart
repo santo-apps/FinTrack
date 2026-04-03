@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
@@ -38,7 +37,7 @@ class _ManageAccountTypeModelsScreenState
                   const SizedBox(height: 16),
                   Text(
                     'No account types yet',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.textColor,
@@ -47,7 +46,7 @@ class _ManageAccountTypeModelsScreenState
                   const SizedBox(height: 8),
                   Text(
                     'Tap + to add your first account type',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 14,
                       color: AppTheme.textSecondaryColor,
                     ),
@@ -93,13 +92,13 @@ class _ManageAccountTypeModelsScreenState
                     child: Center(
                       child: Text(
                         type.icon ?? '💳',
-                        style: GoogleFonts.poppins(fontSize: 24),
+                        style: TextStyle(fontFamily: 'Poppins', fontSize: 24),
                       ),
                     ),
                   ),
                   title: Text(
                     type.name,
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.textColor,
@@ -127,11 +126,13 @@ class _ManageAccountTypeModelsScreenState
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        mini: true,
-        heroTag: 'manage_account_types_fab',
-        onPressed: () => _showAddEditDialog(),
-        child: const Icon(Icons.add),
+      floatingActionButton: AdaptiveBottomFab(
+        child: FloatingActionButton(
+          mini: true,
+          heroTag: 'manage_account_types_fab',
+          onPressed: () => _showAddEditDialog(),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -169,7 +170,7 @@ class _ManageAccountTypeModelsScreenState
         builder: (context, setState) => AlertDialog(
           title: Text(
             isEdit ? 'Edit Account Type' : 'Add Account Type',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -186,7 +187,7 @@ class _ManageAccountTypeModelsScreenState
                 const SizedBox(height: 20),
                 Text(
                   'Icon',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -220,7 +221,7 @@ class _ManageAccountTypeModelsScreenState
                         ),
                         child: Center(
                           child: Text(emoji,
-                              style: GoogleFonts.poppins(fontSize: 24)),
+                              style: TextStyle(fontFamily: 'Poppins', fontSize: 24)),
                         ),
                       ),
                     );
@@ -229,7 +230,7 @@ class _ManageAccountTypeModelsScreenState
                 const SizedBox(height: 20),
                 Text(
                   'Color',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -334,11 +335,11 @@ class _ManageAccountTypeModelsScreenState
       builder: (context) => AlertDialog(
         title: Text(
           'Delete Account Type',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
         ),
         content: Text(
           'Are you sure you want to delete "${type.name}"?',
-          style: GoogleFonts.poppins(),
+          style: TextStyle(fontFamily: 'Poppins', ),
         ),
         actions: [
           TextButton(

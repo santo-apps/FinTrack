@@ -116,8 +116,12 @@ class _SettingsNavigationScreenState extends State<SettingsNavigationScreen>
                   children: [
                     // Bottom Navigation Tab
                     ListView(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                      padding: EdgeInsets.fromLTRB(
+                        16,
+                        12,
+                        16,
+                        contentBottomPadding(context, hasFab: false),
+                      ),
                       children: [
                         _buildTabHeader(
                           context,
@@ -201,8 +205,12 @@ class _SettingsNavigationScreenState extends State<SettingsNavigationScreen>
                     ),
                     // Home FAB Tab
                     ListView(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                      padding: EdgeInsets.fromLTRB(
+                        16,
+                        12,
+                        16,
+                        contentBottomPadding(context, hasFab: false),
+                      ),
                       children: [
                         _buildTabHeader(
                           context,

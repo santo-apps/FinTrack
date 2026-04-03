@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
+import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
 import 'package:fintrack/features/investment/presentation/providers/investment_provider.dart';
 import 'package:fintrack/features/loan/presentation/providers/loan_provider.dart';
@@ -36,8 +36,8 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Net Worth Breakdown'),
+      appBar: const CustomAppBar(
+        title: 'Net Worth Breakdown',
       ),
       body: Consumer4<PaymentAccountProvider, InvestmentProvider, LoanProvider,
           SettingsProvider>(
@@ -75,7 +75,12 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
               : 0.0;
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              12,
+              16,
+              contentBottomPadding(context, hasFab: false),
+            ),
             children: [
               Card(
                 elevation: 3,
@@ -90,7 +95,8 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                     children: [
                       Text(
                         'Net Worth',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: colorScheme.onSurfaceVariant,
@@ -108,7 +114,8 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                                   totalNetWorth,
                                   currencySymbol: currencySymbol,
                                 ),
-                                style: GoogleFonts.poppins(
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
                                   fontSize: 26,
                                   fontWeight: FontWeight.w800,
                                   color: isNegative
@@ -207,7 +214,8 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                     initiallyExpanded: false,
                     title: Text(
                       'Assets',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
@@ -217,7 +225,8 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                         totalAssets,
                         currencySymbol: currencySymbol,
                       ),
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Colors.green.shade700,
@@ -231,7 +240,8 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                           children: [
                             Text(
                               'Accounts',
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 color: colorScheme.onSurfaceVariant,
@@ -256,7 +266,8 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                             const SizedBox(height: 10),
                             Text(
                               'Investments',
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 color: colorScheme.onSurfaceVariant,
@@ -307,7 +318,8 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                     initiallyExpanded: false,
                     title: Text(
                       'Loans',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
@@ -317,7 +329,8 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                         totalLoans,
                         currencySymbol: currencySymbol,
                       ),
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Colors.red.shade700,
@@ -392,7 +405,8 @@ class _MetricBox extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -412,7 +426,8 @@ class _MetricBox extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   value,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: color,
@@ -457,7 +472,8 @@ class _SectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: GoogleFonts.poppins(
+            style: TextStyle(
+              fontFamily: 'Poppins',
               fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
@@ -465,7 +481,8 @@ class _SectionHeader extends StatelessWidget {
         ),
         Text(
           total,
-          style: GoogleFonts.poppins(
+          style: TextStyle(
+            fontFamily: 'Poppins',
             fontSize: 13,
             fontWeight: FontWeight.w700,
             color: totalColor,
@@ -508,7 +525,8 @@ class _DataRowItem extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -518,7 +536,8 @@ class _DataRowItem extends StatelessWidget {
                   subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 11,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -529,7 +548,8 @@ class _DataRowItem extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             value,
-            style: GoogleFonts.poppins(
+            style: TextStyle(
+              fontFamily: 'Poppins',
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: valueColor,
@@ -557,7 +577,8 @@ class _EmptySection extends StatelessWidget {
       ),
       child: Text(
         message,
-        style: GoogleFonts.poppins(
+        style: TextStyle(
+          fontFamily: 'Poppins',
           fontSize: 12,
           color: Colors.grey.shade700,
         ),

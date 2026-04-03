@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
 import 'package:fintrack/features/accounts/presentation/pages/account_list_screen.dart';
@@ -8,6 +7,7 @@ import 'package:fintrack/features/investment/data/models/investment_model.dart';
 import 'package:fintrack/features/investment/presentation/pages/investment_portfolio_screen.dart';
 import 'package:fintrack/features/investment/presentation/providers/investment_provider.dart';
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
+import 'package:fintrack/core/utils/custom_widgets.dart';
 
 class AssetBreakdownScreen extends StatefulWidget {
   const AssetBreakdownScreen({super.key});
@@ -28,8 +28,8 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Asset Breakdown'),
+      appBar: const CustomAppBar(
+        title: 'Asset Breakdown',
       ),
       body: Consumer3<PaymentAccountProvider, InvestmentProvider,
           SettingsProvider>(
@@ -56,7 +56,12 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
               totalAssets > 0 ? (investmentTotal / totalAssets) : 0.0;
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              12,
+              16,
+              contentBottomPadding(context, hasFab: false),
+            ),
             children: [
               Card(
                 elevation: 3,
@@ -70,7 +75,8 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
                     children: [
                       Text(
                         'Total Assets',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: colorScheme.onSurfaceVariant,
@@ -82,7 +88,8 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
                           totalAssets,
                           currencySymbol: currencySymbol,
                         ),
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
                           fontSize: 26,
                           fontWeight: FontWeight.w800,
                           color: colorScheme.primary,
@@ -161,7 +168,8 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
               LayoutBuilder(
                 builder: (context, constraints) {
                   final isCompact = constraints.maxWidth < 420;
-                  final buttonTextStyle = GoogleFonts.poppins(
+                  final buttonTextStyle = TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: isCompact ? 11 : 13,
                     fontWeight: FontWeight.w600,
                   );
@@ -267,7 +275,8 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
                     initiallyExpanded: false,
                     title: Text(
                       'Accounts',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
@@ -277,7 +286,8 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
                         accountTotal,
                         currencySymbol: currencySymbol,
                       ),
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Colors.green.shade700,
@@ -323,7 +333,8 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
                     initiallyExpanded: false,
                     title: Text(
                       'Investments',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
@@ -333,7 +344,8 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
                         investmentTotal,
                         currencySymbol: currencySymbol,
                       ),
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: colorScheme.primary,
@@ -416,7 +428,8 @@ class _SummaryMetric extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -436,7 +449,8 @@ class _SummaryMetric extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   value,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: color,
@@ -481,7 +495,8 @@ class _SectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: GoogleFonts.poppins(
+            style: TextStyle(
+              fontFamily: 'Poppins',
               fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
@@ -489,7 +504,8 @@ class _SectionHeader extends StatelessWidget {
         ),
         Text(
           total,
-          style: GoogleFonts.poppins(
+          style: TextStyle(
+            fontFamily: 'Poppins',
             fontSize: 13,
             fontWeight: FontWeight.w700,
             color: totalColor,
@@ -532,7 +548,8 @@ class _DataRowItem extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -542,7 +559,8 @@ class _DataRowItem extends StatelessWidget {
                   subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 11,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -553,7 +571,8 @@ class _DataRowItem extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             value,
-            style: GoogleFonts.poppins(
+            style: TextStyle(
+              fontFamily: 'Poppins',
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: valueColor,
@@ -581,7 +600,8 @@ class _EmptySection extends StatelessWidget {
       ),
       child: Text(
         message,
-        style: GoogleFonts.poppins(
+        style: TextStyle(
+          fontFamily: 'Poppins',
           fontSize: 12,
           color: Colors.grey.shade700,
         ),

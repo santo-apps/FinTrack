@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 import 'package:collection/collection.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
@@ -55,14 +54,9 @@ class _BillListScreenState extends State<BillListScreen> {
       length: 3,
       child: Scaffold(
         appBar: widget.showAppBar
-            ? AppBar(
-                title: const Text('Bill Reminders'),
-                leading: widget.showBackButton
-                    ? IconButton(
-                        icon: const Icon(Icons.arrow_back),
-                        onPressed: () => Navigator.pop(context),
-                      )
-                    : null,
+            ? CustomAppBar(
+                title: 'Bill Reminders',
+                showBackButton: widget.showBackButton,
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.add),
@@ -103,7 +97,8 @@ class _BillListScreenState extends State<BillListScreen> {
                       ),
                       child: Text(
                         _formatMonth(_selectedMonth),
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: Theme.of(context).colorScheme.onSurface,
@@ -131,11 +126,13 @@ class _BillListScreenState extends State<BillListScreen> {
                 indicatorColor: Theme.of(context).colorScheme.primary,
                 indicatorWeight: 3,
                 labelPadding: const EdgeInsets.symmetric(horizontal: 12.0),
-                labelStyle: GoogleFonts.poppins(
+                labelStyle: TextStyle(
+                  fontFamily: 'Poppins',
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                 ),
-                unselectedLabelStyle: GoogleFonts.poppins(
+                unselectedLabelStyle: TextStyle(
+                  fontFamily: 'Poppins',
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                 ),
@@ -175,12 +172,14 @@ class _BillListScreenState extends State<BillListScreen> {
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton(
-          mini: true,
-          heroTag: 'bill_list_fab_add',
-          onPressed: () => _showAddManualBillDialog(context),
-          tooltip: 'Add Manual Bill',
-          child: const Icon(Icons.add),
+        floatingActionButton: AdaptiveBottomFab(
+          child: FloatingActionButton(
+            mini: true,
+            heroTag: 'bill_list_fab_add',
+            onPressed: () => _showAddManualBillDialog(context),
+            tooltip: 'Add Manual Bill',
+            child: const Icon(Icons.add),
+          ),
         ),
       ),
     );
@@ -203,7 +202,12 @@ class _BillListScreenState extends State<BillListScreen> {
         await Provider.of<BillProvider>(context, listen: false).refreshData();
       },
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          contentBottomPadding(context),
+        ),
         itemCount: reminders.length,
         itemBuilder: (context, index) {
           return _buildReminderCard(reminders[index]);
@@ -226,7 +230,8 @@ class _BillListScreenState extends State<BillListScreen> {
             ),
             const SizedBox(height: 16),
             Text(emptyMessage,
-                style: GoogleFonts.poppins(
+                style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 16,
                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
@@ -239,7 +244,12 @@ class _BillListScreenState extends State<BillListScreen> {
         await Provider.of<BillProvider>(context, listen: false).refreshData();
       },
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          contentBottomPadding(context),
+        ),
         itemCount: reminders.length + 1, // +1 for summary section
         itemBuilder: (context, index) {
           if (index == 0) {
@@ -284,7 +294,8 @@ class _BillListScreenState extends State<BillListScreen> {
           children: [
             Text(
               'Summary',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.onSurface,
@@ -296,7 +307,8 @@ class _BillListScreenState extends State<BillListScreen> {
               children: [
                 Text(
                   'Total Amount',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurface,
@@ -304,7 +316,8 @@ class _BillListScreenState extends State<BillListScreen> {
                 ),
                 Text(
                   '$currency ${grandTotal.toStringAsFixed(2)}',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.primaryColor,
@@ -382,7 +395,8 @@ class _BillListScreenState extends State<BillListScreen> {
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: Theme.of(context).colorScheme.onSurface,
@@ -390,7 +404,8 @@ class _BillListScreenState extends State<BillListScreen> {
                 ),
                 Text(
                   '$count item${count > 1 ? "s" : ""}',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -400,7 +415,8 @@ class _BillListScreenState extends State<BillListScreen> {
           ),
           Text(
             '$currency ${amount.toStringAsFixed(2)}',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
+              fontFamily: 'Poppins',
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: color,
@@ -459,7 +475,8 @@ class _BillListScreenState extends State<BillListScreen> {
                       children: [
                         Text(
                           reminder.name,
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: Theme.of(context).colorScheme.onSurface,
@@ -468,7 +485,8 @@ class _BillListScreenState extends State<BillListScreen> {
                         const SizedBox(height: 4),
                         Text(
                           reminder.getTypeLabel(),
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
                             fontSize: 12,
                             color:
                                 Theme.of(context).colorScheme.onSurfaceVariant,
@@ -490,7 +508,8 @@ class _BillListScreenState extends State<BillListScreen> {
                     ),
                     child: Text(
                       reminder.getStatusLabel(),
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: isPaid
@@ -509,7 +528,8 @@ class _BillListScreenState extends State<BillListScreen> {
                 children: [
                   Text(
                     '${reminder.currency} ${reminder.amount.toStringAsFixed(2)}',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.primaryColor,
@@ -520,7 +540,8 @@ class _BillListScreenState extends State<BillListScreen> {
                     children: [
                       Text(
                         _formatDate(reminder.dueDate),
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
                           fontSize: 14,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -528,7 +549,8 @@ class _BillListScreenState extends State<BillListScreen> {
                       if (isPending && daysUntilDue >= 0)
                         Text(
                           dueStatusText,
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                             color: daysUntilDue == 0
@@ -617,7 +639,9 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Please add an account first',
-            style: GoogleFonts.poppins(),
+            style: TextStyle(
+              fontFamily: 'Poppins',
+            ),
           ),
           backgroundColor: AppTheme.errorColor,
         ),
@@ -632,7 +656,9 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Account mapping is not stored for this reminder type. Use Delete to move it back to Pending and mark as paid again.',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
           ),
         );
@@ -643,6 +669,7 @@ class _BillListScreenState extends State<BillListScreen> {
     String? selectedAccountId;
     await showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -656,7 +683,8 @@ class _BillListScreenState extends State<BillListScreen> {
               children: [
                 Text(
                   'Update Bank Account',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -672,7 +700,9 @@ class _BillListScreenState extends State<BillListScreen> {
                             width: 250,
                             child: Text(
                               '${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})',
-                              style: GoogleFonts.poppins(),
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -692,7 +722,7 @@ class _BillListScreenState extends State<BillListScreen> {
                   ),
                   hint: Text(
                     'Select account',
-                    style: GoogleFonts.poppins(fontSize: 13),
+                    style: TextStyle(fontFamily: 'Poppins', fontSize: 13),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -735,7 +765,9 @@ class _BillListScreenState extends State<BillListScreen> {
                               SnackBar(
                                 content: Text(
                                   'Bank account updated',
-                                  style: GoogleFonts.poppins(),
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                  ),
                                 ),
                               ),
                             );
@@ -747,7 +779,8 @@ class _BillListScreenState extends State<BillListScreen> {
                   ),
                   child: Text(
                     'Save Changes',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
@@ -769,16 +802,22 @@ class _BillListScreenState extends State<BillListScreen> {
           builder: (context) => AlertDialog(
             title: Text(
               'Delete Completed Entry?',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+              style:
+                  TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
             ),
             content: Text(
               'This will move the entry back to Pending to avoid accidental updates.',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: Text('Cancel', style: GoogleFonts.poppins()),
+                child: Text('Cancel',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                    )),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
@@ -787,7 +826,8 @@ class _BillListScreenState extends State<BillListScreen> {
                 ),
                 child: Text(
                   'Delete',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                   ),
@@ -859,7 +899,9 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Entry moved to pending',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
           ),
         );
@@ -870,7 +912,9 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Unable to update entry: $e',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
             backgroundColor: AppTheme.errorColor,
           ),
@@ -887,7 +931,7 @@ class _BillListScreenState extends State<BillListScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'Move Credit Card to Pending',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -895,7 +939,9 @@ class _BillListScreenState extends State<BillListScreen> {
           children: [
             Text(
               'Enter the outstanding amount to reopen this credit card bill.',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -914,7 +960,10 @@ class _BillListScreenState extends State<BillListScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: GoogleFonts.poppins()),
+            child: Text('Cancel',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                )),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -924,7 +973,9 @@ class _BillListScreenState extends State<BillListScreen> {
                   SnackBar(
                     content: Text(
                       'Please enter a valid amount',
-                      style: GoogleFonts.poppins(),
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                      ),
                     ),
                     backgroundColor: AppTheme.errorColor,
                   ),
@@ -950,7 +1001,9 @@ class _BillListScreenState extends State<BillListScreen> {
                   SnackBar(
                     content: Text(
                       'Entry moved to pending',
-                      style: GoogleFonts.poppins(),
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                      ),
                     ),
                   ),
                 );
@@ -961,7 +1014,8 @@ class _BillListScreenState extends State<BillListScreen> {
             ),
             child: Text(
               'Save',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'Poppins',
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
               ),
@@ -996,7 +1050,9 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Please add an account first',
-            style: GoogleFonts.poppins(),
+            style: TextStyle(
+              fontFamily: 'Poppins',
+            ),
           ),
           backgroundColor: AppTheme.errorColor,
         ),
@@ -1012,6 +1068,7 @@ class _BillListScreenState extends State<BillListScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1023,7 +1080,8 @@ class _BillListScreenState extends State<BillListScreen> {
 
           return Padding(
             padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
+              bottom: MediaQuery.of(context).viewInsets.bottom +
+                  effectiveBottomInset(context),
               left: 16,
               right: 16,
               top: 16,
@@ -1038,7 +1096,8 @@ class _BillListScreenState extends State<BillListScreen> {
                     children: [
                       Text(
                         'Mark Bill as Paid',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1054,7 +1113,8 @@ class _BillListScreenState extends State<BillListScreen> {
                   const Divider(height: 24),
                   Text(
                     'Select Account Type:',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -1065,7 +1125,10 @@ class _BillListScreenState extends State<BillListScreen> {
                     items: accountTypes
                         .map((type) => DropdownMenuItem(
                               value: type,
-                              child: Text(type, style: GoogleFonts.poppins()),
+                              child: Text(type,
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                  )),
                             ))
                         .toList(),
                     onChanged: (value) {
@@ -1084,7 +1147,8 @@ class _BillListScreenState extends State<BillListScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'Select Account:',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -1100,8 +1164,10 @@ class _BillListScreenState extends State<BillListScreen> {
                       ),
                       child: Text(
                         'No accounts found',
-                        style: GoogleFonts.poppins(
-                            color: Colors.grey, fontSize: 13),
+                        style: TextStyle(
+                            fontFamily: 'Poppins',
+                            color: Colors.grey,
+                            fontSize: 13),
                       ),
                     )
                   else
@@ -1112,7 +1178,9 @@ class _BillListScreenState extends State<BillListScreen> {
                                 value: account.id,
                                 child: Text(
                                   '${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})',
-                                  style: GoogleFonts.poppins(),
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                  ),
                                 ),
                               ))
                           .toList(),
@@ -1128,7 +1196,8 @@ class _BillListScreenState extends State<BillListScreen> {
                             horizontal: 12, vertical: 8),
                       ),
                       hint: Text('Choose account',
-                          style: GoogleFonts.poppins(fontSize: 13)),
+                          style:
+                              TextStyle(fontFamily: 'Poppins', fontSize: 13)),
                     ),
                   const SizedBox(height: 24),
                   Row(
@@ -1139,7 +1208,10 @@ class _BillListScreenState extends State<BillListScreen> {
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: Text('Cancel', style: GoogleFonts.poppins()),
+                          child: Text('Cancel',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                              )),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1162,7 +1234,8 @@ class _BillListScreenState extends State<BillListScreen> {
                           ),
                           child: Text(
                             'Confirm Payment',
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1230,7 +1303,9 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Bill marked as paid',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
             action: SnackBarAction(
               label: 'Undo',
@@ -1247,7 +1322,10 @@ class _BillListScreenState extends State<BillListScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e', style: GoogleFonts.poppins()),
+            content: Text('Error: $e',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                )),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -1287,7 +1365,9 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Bill payment reverted',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
           ),
         );
@@ -1298,7 +1378,9 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Error reverting payment: $e',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
             backgroundColor: AppTheme.errorColor,
           ),
@@ -1315,7 +1397,9 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Please add an account first',
-            style: GoogleFonts.poppins(),
+            style: TextStyle(
+              fontFamily: 'Poppins',
+            ),
           ),
           backgroundColor: AppTheme.errorColor,
         ),
@@ -1331,6 +1415,7 @@ class _BillListScreenState extends State<BillListScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1342,7 +1427,8 @@ class _BillListScreenState extends State<BillListScreen> {
 
           return Padding(
             padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
+              bottom: MediaQuery.of(context).viewInsets.bottom +
+                  effectiveBottomInset(context),
               left: 16,
               right: 16,
               top: 16,
@@ -1357,7 +1443,8 @@ class _BillListScreenState extends State<BillListScreen> {
                     children: [
                       Text(
                         'Record Loan EMI Payment',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1373,7 +1460,8 @@ class _BillListScreenState extends State<BillListScreen> {
                   const Divider(height: 24),
                   Text(
                     'Select Account Type:',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -1384,7 +1472,10 @@ class _BillListScreenState extends State<BillListScreen> {
                     items: accountTypes
                         .map((type) => DropdownMenuItem(
                               value: type,
-                              child: Text(type, style: GoogleFonts.poppins()),
+                              child: Text(type,
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                  )),
                             ))
                         .toList(),
                     onChanged: (value) {
@@ -1403,7 +1494,8 @@ class _BillListScreenState extends State<BillListScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'Select Account:',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -1419,8 +1511,10 @@ class _BillListScreenState extends State<BillListScreen> {
                       ),
                       child: Text(
                         'No accounts found',
-                        style: GoogleFonts.poppins(
-                            color: Colors.grey, fontSize: 13),
+                        style: TextStyle(
+                            fontFamily: 'Poppins',
+                            color: Colors.grey,
+                            fontSize: 13),
                       ),
                     )
                   else
@@ -1431,7 +1525,9 @@ class _BillListScreenState extends State<BillListScreen> {
                                 value: account.id,
                                 child: Text(
                                   '${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})',
-                                  style: GoogleFonts.poppins(),
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                  ),
                                 ),
                               ))
                           .toList(),
@@ -1447,7 +1543,8 @@ class _BillListScreenState extends State<BillListScreen> {
                             horizontal: 12, vertical: 8),
                       ),
                       hint: Text('Choose account',
-                          style: GoogleFonts.poppins(fontSize: 13)),
+                          style:
+                              TextStyle(fontFamily: 'Poppins', fontSize: 13)),
                     ),
                   const SizedBox(height: 24),
                   Row(
@@ -1458,7 +1555,10 @@ class _BillListScreenState extends State<BillListScreen> {
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: Text('Cancel', style: GoogleFonts.poppins()),
+                          child: Text('Cancel',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                              )),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1481,7 +1581,8 @@ class _BillListScreenState extends State<BillListScreen> {
                           ),
                           child: Text(
                             'Confirm Payment',
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1546,7 +1647,9 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Loan EMI payment recorded',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
             action: SnackBarAction(
               label: 'Undo',
@@ -1563,7 +1666,10 @@ class _BillListScreenState extends State<BillListScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e', style: GoogleFonts.poppins()),
+            content: Text('Error: $e',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                )),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -1606,7 +1712,9 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Loan payment reversed',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
           ),
         );
@@ -1617,7 +1725,9 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Error reversing payment: $e',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
             backgroundColor: AppTheme.errorColor,
           ),
@@ -1634,7 +1744,9 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Please add an account first',
-            style: GoogleFonts.poppins(),
+            style: TextStyle(
+              fontFamily: 'Poppins',
+            ),
           ),
           backgroundColor: AppTheme.errorColor,
         ),
@@ -1650,6 +1762,7 @@ class _BillListScreenState extends State<BillListScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1661,7 +1774,8 @@ class _BillListScreenState extends State<BillListScreen> {
 
           return Padding(
             padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
+              bottom: MediaQuery.of(context).viewInsets.bottom +
+                  effectiveBottomInset(context),
               left: 16,
               right: 16,
               top: 16,
@@ -1676,7 +1790,8 @@ class _BillListScreenState extends State<BillListScreen> {
                     children: [
                       Text(
                         'Pay Credit Card Bill',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1698,7 +1813,8 @@ class _BillListScreenState extends State<BillListScreen> {
                     ),
                     child: Text(
                       'Amount: ${reminder.currency} ${reminder.amount.toStringAsFixed(2)}',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.primaryColor,
@@ -1708,7 +1824,8 @@ class _BillListScreenState extends State<BillListScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'Select Account Type:',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -1719,7 +1836,10 @@ class _BillListScreenState extends State<BillListScreen> {
                     items: accountTypes
                         .map((type) => DropdownMenuItem(
                               value: type,
-                              child: Text(type, style: GoogleFonts.poppins()),
+                              child: Text(type,
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                  )),
                             ))
                         .toList(),
                     onChanged: (value) {
@@ -1738,7 +1858,8 @@ class _BillListScreenState extends State<BillListScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'Select Account:',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -1754,8 +1875,10 @@ class _BillListScreenState extends State<BillListScreen> {
                       ),
                       child: Text(
                         'No accounts found',
-                        style: GoogleFonts.poppins(
-                            color: Colors.grey, fontSize: 13),
+                        style: TextStyle(
+                            fontFamily: 'Poppins',
+                            color: Colors.grey,
+                            fontSize: 13),
                       ),
                     )
                   else
@@ -1766,7 +1889,9 @@ class _BillListScreenState extends State<BillListScreen> {
                                 value: account.id,
                                 child: Text(
                                   '${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})',
-                                  style: GoogleFonts.poppins(),
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                  ),
                                 ),
                               ))
                           .toList(),
@@ -1782,7 +1907,8 @@ class _BillListScreenState extends State<BillListScreen> {
                             horizontal: 12, vertical: 8),
                       ),
                       hint: Text('Choose account',
-                          style: GoogleFonts.poppins(fontSize: 13)),
+                          style:
+                              TextStyle(fontFamily: 'Poppins', fontSize: 13)),
                     ),
                   const SizedBox(height: 24),
                   Row(
@@ -1793,7 +1919,10 @@ class _BillListScreenState extends State<BillListScreen> {
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: Text('Cancel', style: GoogleFonts.poppins()),
+                          child: Text('Cancel',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                              )),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1816,7 +1945,8 @@ class _BillListScreenState extends State<BillListScreen> {
                           ),
                           child: Text(
                             'Confirm Payment',
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1879,7 +2009,9 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Credit card payment recorded',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
             action: SnackBarAction(
               label: 'Undo',
@@ -1897,7 +2029,10 @@ class _BillListScreenState extends State<BillListScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e', style: GoogleFonts.poppins()),
+            content: Text('Error: $e',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                )),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -1932,7 +2067,9 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Credit card payment reversed',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
           ),
         );
@@ -1943,7 +2080,9 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Error reversing payment: $e',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
             backgroundColor: AppTheme.errorColor,
           ),
@@ -1960,7 +2099,9 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Please add an account first',
-            style: GoogleFonts.poppins(),
+            style: TextStyle(
+              fontFamily: 'Poppins',
+            ),
           ),
           backgroundColor: AppTheme.errorColor,
         ),
@@ -1976,6 +2117,7 @@ class _BillListScreenState extends State<BillListScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1987,7 +2129,8 @@ class _BillListScreenState extends State<BillListScreen> {
 
           return Padding(
             padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
+              bottom: MediaQuery.of(context).viewInsets.bottom +
+                  effectiveBottomInset(context),
               left: 16,
               right: 16,
               top: 16,
@@ -2002,7 +2145,8 @@ class _BillListScreenState extends State<BillListScreen> {
                     children: [
                       Text(
                         'Pay Subscription',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                         ),
@@ -2018,7 +2162,8 @@ class _BillListScreenState extends State<BillListScreen> {
                   const Divider(height: 24),
                   Text(
                     'Select Account Type:',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -2029,7 +2174,10 @@ class _BillListScreenState extends State<BillListScreen> {
                     items: accountTypes
                         .map((type) => DropdownMenuItem(
                               value: type,
-                              child: Text(type, style: GoogleFonts.poppins()),
+                              child: Text(type,
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                  )),
                             ))
                         .toList(),
                     onChanged: (value) {
@@ -2048,7 +2196,8 @@ class _BillListScreenState extends State<BillListScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'Select Account:',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -2064,8 +2213,10 @@ class _BillListScreenState extends State<BillListScreen> {
                       ),
                       child: Text(
                         'No accounts found',
-                        style: GoogleFonts.poppins(
-                            color: Colors.grey, fontSize: 13),
+                        style: TextStyle(
+                            fontFamily: 'Poppins',
+                            color: Colors.grey,
+                            fontSize: 13),
                       ),
                     )
                   else
@@ -2076,7 +2227,9 @@ class _BillListScreenState extends State<BillListScreen> {
                                 value: account.id,
                                 child: Text(
                                   '${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})',
-                                  style: GoogleFonts.poppins(),
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                  ),
                                 ),
                               ))
                           .toList(),
@@ -2092,7 +2245,8 @@ class _BillListScreenState extends State<BillListScreen> {
                             horizontal: 12, vertical: 8),
                       ),
                       hint: Text('Choose account',
-                          style: GoogleFonts.poppins(fontSize: 13)),
+                          style:
+                              TextStyle(fontFamily: 'Poppins', fontSize: 13)),
                     ),
                   const SizedBox(height: 24),
                   Row(
@@ -2103,7 +2257,10 @@ class _BillListScreenState extends State<BillListScreen> {
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: Text('Cancel', style: GoogleFonts.poppins()),
+                          child: Text('Cancel',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                              )),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -2126,7 +2283,8 @@ class _BillListScreenState extends State<BillListScreen> {
                           ),
                           child: Text(
                             'Confirm Payment',
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                             ),
@@ -2195,7 +2353,9 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Subscription payment recorded',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
             action: SnackBarAction(
               label: 'Undo',
@@ -2212,7 +2372,10 @@ class _BillListScreenState extends State<BillListScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e', style: GoogleFonts.poppins()),
+            content: Text('Error: $e',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                )),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -2250,7 +2413,9 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Subscription payment reversed',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
           ),
         );
@@ -2261,7 +2426,9 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Error reversing payment: $e',
-              style: GoogleFonts.poppins(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+              ),
             ),
             backgroundColor: AppTheme.errorColor,
           ),
@@ -2274,6 +2441,7 @@ class _BillListScreenState extends State<BillListScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       builder: (context) => const AddEditBillScreen(bill: null),
     );
   }
@@ -2336,101 +2504,113 @@ class _BillListScreenState extends State<BillListScreen> {
 
     showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
+      builder: (context) => SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              24,
+              24,
+              24,
+              effectiveBottomInset(context) + 24,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        reminder.name,
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const Divider(height: 24),
+                _buildDetailRow('Type', reminder.getTypeLabel()),
+                _buildDetailRow('Amount',
+                    '${reminder.currency} ${reminder.amount.toStringAsFixed(2)}'),
+                _buildDetailRow('Due Date', _formatDate(reminder.dueDate)),
+                _buildDetailRow('Status', reminder.getStatusLabel()),
+                if (reminder.status == BillReminderStatus.completed &&
+                    paymentType == null &&
+                    paymentAccountName == null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline,
+                              size: 20, color: Colors.orange.shade700),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Payment details not available for this transaction',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                color: Colors.orange.shade900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (paymentType != null)
+                  _buildDetailRow('Payment Type', paymentType),
+                if (paymentAccountName != null)
+                  _buildDetailRow('Payment Account', paymentAccountName),
+                if (reminder.notes != null)
+                  _buildDetailRow('Notes', reminder.notes!),
+                if (reminder.lender != null)
+                  _buildDetailRow('Lender', reminder.lender!),
+                if (reminder.accountName != null)
+                  _buildDetailRow('Account', reminder.accountName!),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
                     child: Text(
-                      reminder.name,
-                      style: GoogleFonts.poppins(
-                        fontSize: 20,
+                      'Close',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        color: Colors.white,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-              const Divider(height: 24),
-              _buildDetailRow('Type', reminder.getTypeLabel()),
-              _buildDetailRow('Amount',
-                  '${reminder.currency} ${reminder.amount.toStringAsFixed(2)}'),
-              _buildDetailRow('Due Date', _formatDate(reminder.dueDate)),
-              _buildDetailRow('Status', reminder.getStatusLabel()),
-              if (reminder.status == BillReminderStatus.completed &&
-                  paymentType == null &&
-                  paymentAccountName == null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orange.shade200),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.info_outline,
-                            size: 20, color: Colors.orange.shade700),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Payment details not available for this transaction',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Colors.orange.shade900,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
-              if (paymentType != null)
-                _buildDetailRow('Payment Type', paymentType),
-              if (paymentAccountName != null)
-                _buildDetailRow('Payment Account', paymentAccountName),
-              if (reminder.notes != null)
-                _buildDetailRow('Notes', reminder.notes!),
-              if (reminder.lender != null)
-                _buildDetailRow('Lender', reminder.lender!),
-              if (reminder.accountName != null)
-                _buildDetailRow('Account', reminder.accountName!),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: Text(
-                    'Close',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -2447,14 +2627,18 @@ class _BillListScreenState extends State<BillListScreen> {
             width: 100,
             child: Text(
               '$label:',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'Poppins',
                 fontWeight: FontWeight.w600,
                 color: Colors.grey.shade700,
               ),
             ),
           ),
           Expanded(
-            child: Text(value, style: GoogleFonts.poppins()),
+            child: Text(value,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                )),
           ),
         ],
       ),
@@ -2571,7 +2755,8 @@ class _AddEditBillScreenState extends State<AddEditBillScreen> {
     return Material(
       child: Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
+          bottom: MediaQuery.of(context).viewInsets.bottom +
+              effectiveBottomInset(context),
           left: 16,
           right: 16,
           top: 24,
@@ -2586,7 +2771,8 @@ class _AddEditBillScreenState extends State<AddEditBillScreen> {
                 children: [
                   Text(
                     widget.bill != null ? 'Edit Bill' : 'Add Manual Bill',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                     ),
@@ -2676,7 +2862,8 @@ class _AddEditBillScreenState extends State<AddEditBillScreen> {
                   ),
                   child: Text(
                     widget.bill != null ? 'Update Bill' : 'Add Bill',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),

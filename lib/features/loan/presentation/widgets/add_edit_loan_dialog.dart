@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/features/loan/data/models/loan_model.dart';
 import 'package:fintrack/features/loan/presentation/providers/loan_provider.dart';
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
+import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
 
@@ -158,7 +158,8 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
 
     return Container(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            effectiveBottomInset(context),
       ),
       child: SingleChildScrollView(
         child: Padding(
@@ -175,7 +176,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                   children: [
                     Text(
                       widget.loan == null ? 'Add Loan' : 'Edit Loan',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: AppTheme.textColor,
@@ -330,7 +331,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                     ),
                     child: Text(
                       DateFormat('MMM dd, yyyy').format(_startDate),
-                      style: GoogleFonts.poppins(fontSize: 16),
+                      style: TextStyle(fontFamily: 'Poppins', fontSize: 16),
                     ),
                   ),
                 ),
@@ -435,7 +436,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                             children: [
                               Text(
                                 'Total Repayment',
-                                style: GoogleFonts.poppins(
+                                style: TextStyle(fontFamily: 'Poppins', 
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                   color:
@@ -446,7 +447,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                                 totalRepayment != null
                                     ? '$currencySymbol${totalRepayment.toStringAsFixed(2)}'
                                     : '---',
-                                style: GoogleFonts.poppins(
+                                style: TextStyle(fontFamily: 'Poppins', 
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
                                   color: AppTheme.primaryColor,
@@ -461,7 +462,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                               children: [
                                 Text(
                                   'Total Interest',
-                                  style: GoogleFonts.poppins(
+                                  style: TextStyle(fontFamily: 'Poppins', 
                                     fontSize: 12,
                                     color: Theme.of(context)
                                         .colorScheme
@@ -470,7 +471,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                                 ),
                                 Text(
                                   '$currencySymbol${totalInterest.toStringAsFixed(2)}',
-                                  style: GoogleFonts.poppins(
+                                  style: TextStyle(fontFamily: 'Poppins', 
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.red,
@@ -486,7 +487,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                               children: [
                                 Text(
                                   'End Date',
-                                  style: GoogleFonts.poppins(
+                                  style: TextStyle(fontFamily: 'Poppins', 
                                     fontSize: 12,
                                     color: Theme.of(context)
                                         .colorScheme
@@ -495,7 +496,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                                 ),
                                 Text(
                                   DateFormat('MMM dd, yyyy').format(_endDate!),
-                                  style: GoogleFonts.poppins(
+                                  style: TextStyle(fontFamily: 'Poppins', 
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                     color:
@@ -537,7 +538,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                     ),
                     child: Text(
                       widget.loan == null ? 'Add Loan' : 'Update Loan',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),

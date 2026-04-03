@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AboutAppScreen extends StatelessWidget {
   const AboutAppScreen({super.key});
@@ -17,7 +16,7 @@ class AboutAppScreen extends StatelessWidget {
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 'About FinTrack',
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 24,
                   fontWeight: FontWeight.w600,
                 ),
@@ -67,7 +66,7 @@ class AboutAppScreen extends StatelessWidget {
                   // App Title and Version
                   Text(
                     'FinTrack',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 32,
                       fontWeight: FontWeight.w700,
                       color: Theme.of(context).primaryColor,
@@ -76,7 +75,7 @@ class AboutAppScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     'v1.0.0',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
                       color: Colors.grey[600],
@@ -96,7 +95,7 @@ class AboutAppScreen extends StatelessWidget {
                     ),
                     child: Text(
                       'Your personal finance companion designed to help you manage money, track investments, and achieve financial goals with ease and confidence.',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                         height: 1.6,
@@ -109,7 +108,7 @@ class AboutAppScreen extends StatelessWidget {
                   // Features Section
                   Text(
                     'Features',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).colorScheme.onSurface,
@@ -125,7 +124,7 @@ class AboutAppScreen extends StatelessWidget {
                   // About Section
                   Text(
                     'About This App',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).colorScheme.onSurface,
@@ -169,7 +168,7 @@ class AboutAppScreen extends StatelessWidget {
                       children: [
                         Text(
                           'Support & Feedback',
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: Theme.of(context).colorScheme.onSurface,
@@ -178,7 +177,7 @@ class AboutAppScreen extends StatelessWidget {
                         const SizedBox(height: 12),
                         Text(
                           'We\'d love to hear from you! If you have suggestions or encounter any issues, please reach out to us.',
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 14,
                             fontWeight: FontWeight.w400,
                             height: 1.5,
@@ -194,7 +193,7 @@ class AboutAppScreen extends StatelessWidget {
                   Center(
                     child: Text(
                       '© 2025 FinTrack. All rights reserved.',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
                         color: Colors.grey[500],
@@ -334,7 +333,7 @@ class AboutAppScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurface,
@@ -343,7 +342,7 @@ class AboutAppScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
                     height: 1.4,
@@ -389,7 +388,7 @@ class AboutAppScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurface,
@@ -398,7 +397,7 @@ class AboutAppScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
                     height: 1.4,

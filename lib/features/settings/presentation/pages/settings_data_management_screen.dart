@@ -35,7 +35,12 @@ class _SettingsDataManagementScreenState
         showBackButton: true,
       ),
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          12,
+          16,
+          contentBottomPadding(context, hasFab: false),
+        ),
         children: [
           // Backups Section
           _buildSectionHeader(context, 'Backups', Icons.backup),
@@ -103,7 +108,7 @@ class _SettingsDataManagementScreenState
             isDanger: true,
             onTap: () => _showClearDataDialog(context),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
         ],
       ),
     );

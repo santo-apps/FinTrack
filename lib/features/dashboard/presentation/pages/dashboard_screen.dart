@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
@@ -13,6 +12,7 @@ import 'package:fintrack/features/goals/presentation/pages/goal_tracker_screen.d
 import 'package:fintrack/features/bill/presentation/pages/bill_list_screen.dart';
 import 'package:fintrack/features/investment/presentation/pages/investment_portfolio_screen.dart';
 import 'package:fintrack/features/expense/presentation/pages/expense_list_screen.dart';
+import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
 import 'package:fintrack/features/budget/presentation/providers/budget_provider.dart';
 import 'package:fintrack/features/investment/presentation/providers/investment_provider.dart';
@@ -32,9 +32,11 @@ class DashboardScreen extends StatelessWidget {
       create: (context) => HomeViewModel(
         expenseProvider: Provider.of<ExpenseProvider>(context, listen: false),
         budgetProvider: Provider.of<BudgetProvider>(context, listen: false),
-        investmentProvider: Provider.of<InvestmentProvider>(context, listen: false),
+        investmentProvider:
+            Provider.of<InvestmentProvider>(context, listen: false),
         loanProvider: Provider.of<LoanProvider>(context, listen: false),
-        accountProvider: Provider.of<PaymentAccountProvider>(context, listen: false),
+        accountProvider:
+            Provider.of<PaymentAccountProvider>(context, listen: false),
         goalProvider: Provider.of<GoalProvider>(context, listen: false),
         billProvider: Provider.of<BillProvider>(context, listen: false),
       ),
@@ -47,14 +49,16 @@ class _DashboardScreenContent extends StatefulWidget {
   const _DashboardScreenContent();
 
   @override
-  State<_DashboardScreenContent> createState() => _DashboardScreenContentState();
+  State<_DashboardScreenContent> createState() =>
+      _DashboardScreenContentState();
 }
 
 class _DashboardScreenContentState extends State<_DashboardScreenContent>
     with SingleTickerProviderStateMixin {
   late ScrollController _scrollController;
   late AnimationController _netWorthAnimationController;
-  double _previousNetWorth = -1; // Initialize to -1 to trigger animation on first load
+  double _previousNetWorth =
+      -1; // Initialize to -1 to trigger animation on first load
 
   @override
   void initState() {
@@ -100,8 +104,12 @@ class _DashboardScreenContentState extends State<_DashboardScreenContent>
               return SingleChildScrollView(
                 controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  12,
+                  16,
+                  contentBottomPadding(context),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -122,7 +130,8 @@ class _DashboardScreenContentState extends State<_DashboardScreenContent>
 
                     // 1.5️⃣ Pending Bills Alert Card
                     if (viewModel.pendingBillReminderCount > 0) ...[
-                      _AlertsStrip(pendingBillCount: viewModel.pendingBillReminderCount),
+                      _AlertsStrip(
+                          pendingBillCount: viewModel.pendingBillReminderCount),
                       const SizedBox(height: 16),
                     ],
 
@@ -267,7 +276,7 @@ class _SnapshotCard extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 'Assets',
-                                style: GoogleFonts.poppins(
+                                style: TextStyle(fontFamily: 'Poppins', 
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.grey.shade700,
@@ -288,7 +297,7 @@ class _SnapshotCard extends StatelessWidget {
                             child: Text(
                               AppUtils.formatCurrency(assets,
                                   currencySymbol: currencySymbol),
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(fontFamily: 'Poppins', 
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 color: const Color(0xFF047857),
@@ -346,7 +355,7 @@ class _SnapshotCard extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 'Loans',
-                                style: GoogleFonts.poppins(
+                                style: TextStyle(fontFamily: 'Poppins', 
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.grey.shade700,
@@ -367,7 +376,7 @@ class _SnapshotCard extends StatelessWidget {
                             child: Text(
                               AppUtils.formatCurrency(loans,
                                   currencySymbol: currencySymbol),
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(fontFamily: 'Poppins', 
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 color: const Color(0xFFB45309),
@@ -398,7 +407,8 @@ class _SnapshotCard extends StatelessWidget {
               },
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: BoxDecoration(
                   color: Theme.of(context).brightness == Brightness.dark
                       ? Theme.of(context).colorScheme.surface
@@ -435,7 +445,7 @@ class _SnapshotCard extends StatelessWidget {
                         const SizedBox(width: 6),
                         Text(
                           'Net Worth',
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: Colors.grey.shade700,
@@ -465,7 +475,7 @@ class _SnapshotCard extends StatelessWidget {
                         child: Text(
                           AppUtils.formatCurrency(netWorth,
                               currencySymbol: currencySymbol),
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
                             color: isNegative
@@ -528,7 +538,7 @@ class _CompactMetric extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: TextStyle(fontFamily: 'Poppins', 
             fontSize: 10,
             fontWeight: FontWeight.w500,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -539,7 +549,7 @@ class _CompactMetric extends StatelessWidget {
           fit: BoxFit.scaleDown,
           child: Text(
             value,
-            style: GoogleFonts.poppins(
+            style: TextStyle(fontFamily: 'Poppins', 
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: color,
@@ -599,7 +609,7 @@ class _InvestmentSummaryCard extends StatelessWidget {
                 children: [
                   Text(
                     'Investment Portfolio',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
@@ -615,7 +625,7 @@ class _InvestmentSummaryCard extends StatelessWidget {
                     ),
                     child: Text(
                       '${isPositive ? '+' : ''}${gainLossPercent.toStringAsFixed(1)}%',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: isPositive
@@ -635,7 +645,7 @@ class _InvestmentSummaryCard extends StatelessWidget {
                     children: [
                       Text(
                         'Current Value',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 10,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -644,7 +654,7 @@ class _InvestmentSummaryCard extends StatelessWidget {
                       Text(
                         AppUtils.formatCurrency(portfolioValue,
                             currencySymbol: currencySymbol),
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
@@ -661,7 +671,7 @@ class _InvestmentSummaryCard extends StatelessWidget {
                     children: [
                       Text(
                         'Gain / Loss',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 10,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -670,7 +680,7 @@ class _InvestmentSummaryCard extends StatelessWidget {
                       Text(
                         AppUtils.formatCurrency(gainLoss,
                             currencySymbol: currencySymbol),
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: isPositive
@@ -713,7 +723,7 @@ class _WelcomeBackBanner extends StatelessWidget {
           Expanded(
             child: Text(
               'Welcome back! Let\'s get your finances back on track.',
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: Colors.blue.shade900,
@@ -765,7 +775,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   'No Budget Set',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -774,7 +784,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                 Text(
                   'Create a budget to track your spending',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -854,7 +864,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                       'Monthly Budget',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                       ),
@@ -876,7 +886,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           statusLabel,
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: usageColor,
@@ -894,7 +904,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                 children: [
                   Text(
                     'Spent',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       color: Colors.grey.shade700,
@@ -907,7 +917,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.right,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: usageColor,
@@ -936,7 +946,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                     children: [
                       Text(
                         'You spent',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 10,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -944,7 +954,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                       Text(
                         AppUtils.formatCurrency(spentAmount,
                             currencySymbol: currencySymbol),
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
@@ -961,7 +971,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                     children: [
                       Text(
                         isExceeded ? 'Overspent by' : 'You have left',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 10,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -969,10 +979,12 @@ class _BudgetOverviewCard extends StatelessWidget {
                       Text(
                         AppUtils.formatCurrency(remainingBudget.abs(),
                             currencySymbol: currencySymbol),
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: isExceeded ? Colors.red.shade700 : Colors.green.shade700,
+                          color: isExceeded
+                              ? Colors.red.shade700
+                              : Colors.green.shade700,
                         ),
                       ),
                     ],
@@ -985,7 +997,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   '⚠️ Categories Over Limit',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: Colors.red.shade700,
@@ -998,7 +1010,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                     return Chip(
                       label: Text(
                         cat,
-                        style: GoogleFonts.poppins(fontSize: 10),
+                        style: TextStyle(fontFamily: 'Poppins', fontSize: 10),
                       ),
                       backgroundColor: Colors.red.shade50,
                       side: BorderSide(color: Colors.red.shade200),
@@ -1053,7 +1065,7 @@ class _TopCategoriesCard extends StatelessWidget {
             children: [
               Text(
                 'Top Spending',
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1073,7 +1085,7 @@ class _TopCategoriesCard extends StatelessWidget {
                               cat.category,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(fontFamily: 'Poppins', 
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1083,7 +1095,7 @@ class _TopCategoriesCard extends StatelessWidget {
                           Text(
                             AppUtils.formatCurrency(cat.amount,
                                 currencySymbol: currencySymbol),
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(fontFamily: 'Poppins', 
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: AppTheme.primaryColor,
@@ -1096,7 +1108,8 @@ class _TopCategoriesCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           value: cat.percentage,
-                          backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.surfaceVariant,
                           valueColor: AlwaysStoppedAnimation(
                             cat.percentage > 1.0
                                 ? Colors.red
@@ -1168,7 +1181,7 @@ class _StreakCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   '$streak',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: Theme.of(context).brightness == Brightness.dark
@@ -1185,7 +1198,7 @@ class _StreakCard extends StatelessWidget {
                 children: [
                   Text(
                     'Tracking Streak',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1194,7 +1207,7 @@ class _StreakCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     _getStreakMessage(streak),
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1254,7 +1267,7 @@ class _AlertsStrip extends StatelessWidget {
                   children: [
                     Text(
                       'Pending Bills',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey.shade800,
@@ -1263,7 +1276,7 @@ class _AlertsStrip extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       '$pendingBillCount reminder${pendingBillCount != 1 ? 's' : ''} pending',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: Colors.red.shade600,
@@ -1314,11 +1327,12 @@ class _GoalsSection extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.flag_outlined,
-                        size: 48, color: AppTheme.primaryColor.withOpacity(0.6)),
+                        size: 48,
+                        color: AppTheme.primaryColor.withOpacity(0.6)),
                     const SizedBox(height: 12),
                     Text(
                       'No Goals Set',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1327,7 +1341,7 @@ class _GoalsSection extends StatelessWidget {
                     Text(
                       'Set financial goals to track progress',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 12,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -1383,19 +1397,21 @@ class _GoalsSection extends StatelessWidget {
                     children: [
                       Text(
                         'Financial Goals',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       Icon(Icons.arrow_forward_ios,
-                          size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          size: 16,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
                     ],
                   ),
                   const SizedBox(height: 10),
                   Text(
                     '${activeGoals.length} active goal${activeGoals.length == 1 ? '' : 's'}',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1404,7 +1420,7 @@ class _GoalsSection extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     '${AppUtils.formatCurrency(totalSaved, currencySymbol: settingsProvider.currencySymbol)} saved of ${AppUtils.formatCurrency(totalTarget, currencySymbol: settingsProvider.currencySymbol)}',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -1412,7 +1428,7 @@ class _GoalsSection extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     '$completedGoalsCount completed goal${completedGoalsCount == 1 ? '' : 's'}',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 11,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -1423,7 +1439,8 @@ class _GoalsSection extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: (progressPercent / 100).clamp(0.0, 1.0),
                       minHeight: 8,
-                      backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                      backgroundColor:
+                          Theme.of(context).colorScheme.surfaceVariant,
                       valueColor:
                           AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
                     ),
@@ -1431,7 +1448,7 @@ class _GoalsSection extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     '${progressPercent.toStringAsFixed(1)}% complete',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.primaryColor,

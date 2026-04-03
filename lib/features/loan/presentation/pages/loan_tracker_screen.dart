@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
@@ -45,189 +44,227 @@ class _LoanTrackerScreenState extends State<LoanTrackerScreen> {
               showBackButton: widget.showBackButton,
             )
           : null,
-      body: Consumer2<LoanProvider, SettingsProvider>(
-        builder: (context, loanProvider, settingsProvider, _) {
-          final currencySymbol = settingsProvider.currencySymbol;
-          final activeLoans = loanProvider.activeLoans;
-          final completedLoans = loanProvider.completedLoans;
-          final displayLoans =
-              _showCompletedLoans ? completedLoans : activeLoans;
+      body: SafeArea(
+        top: false,
+        child: Consumer2<LoanProvider, SettingsProvider>(
+          builder: (context, loanProvider, settingsProvider, _) {
+            final currencySymbol = settingsProvider.currencySymbol;
+            final activeLoans = loanProvider.activeLoans;
+            final completedLoans = loanProvider.completedLoans;
+            final displayLoans =
+                _showCompletedLoans ? completedLoans : activeLoans;
 
-          if (loanProvider.loans.isEmpty) {
-            return EmptyStateWidget(
-              icon: Icons.account_balance,
-              title: 'No Loans',
-              description: 'Track your loans and EMI payments here',
-              actionLabel: 'Add Loan',
-              onAction: () => _showAddLoanDialog(context),
-            );
-          }
+            if (loanProvider.loans.isEmpty) {
+              return EmptyStateWidget(
+                icon: Icons.account_balance,
+                title: 'No Loans',
+                description: 'Track your loans and EMI payments here',
+                actionLabel: 'Add Loan',
+                onAction: () => _showAddLoanDialog(context),
+              );
+            }
 
-          final totalOutstanding = loanProvider.getTotalOutstandingAmount();
-          final totalMonthlyEmi = loanProvider.getTotalMonthlyEmi();
+            final totalOutstanding = loanProvider.getTotalOutstandingAmount();
+            final totalMonthlyEmi = loanProvider.getTotalMonthlyEmi();
 
-          return Column(
-            children: [
-              // Summary Card
-              Container(
-                margin: const EdgeInsets.all(12),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppTheme.primaryColor,
-                      AppTheme.accentColor,
+            return Column(
+              children: [
+                // Summary Card
+                Container(
+                  margin: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.primaryColor,
+                        AppTheme.accentColor,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withOpacity(0.25),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
                     ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryColor.withOpacity(0.25),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Outstanding Loan Amount',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white70,
+                  child: Column(
+                    children: [
+                      Text(
+                        'Outstanding Loan Amount',
+                        style: TextStyle(fontFamily: 'Poppins', 
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white70,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      AppUtils.formatCurrency(
-                        totalOutstanding,
-                        currencySymbol: currencySymbol,
+                      const SizedBox(height: 6),
+                      Text(
+                        AppUtils.formatCurrency(
+                          totalOutstanding,
+                          currencySymbol: currencySymbol,
+                        ),
+                        style: TextStyle(fontFamily: 'Poppins', 
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
                       ),
-                      style: GoogleFonts.poppins(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _SummaryItem(
-                          label: 'Monthly EMI',
-                          value: AppUtils.formatCurrency(
-                            totalMonthlyEmi,
-                            currencySymbol: currencySymbol,
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _SummaryItem(
+                            label: 'Monthly EMI',
+                            value: AppUtils.formatCurrency(
+                              totalMonthlyEmi,
+                              currencySymbol: currencySymbol,
+                            ),
                           ),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 32,
-                          color: Colors.white.withOpacity(0.3),
-                        ),
-                        _SummaryItem(
-                          label: 'Active Loans',
-                          value: '${activeLoans.length}',
+                          Container(
+                            width: 1,
+                            height: 32,
+                            color: Colors.white.withOpacity(0.3),
+                          ),
+                          _SummaryItem(
+                            label: 'Active Loans',
+                            value: '${activeLoans.length}',
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Toggle between active and completed
+                if (completedLoans.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: SegmentedButton<bool>(
+                            segments: const [
+                              ButtonSegment<bool>(
+                                value: false,
+                                label: Text('Active'),
+                                icon: Icon(Icons.pending_actions, size: 16),
+                              ),
+                              ButtonSegment<bool>(
+                                value: true,
+                                label: Text('Completed'),
+                                icon: Icon(Icons.check_circle, size: 16),
+                              ),
+                            ],
+                            selected: {_showCompletedLoans},
+                            style: ButtonStyle(
+                              side: WidgetStatePropertyAll(
+                                BorderSide(
+                                  color: Colors.transparent,
+                                ),
+                              ),
+                              textStyle: WidgetStatePropertyAll(
+                                TextStyle(fontFamily: 'Poppins', 
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              foregroundColor:
+                                  WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) {
+                                  return Colors.white;
+                                }
+                                return Theme.of(context).colorScheme.onSurface;
+                              }),
+                              backgroundColor:
+                                  WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) {
+                                  return AppTheme.primaryColor
+                                      .withOpacity(0.75);
+                                }
+                                return Theme.of(context).colorScheme.surface;
+                              }),
+                            ),
+                            onSelectionChanged: (Set<bool> selected) {
+                              setState(() {
+                                _showCompletedLoans = selected.first;
+                              });
+                            },
+                          ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-
-              // Toggle between active and completed
-              if (completedLoans.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: SegmentedButton<bool>(
-                          segments: const [
-                            ButtonSegment<bool>(
-                              value: false,
-                              label: Text('Active'),
-                              icon: Icon(Icons.pending_actions, size: 16),
-                            ),
-                            ButtonSegment<bool>(
-                              value: true,
-                              label: Text('Completed'),
-                              icon: Icon(Icons.check_circle, size: 16),
-                            ),
-                          ],
-                          selected: {_showCompletedLoans},
-                          onSelectionChanged: (Set<bool> selected) {
-                            setState(() {
-                              _showCompletedLoans = selected.first;
-                            });
-                          },
-                        ),
-                      ),
-                    ],
                   ),
-                ),
 
-              const SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-              // Loan List
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () async => loanProvider.initLoans(),
-                  child: displayLoans.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                _showCompletedLoans
-                                    ? Icons.check_circle_outline
-                                    : Icons.pending_actions_outlined,
-                                size: 64,
-                                color: Colors.grey,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                _showCompletedLoans
-                                    ? 'No completed loans'
-                                    : 'No active loans',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
+                // Loan List
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () async => loanProvider.initLoans(),
+                    child: displayLoans.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  _showCompletedLoans
+                                      ? Icons.check_circle_outline
+                                      : Icons.pending_actions_outlined,
+                                  size: 64,
                                   color: Colors.grey,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 16),
+                                Text(
+                                  _showCompletedLoans
+                                      ? 'No completed loans'
+                                      : 'No active loans',
+                                  style: TextStyle(fontFamily: 'Poppins', 
+                                    fontSize: 16,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: EdgeInsets.fromLTRB(
+                              12,
+                              0,
+                              12,
+                              contentBottomPadding(context),
+                            ),
+                            itemCount: displayLoans.length,
+                            itemBuilder: (context, index) {
+                              final loan = displayLoans[index];
+                              return _LoanCard(
+                                loan: loan,
+                                currencySymbol: currencySymbol,
+                                onTap: () => _showLoanDetails(context, loan),
+                                onEdit: () => _showAddLoanDialog(context, loan),
+                                onDelete: () => _deleteLoan(context, loan),
+                                onPayment: () =>
+                                    _showPaymentDialog(context, loan),
+                              );
+                            },
                           ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          itemCount: displayLoans.length,
-                          itemBuilder: (context, index) {
-                            final loan = displayLoans[index];
-                            return _LoanCard(
-                              loan: loan,
-                              currencySymbol: currencySymbol,
-                              onTap: () => _showLoanDetails(context, loan),
-                              onEdit: () => _showAddLoanDialog(context, loan),
-                              onDelete: () => _deleteLoan(context, loan),
-                              onPayment: () =>
-                                  _showPaymentDialog(context, loan),
-                            );
-                          },
-                        ),
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        mini: true,
-        heroTag: 'loan_tracker_fab_add',
-        onPressed: () => _showAddLoanDialog(context),
-        child: const Icon(Icons.add),
+      floatingActionButton: AdaptiveBottomFab(
+        child: FloatingActionButton(
+          mini: true,
+          heroTag: 'loan_tracker_fab_add',
+          onPressed: () => _showAddLoanDialog(context),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -236,6 +273,7 @@ class _LoanTrackerScreenState extends State<LoanTrackerScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
@@ -308,8 +346,8 @@ class _SummaryItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
-            fontSize: 10,
+          style: TextStyle(fontFamily: 'Poppins', 
+            fontSize: 11,
             color: Colors.white70,
             fontWeight: FontWeight.w500,
           ),
@@ -317,8 +355,8 @@ class _SummaryItem extends StatelessWidget {
         const SizedBox(height: 3),
         Text(
           value,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
+          style: TextStyle(fontFamily: 'Poppins', 
+            fontSize: 16,
             fontWeight: FontWeight.w700,
             color: Colors.white,
           ),
@@ -362,12 +400,12 @@ class _LoanCardState extends State<_LoanCard> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      elevation: 2,
+      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -397,8 +435,8 @@ class _LoanCardState extends State<_LoanCard> {
                           children: [
                             Text(
                               loan.lender,
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
+                              style: TextStyle(fontFamily: 'Poppins', 
+                                fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Theme.of(context).colorScheme.onSurface,
                               ),
@@ -407,8 +445,8 @@ class _LoanCardState extends State<_LoanCard> {
                             ),
                             Text(
                               '${loan.interestRate.toStringAsFixed(2)}% interest',
-                              style: GoogleFonts.poppins(
-                                fontSize: 10,
+                              style: TextStyle(fontFamily: 'Poppins', 
+                                fontSize: 12,
                                 color: Theme.of(context)
                                     .colorScheme
                                     .onSurfaceVariant,
@@ -518,7 +556,7 @@ class _LoanCardState extends State<_LoanCard> {
                   children: [
                     Text(
                       'Monthly EMI',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -529,7 +567,7 @@ class _LoanCardState extends State<_LoanCard> {
                         loan.monthlyEmi,
                         currencySymbol: currencySymbol,
                       ),
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppTheme.successColor,
@@ -616,14 +654,14 @@ class _LoanCardState extends State<_LoanCard> {
                     children: [
                       Text(
                         'Repayment Progress',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 10,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       Text(
                         '${(progress * 100).toStringAsFixed(1)}%',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.primaryColor,
@@ -707,8 +745,8 @@ class _DetailItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
-            fontSize: 9,
+          style: TextStyle(fontFamily: 'Poppins', 
+            fontSize: 11,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w500,
           ),
@@ -716,8 +754,8 @@ class _DetailItem extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           value,
-          style: GoogleFonts.poppins(
-            fontSize: 11,
+          style: TextStyle(fontFamily: 'Poppins', 
+            fontSize: 14,
             fontWeight: FontWeight.w600,
             color: valueColor ?? Theme.of(context).colorScheme.onSurface,
           ),

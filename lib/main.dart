@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'database/hive_service.dart';
@@ -22,12 +23,19 @@ import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   // Lock app to portrait orientation only
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+
+  // Keep system bars visible to avoid OEM gesture/nav overlap on some devices.
+  await SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.manual,
+    overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],
+  );
 
   // Ignore FlutterError for Google Fonts network issues
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -112,6 +120,34 @@ class FinTrack extends StatelessWidget {
             darkTheme: AppTheme.darkTheme(),
             themeMode:
                 settingsProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            builder: (context, child) {
+              if (child == null) {
+                return const SizedBox.shrink();
+              }
+
+              final theme = Theme.of(context);
+              final isDark = theme.brightness == Brightness.dark;
+              final overlayStyle = SystemUiOverlayStyle(
+                statusBarColor: theme.colorScheme.surface,
+                statusBarIconBrightness:
+                    isDark ? Brightness.light : Brightness.dark,
+                statusBarBrightness:
+                    isDark ? Brightness.dark : Brightness.light,
+                systemNavigationBarColor: isDark ? Colors.black : Colors.white,
+                systemNavigationBarIconBrightness:
+                    isDark ? Brightness.light : Brightness.dark,
+                systemNavigationBarDividerColor:
+                    isDark ? Colors.black : Colors.white,
+                systemStatusBarContrastEnforced: false,
+                systemNavigationBarContrastEnforced: false,
+              );
+              SystemChrome.setSystemUIOverlayStyle(overlayStyle);
+
+              return AnnotatedRegion<SystemUiOverlayStyle>(
+                value: overlayStyle,
+                child: child,
+              );
+            },
             home: _getHomeScreen(settingsProvider),
           );
         },

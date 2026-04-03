@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/features/dashboard/presentation/pages/dashboard_screen.dart';
 import 'package:fintrack/features/expense/presentation/pages/expense_list_screen.dart';
@@ -151,6 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: const BoxDecoration(
@@ -360,8 +360,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 type: bottomModules.length > 3
                     ? BottomNavigationBarType.fixed
                     : BottomNavigationBarType.shifting,
-                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                elevation: 8,
+                backgroundColor: Theme.of(context).colorScheme.surface,
+                elevation: 0,
                 onTap: (index) {
                   setState(() => _currentIndex = index);
                 },
@@ -389,7 +389,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 right: 16,
                 bottom: MediaQuery.of(context).padding.bottom +
                     kBottomNavigationBarHeight +
-                    16,
+                    8,
                 child: Material(
                   type: MaterialType.transparency,
                   child: _buildExpandableFab(context, settingsProvider),
@@ -467,7 +467,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'FinTrack',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -476,7 +476,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Personal Finance Manager',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 13,
                         fontWeight: FontWeight.w400,
                         color: Colors.white.withOpacity(0.9),
@@ -491,7 +491,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
                 child: Text(
                   'Quick Navigation',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey[600],
@@ -529,7 +529,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                 child: Text(
                   'Features',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey[600],
@@ -567,7 +567,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                 child: Text(
                   'Application',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey[600],
@@ -609,7 +609,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Center(
                   child: Text(
                     'v1.0.0',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
                       color: Colors.grey[500],
@@ -666,7 +666,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         title: Text(
           label,
-          style: GoogleFonts.poppins(
+          style: TextStyle(fontFamily: 'Poppins', 
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
             color:
@@ -751,7 +751,7 @@ class _MiniFloatingActionButton extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
                   ),

@@ -16,7 +16,12 @@ class SettingsContentManagementScreen extends StatelessWidget {
         showBackButton: true,
       ),
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          12,
+          16,
+          contentBottomPadding(context, hasFab: false),
+        ),
         children: [
           Text(
             'Manage your app content',
@@ -96,7 +101,7 @@ class SettingsContentManagementScreen extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
         ],
       ),
     );

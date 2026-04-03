@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/features/settings/presentation/pages/manage_subscription_categories_screen.dart';
@@ -46,234 +45,249 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
               showBackButton: widget.showBackButton,
             )
           : null,
-      body: Consumer2<SubscriptionProvider, SettingsProvider>(
-        builder: (context, subProvider, settingsProvider, _) {
-          final currencySymbol = settingsProvider.currencySymbol;
-          final subscriptions = subProvider.subscriptions;
+      body: SafeArea(
+        top: false,
+        child: Consumer2<SubscriptionProvider, SettingsProvider>(
+          builder: (context, subProvider, settingsProvider, _) {
+            final currencySymbol = settingsProvider.currencySymbol;
+            final subscriptions = subProvider.subscriptions;
 
-          if (subscriptions.isEmpty) {
-            return EmptyStateWidget(
-              icon: Icons.subscriptions,
-              title: 'No Subscriptions',
-              description: 'Track your recurring subscriptions here',
-              actionLabel: 'Add Subscription',
-              onAction: () => _showAddEditDialog(context),
-            );
-          }
+            if (subscriptions.isEmpty) {
+              return EmptyStateWidget(
+                icon: Icons.subscriptions,
+                title: 'No Subscriptions',
+                description: 'Track your recurring subscriptions here',
+                actionLabel: 'Add Subscription',
+                onAction: () => _showAddEditDialog(context),
+              );
+            }
 
-          final categoryFilters = _buildCategoryFilters(subscriptions);
-          if (!categoryFilters.contains(_selectedCategoryFilter)) {
-            _selectedCategoryFilter = _allCategoriesFilter;
-          }
-          final filteredSubscriptions =
-              _getFilteredSubscriptions(subscriptions, _selectedCategoryFilter);
+            final categoryFilters = _buildCategoryFilters(subscriptions);
+            if (!categoryFilters.contains(_selectedCategoryFilter)) {
+              _selectedCategoryFilter = _allCategoriesFilter;
+            }
+            final filteredSubscriptions = _getFilteredSubscriptions(
+                subscriptions, _selectedCategoryFilter);
 
-          double totalMonthly = 0;
-          for (var sub in filteredSubscriptions) {
-            totalMonthly += sub.getMonthlyAmount();
-          }
-          final categoryBreakdown =
-              _calculateCategoryBreakdown(filteredSubscriptions);
+            double totalMonthly = 0;
+            for (var sub in filteredSubscriptions) {
+              totalMonthly += sub.getMonthlyAmount();
+            }
+            final categoryBreakdown =
+                _calculateCategoryBreakdown(filteredSubscriptions);
 
-          return Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Theme.of(context).colorScheme.surface
-                      : null,
-                  gradient: Theme.of(context).brightness == Brightness.dark
-                      ? null
-                      : LinearGradient(
-                          colors: [
-                            AppTheme.primaryColor.withOpacity(0.85),
-                            AppTheme.primaryColor,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Theme.of(context).brightness == Brightness.dark
-                      ? Border.all(color: Theme.of(context).dividerColor)
-                      : null,
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Monthly Cost',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).brightness ==
-                                    Brightness.dark
-                                ? Theme.of(context).colorScheme.onSurfaceVariant
-                                : Colors.white70,
+            return Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Theme.of(context).colorScheme.surface
+                        : null,
+                    gradient: Theme.of(context).brightness == Brightness.dark
+                        ? null
+                        : LinearGradient(
+                            colors: [
+                              AppTheme.primaryColor.withOpacity(0.85),
+                              AppTheme.primaryColor,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '$currencySymbol${totalMonthly.toStringAsFixed(2)}',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
-                          ?.copyWith(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? Theme.of(context).colorScheme.onSurface
-                                    : Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Across ${filteredSubscriptions.length} subscriptions',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).brightness ==
-                                    Brightness.dark
-                                ? Theme.of(context).colorScheme.onSurfaceVariant
-                                : Colors.white70,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: categoryFilters.map((category) {
-                      final isSelected = category == _selectedCategoryFilter;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(category),
-                          selected: isSelected,
-                          onSelected: (_) {
-                            setState(() {
-                              _selectedCategoryFilter = category;
-                            });
-                          },
-                          elevation: isSelected ? 4 : 2,
-                          pressElevation: 6,
-                          shadowColor: Colors.black26,
-                          backgroundColor:
-                              Theme.of(context).colorScheme.surface,
-                          selectedColor: AppTheme.primaryColor,
-                          side: BorderSide(
-                            color: isSelected
-                                ? AppTheme.primaryColor
-                                : Theme.of(context).dividerColor,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          labelStyle:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: isSelected
-                                        ? Colors.white
-                                        : Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.color,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w600
-                                        : FontWeight.w400,
-                                  ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              if (categoryBreakdown.isNotEmpty)
-                Card(
-                  elevation: 3,
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
+                    border: Theme.of(context).brightness == Brightness.dark
+                        ? Border.all(color: Theme.of(context).dividerColor)
+                        : null,
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Category Breakdown',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 12),
-                        ...categoryBreakdown.entries.map((entry) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: AppTheme.primaryColor,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    '${entry.key} (${entry.value.count})',
-                                    style:
-                                        Theme.of(context).textTheme.bodyMedium,
-                                  ),
-                                ),
-                                Text(
-                                  '$currencySymbol${entry.value.monthlyAmount.toStringAsFixed(2)}',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(fontWeight: FontWeight.w600),
-                                ),
-                              ],
+                  child: Column(
+                    children: [
+                      Text(
+                        'Monthly Cost',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant
+                                  : Colors.white70,
                             ),
-                          );
-                        }),
-                      ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '$currencySymbol${totalMonthly.toStringAsFixed(2)}',
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Theme.of(context).colorScheme.onSurface
+                                      : Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Across ${filteredSubscriptions.length} subscriptions',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant
+                                  : Colors.white70,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: categoryFilters.map((category) {
+                        final isSelected = category == _selectedCategoryFilter;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(category),
+                            selected: isSelected,
+                            onSelected: (_) {
+                              setState(() {
+                                _selectedCategoryFilter = category;
+                              });
+                            },
+                            elevation: isSelected ? 4 : 2,
+                            pressElevation: 6,
+                            shadowColor: Colors.black26,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.surface,
+                            selectedColor: AppTheme.primaryColor,
+                            side: BorderSide(
+                              color: isSelected
+                                  ? AppTheme.primaryColor
+                                  : Theme.of(context).dividerColor,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            labelStyle:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.color,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w400,
+                                    ),
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: filteredSubscriptions.isEmpty
-                    ? Center(
-                        child: Text(
-                          'No subscriptions in this category',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: () async => subProvider.initSubscriptions(),
-                        child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: filteredSubscriptions.length,
-                          itemBuilder: (context, index) {
-                            final sub = filteredSubscriptions[index];
-                            return _SubscriptionCard(
-                              subscription: sub,
-                              onEdit: () => _showAddEditDialog(context, sub),
-                              onDelete: () => _deleteSubscription(context, sub),
+                const SizedBox(height: 12),
+                if (categoryBreakdown.isNotEmpty)
+                  Card(
+                    elevation: 3,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Category Breakdown',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 12),
+                          ...categoryBreakdown.entries.map((entry) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: AppTheme.primaryColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      '${entry.key} (${entry.value.count})',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium,
+                                    ),
+                                  ),
+                                  Text(
+                                    '$currencySymbol${entry.value.monthlyAmount.toStringAsFixed(2)}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
                             );
-                          },
-                        ),
+                          }),
+                        ],
                       ),
-              ),
-            ],
-          );
-        },
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: filteredSubscriptions.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No subscriptions in this category',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: () async =>
+                              subProvider.initSubscriptions(),
+                          child: ListView.builder(
+                            padding: EdgeInsets.fromLTRB(
+                              16,
+                              0,
+                              16,
+                              contentBottomPadding(context),
+                            ),
+                            itemCount: filteredSubscriptions.length,
+                            itemBuilder: (context, index) {
+                              final sub = filteredSubscriptions[index];
+                              return _SubscriptionCard(
+                                subscription: sub,
+                                onEdit: () => _showAddEditDialog(context, sub),
+                                onDelete: () =>
+                                    _deleteSubscription(context, sub),
+                              );
+                            },
+                          ),
+                        ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        mini: true,
-        heroTag: 'subscription_list_fab_add',
-        onPressed: () => _showAddEditDialog(context),
-        child: const Icon(Icons.add),
+      floatingActionButton: AdaptiveBottomFab(
+        child: FloatingActionButton(
+          mini: true,
+          heroTag: 'subscription_list_fab_add',
+          onPressed: () => _showAddEditDialog(context),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -282,6 +296,7 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       builder: (context) =>
           AddEditSubscriptionScreen(subscription: subscription),
     );
@@ -581,7 +596,8 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
       child: SingleChildScrollView(
         child: Container(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom +
+                effectiveBottomInset(context),
             left: 16,
             right: 16,
             top: 24,
@@ -597,7 +613,8 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
                     widget.subscription != null
                         ? 'Edit Subscription'
                         : 'Add Subscription',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                     ),

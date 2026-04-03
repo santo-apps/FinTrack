@@ -1,13 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:fintrack/core/utils/custom_widgets.dart';
-import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
 import 'package:fintrack/features/settings/presentation/pages/settings_navigation_screen.dart';
 import 'package:fintrack/features/settings/presentation/pages/settings_content_management_screen.dart';
 import 'package:fintrack/features/settings/presentation/pages/settings_data_management_screen.dart';
 import 'package:fintrack/features/settings/presentation/pages/settings_about_screen.dart';
-import 'package:fintrack/services/security_service.dart';
 import 'package:fintrack/services/notification_service.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:fintrack/core/utils/custom_widgets.dart';
+import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
+import 'package:fintrack/services/security_service.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -42,420 +42,427 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: 'Settings',
         showBackButton: true,
       ),
-      body: Consumer<SettingsProvider>(
-        builder: (context, settingsProvider, _) {
-          return ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            children: [
-              // Appearance Section
-              _buildSectionHeader(context, 'Appearance', Icons.palette),
-              _buildSettingCard(
-                context,
-                leading: Icon(Icons.brightness_4,
-                    color: _settingsIconColor(context)),
-                title: 'Dark Mode',
-                subtitle: 'Switch between light and dark theme',
-                trailing: Switch(
-                  value: settingsProvider.isDarkMode,
-                  onChanged: (value) {
-                    settingsProvider.setDarkMode(value);
-                  },
-                ),
+      body: SafeArea(
+        top: false,
+        child: Consumer<SettingsProvider>(
+          builder: (context, settingsProvider, _) {
+            return ListView(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                contentBottomPadding(context, hasFab: false),
               ),
-              const SizedBox(height: 16),
-
-              // Currency Section
-              _buildSectionHeader(context, 'Currency', Icons.currency_exchange),
-              _buildSettingCard(
-                context,
-                leading: Icon(Icons.attach_money,
-                    color: _settingsIconColor(context)),
-                title: 'Default Currency',
-                subtitle: settingsProvider.currency,
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 120,
-                      child: DropdownSearch<String>(
-                        items: settingsProvider.availableCurrencies,
-                        selectedItem: settingsProvider.currency,
-                        dropdownBuilder: (context, selectedItem) {
-                          return Text(selectedItem ?? 'Select currency');
-                        },
-                        dropdownDecoratorProps: const DropDownDecoratorProps(
-                          baseStyle: TextStyle(),
-                        ),
-                        popupProps: PopupProps.menu(
-                          title: const Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Text('Select Currency'),
-                          ),
-                          showSearchBox: true,
-                          searchFieldProps: const TextFieldProps(
-                            decoration: InputDecoration(
-                              hintText: 'Search currency...',
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.all(8),
-                            ),
-                          ),
-                          fit: FlexFit.loose,
-                        ),
-                        onChanged: (value) {
-                          if (value != null) {
-                            settingsProvider.setCurrency(value);
-                          }
-                        },
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.add,
-                          color: _settingsIconColor(context), size: 20),
-                      tooltip: 'Add currency',
-                      onPressed: () =>
-                          _showAddCurrencyDialog(context, settingsProvider),
-                    ),
-                  ],
-                ),
-              ),
-              if (settingsProvider.customCurrencySymbols.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.only(left: 8, bottom: 8),
-                  child: Text(
-                    'Custom Currencies',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+              children: [
+                // Appearance Section
+                _buildSectionHeader(context, 'Appearance', Icons.palette),
+                _buildSettingCard(
+                  context,
+                  leading: Icon(Icons.brightness_4,
+                      color: _settingsIconColor(context)),
+                  title: 'Dark Mode',
+                  subtitle: 'Switch between light and dark theme',
+                  trailing: Switch(
+                    value: settingsProvider.isDarkMode,
+                    onChanged: (value) {
+                      settingsProvider.setDarkMode(value);
+                    },
                   ),
                 ),
-                ...settingsProvider.customCurrencySymbols.entries.map((entry) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _buildCustomCurrencyCard(
-                      context,
-                      entry.key,
-                      entry.value,
-                      settingsProvider,
-                    ),
-                  );
-                }),
-              ],
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Security Section
-              _buildSectionHeader(context, 'Security', Icons.security),
-              FutureBuilder<(bool, String)>(
-                future: BiometricService.getBiometricStatusForSettings(),
-                builder: (context, snapshot) {
-                  final status = snapshot.data;
-                  final canUseBiometrics = status?.$1 ?? false;
-                  final biometricSubtitle =
-                      status?.$2 ?? 'Checking biometric availability...';
-                  return Column(
+                // Currency Section
+                _buildSectionHeader(
+                    context, 'Currency', Icons.currency_exchange),
+                _buildSettingCard(
+                  context,
+                  leading: Icon(Icons.attach_money,
+                      color: _settingsIconColor(context)),
+                  title: 'Default Currency',
+                  subtitle: settingsProvider.currency,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildSettingCard(
-                        context,
-                        leading: Icon(Icons.fingerprint,
-                            color: canUseBiometrics
-                                ? _settingsIconColor(context)
-                                : _settingsIconColor(context, enabled: false)),
-                        title: 'Biometric Authentication',
-                        subtitle: biometricSubtitle,
-                        enabled: canUseBiometrics,
-                        trailing: Switch(
-                          value: settingsProvider.biometricEnabled &&
-                              canUseBiometrics,
-                          onChanged: canUseBiometrics
-                              ? (value) async {
-                                  if (value) {
-                                    // Request permission and enable biometric
-                                    final (
-                                      enabled,
-                                      errorMessage,
-                                      shouldOpenSettings
-                                    ) = await BiometricService
-                                        .enableBiometric();
-
-                                    if (!context.mounted) {
-                                      return;
-                                    }
-
-                                    if (enabled) {
-                                      await settingsProvider
-                                          .setBiometricEnabled(true);
-                                      if (!context.mounted) {
-                                        return;
-                                      }
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            '✓ Biometric authentication enabled',
-                                          ),
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
-                                    } else {
-                                      await settingsProvider
-                                          .setBiometricEnabled(false);
-                                      if (!context.mounted) {
-                                        return;
-                                      }
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            '✗ ${errorMessage ?? 'Failed to enable biometric. Please check permissions.'}',
-                                          ),
-                                          duration: const Duration(seconds: 3),
-                                          action: shouldOpenSettings
-                                              ? SnackBarAction(
-                                                  label: 'Open Settings',
-                                                  onPressed: () {
-                                                    BiometricService
-                                                        .openBiometricSettings();
-                                                  },
-                                                )
-                                              : null,
-                                        ),
-                                      );
-                                    }
-                                  } else {
-                                    // Disable biometric - require verification
-                                    final verified =
-                                        await _verifyBeforeDisableSecurity(
-                                      context,
-                                      settingsProvider,
-                                      useBiometric: true,
-                                    );
-
-                                    if (!context.mounted) {
-                                      return;
-                                    }
-
-                                    if (verified) {
-                                      await BiometricService.disableBiometric();
-                                      await settingsProvider
-                                          .setBiometricEnabled(false);
-                                      if (!context.mounted) {
-                                        return;
-                                      }
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Biometric authentication disabled',
-                                          ),
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
-                                    }
-                                  }
-                                }
-                              : null,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildSettingCard(
-                        context,
-                        leading: Icon(Icons.vpn_key,
-                            color: _settingsIconColor(context)),
-                        title: 'PIN Protection',
-                        subtitle: settingsProvider.pinEnabled
-                            ? 'PIN is enabled'
-                            : 'No PIN protection',
-                        trailing: Switch(
-                          value: settingsProvider.pinEnabled,
-                          onChanged: (value) async {
-                            if (value) {
-                              _showPINDialog(context, settingsProvider, true);
-                            } else {
-                              // Disable PIN - require verification
-                              final verified =
-                                  await _verifyBeforeDisableSecurity(
-                                context,
-                                settingsProvider,
-                                useBiometric: false,
-                              );
-
-                              if (!context.mounted) {
-                                return;
-                              }
-
-                              if (verified) {
-                                await settingsProvider.setPinEnabled(false);
-                                if (!context.mounted) {
-                                  return;
-                                }
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('PIN protection disabled'),
-                                  ),
-                                );
-                              }
+                      SizedBox(
+                        width: 120,
+                        child: DropdownSearch<String>(
+                          items: settingsProvider.availableCurrencies,
+                          selectedItem: settingsProvider.currency,
+                          dropdownBuilder: (context, selectedItem) {
+                            return Text(selectedItem ?? 'Select currency');
+                          },
+                          dropdownDecoratorProps: const DropDownDecoratorProps(
+                            baseStyle: TextStyle(),
+                          ),
+                          popupProps: PopupProps.menu(
+                            title: const Padding(
+                              padding: EdgeInsets.all(8),
+                              child: Text('Select Currency'),
+                            ),
+                            showSearchBox: true,
+                            searchFieldProps: const TextFieldProps(
+                              decoration: InputDecoration(
+                                hintText: 'Search currency...',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.all(8),
+                              ),
+                            ),
+                          ),
+                          onChanged: (value) {
+                            if (value != null) {
+                              settingsProvider.setCurrency(value);
                             }
                           },
                         ),
                       ),
+                      IconButton(
+                        icon: Icon(Icons.add,
+                            color: _settingsIconColor(context), size: 20),
+                        tooltip: 'Add currency',
+                        onPressed: () =>
+                            _showAddCurrencyDialog(context, settingsProvider),
+                      ),
                     ],
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Notifications Section
-              _buildSectionHeader(
-                  context, 'Notifications', Icons.notifications),
-              _buildSettingCard(
-                context,
-                leading: Icon(Icons.notifications_active,
-                    color: _settingsIconColor(context)),
-                title: 'Enable Notifications',
-                subtitle: 'Receive app notifications',
-                trailing: Switch(
-                  value: settingsProvider.notificationsEnabled,
-                  onChanged: (value) {
-                    settingsProvider.setNotificationsEnabled(value);
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
-              GestureDetector(
-                onTap: settingsProvider.notificationsEnabled &&
-                        settingsProvider.dailyReminderEnabled
-                    ? () => _showTimePickerDialog(context, settingsProvider)
-                    : null,
-                child: _buildSettingCard(
-                  context,
-                  leading:
-                      Icon(Icons.alarm, color: _settingsIconColor(context)),
-                  title: 'Daily Reminder',
-                  subtitle: settingsProvider.dailyReminderEnabled
-                      ? '${_formatTime(settingsProvider.dailyReminderHour, settingsProvider.dailyReminderMinute)} - ${_getNextReminderText(settingsProvider.dailyReminderHour, settingsProvider.dailyReminderMinute)}. Tap to change'
-                      : 'Get daily reminders to track expenses',
-                  trailing: Switch(
-                    value: settingsProvider.dailyReminderEnabled,
-                    onChanged: settingsProvider.notificationsEnabled
-                        ? (value) async {
-                            try {
-                              await settingsProvider
-                                  .setDailyReminderEnabled(value);
-                              if (value && context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Daily reminder enabled'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Permission required: Please enable "Alarms & reminders" permission in your device settings for FinTrack',
-                                    ),
-                                    backgroundColor: Colors.red,
-                                    duration: const Duration(seconds: 5),
-                                  ),
-                                );
-                              }
-                            }
-                          }
-                        : null,
                   ),
                 ),
-              ),
+                if (settingsProvider.customCurrencySymbols.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8, bottom: 8),
+                    child: Text(
+                      'Custom Currencies',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                  ...settingsProvider.customCurrencySymbols.entries
+                      .map((entry) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _buildCustomCurrencyTile(
+                          context, entry.key, entry.value, settingsProvider),
+                    );
+                  }),
+                ],
+                // ...existing code...
+                _buildSectionHeader(context, 'Security', Icons.security),
+                FutureBuilder<(bool, String)>(
+                  future: BiometricService.getBiometricStatusForSettings(),
+                  builder: (context, snapshot) {
+                    final status = snapshot.data;
+                    final canUseBiometrics = status?.$1 ?? false;
+                    final biometricSubtitle =
+                        status?.$2 ?? 'Checking biometric availability...';
+                    return Column(
+                      children: [
+                        _buildSettingCard(
+                          context,
+                          leading: Icon(Icons.fingerprint,
+                              color: canUseBiometrics
+                                  ? _settingsIconColor(context)
+                                  : _settingsIconColor(context,
+                                      enabled: false)),
+                          title: 'Biometric Authentication',
+                          subtitle: biometricSubtitle,
+                          enabled: canUseBiometrics,
+                          trailing: Switch(
+                            value: settingsProvider.biometricEnabled &&
+                                canUseBiometrics,
+                            onChanged: canUseBiometrics
+                                ? (value) async {
+                                    if (value) {
+                                      // Request permission and enable biometric
+                                      final (
+                                        enabled,
+                                        errorMessage,
+                                        shouldOpenSettings
+                                      ) = await BiometricService
+                                          .enableBiometric();
 
-              const SizedBox(height: 12),
-              _buildSettingCard(
-                context,
-                leading:
-                    Icon(Icons.settings, color: _settingsIconColor(context)),
-                title: 'Open Notification Settings',
-                subtitle:
-                    'Enable FinTrack alerts, banners, and Notification Center',
-                trailing: ElevatedButton(
-                  onPressed: () async {
-                    await NotificationService.openNotificationSettings();
+                                      if (!context.mounted) {
+                                        return;
+                                      }
+
+                                      if (enabled) {
+                                        await settingsProvider
+                                            .setBiometricEnabled(true);
+                                        if (!context.mounted) {
+                                          return;
+                                        }
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              '✓ Biometric authentication enabled',
+                                            ),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      } else {
+                                        await settingsProvider
+                                            .setBiometricEnabled(false);
+                                        if (!context.mounted) {
+                                          return;
+                                        }
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              '✗ ${errorMessage ?? 'Failed to enable biometric. Please check permissions.'}',
+                                            ),
+                                            duration:
+                                                const Duration(seconds: 3),
+                                            action: shouldOpenSettings
+                                                ? SnackBarAction(
+                                                    label: 'Open Settings',
+                                                    onPressed: () {
+                                                      BiometricService
+                                                          .openBiometricSettings();
+                                                    },
+                                                  )
+                                                : null,
+                                          ),
+                                        );
+                                      }
+                                    } else {
+                                      // Disable biometric - require verification
+                                      final verified =
+                                          await _verifyBeforeDisableSecurity(
+                                        context,
+                                        settingsProvider,
+                                        useBiometric: true,
+                                      );
+
+                                      if (!context.mounted) {
+                                        return;
+                                      }
+
+                                      if (verified) {
+                                        await BiometricService
+                                            .disableBiometric();
+                                        await settingsProvider
+                                            .setBiometricEnabled(false);
+                                        if (!context.mounted) {
+                                          return;
+                                        }
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Biometric authentication disabled',
+                                            ),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  }
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _buildSettingCard(
+                          context,
+                          leading: Icon(Icons.vpn_key,
+                              color: _settingsIconColor(context)),
+                          title: 'PIN Protection',
+                          subtitle: settingsProvider.pinEnabled
+                              ? 'PIN is enabled'
+                              : 'No PIN protection',
+                          trailing: Switch(
+                            value: settingsProvider.pinEnabled,
+                            onChanged: (value) async {
+                              if (value) {
+                                _showPINDialog(context, settingsProvider, true);
+                              } else {
+                                // Disable PIN - require verification
+                                final verified =
+                                    await _verifyBeforeDisableSecurity(
+                                  context,
+                                  settingsProvider,
+                                  useBiometric: false,
+                                );
+
+                                if (!context.mounted) {
+                                  return;
+                                }
+
+                                if (verified) {
+                                  await settingsProvider.setPinEnabled(false);
+                                  if (!context.mounted) {
+                                    return;
+                                  }
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('PIN protection disabled'),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    );
                   },
-                  child: const Text('Open'),
                 ),
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-              // Settings Modules Section
-              _buildSectionHeader(context, 'Settings Modules', Icons.tune),
-              _buildModuleCard(
-                context,
-                icon: Icons.navigation,
-                title: 'Navigation & Home FAB',
-                description: 'Customize bottom navigation and Home FAB actions',
-                color: Colors.blue,
-                onTap: () {
-                  Navigator.push(
+                // Notifications Section
+                _buildSectionHeader(
+                    context, 'Notifications', Icons.notifications),
+                _buildSettingCard(
+                  context,
+                  leading: Icon(Icons.notifications_active,
+                      color: _settingsIconColor(context)),
+                  title: 'Enable Notifications',
+                  subtitle: 'Receive app notifications',
+                  trailing: Switch(
+                    value: settingsProvider.notificationsEnabled,
+                    onChanged: (value) {
+                      settingsProvider.setNotificationsEnabled(value);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: settingsProvider.notificationsEnabled &&
+                          settingsProvider.dailyReminderEnabled
+                      ? () => _showTimePickerDialog(context, settingsProvider)
+                      : null,
+                  child: _buildSettingCard(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const SettingsNavigationScreen(),
+                    leading:
+                        Icon(Icons.alarm, color: _settingsIconColor(context)),
+                    title: 'Daily Reminder',
+                    subtitle: settingsProvider.dailyReminderEnabled
+                        ? '${_formatTime(settingsProvider.dailyReminderHour, settingsProvider.dailyReminderMinute)} - ${_getNextReminderText(settingsProvider.dailyReminderHour, settingsProvider.dailyReminderMinute)}. Tap to change'
+                        : 'Get daily reminders to track expenses',
+                    trailing: Switch(
+                      value: settingsProvider.dailyReminderEnabled,
+                      onChanged: settingsProvider.notificationsEnabled
+                          ? (value) async {
+                              try {
+                                await settingsProvider
+                                    .setDailyReminderEnabled(value);
+                                if (value && context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Daily reminder enabled'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Permission required: Please enable "Alarms & reminders" permission in your device settings for FinTrack',
+                                      ),
+                                      backgroundColor: Colors.red,
+                                      duration: const Duration(seconds: 5),
+                                    ),
+                                  );
+                                }
+                              }
+                            }
+                          : null,
                     ),
-                  );
-                },
-              ),
-              const SizedBox(height: 8),
-              _buildModuleCard(
-                context,
-                icon: Icons.inventory_2,
-                title: 'Content Management',
-                description: 'Manage categories, types, and data',
-                color: Colors.orange,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          const SettingsContentManagementScreen(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 8),
-              _buildModuleCard(
-                context,
-                icon: Icons.backup,
-                title: 'Data Management',
-                description: 'Backup, export, import, and restore data',
-                color: Colors.green,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          const SettingsDataManagementScreen(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 8),
-              _buildModuleCard(
-                context,
-                icon: Icons.info,
-                title: 'About',
-                description: 'App version, privacy, and legal information',
-                color: Colors.purple,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SettingsAboutScreen(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-            ],
-          );
-        },
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+                _buildSettingCard(
+                  context,
+                  leading:
+                      Icon(Icons.settings, color: _settingsIconColor(context)),
+                  title: 'Open Notification Settings',
+                  subtitle:
+                      'Enable FinTrack alerts, banners, and Notification Center',
+                  trailing: ElevatedButton(
+                    onPressed: () async {
+                      await NotificationService.openNotificationSettings();
+                    },
+                    child: const Text('Open'),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Settings Modules Section
+                _buildSectionHeader(context, 'Settings Modules', Icons.tune),
+                _buildModuleCard(
+                  context,
+                  icon: Icons.navigation,
+                  title: 'Navigation & Home FAB',
+                  description:
+                      'Customize bottom navigation and Home FAB actions',
+                  color: Colors.blue,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SettingsNavigationScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+                _buildModuleCard(
+                  context,
+                  icon: Icons.inventory_2,
+                  title: 'Content Management',
+                  description: 'Manage categories, types, and data',
+                  color: Colors.orange,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const SettingsContentManagementScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+                _buildModuleCard(
+                  context,
+                  icon: Icons.backup,
+                  title: 'Data Management',
+                  description: 'Backup, export, import, and restore data',
+                  color: Colors.green,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const SettingsDataManagementScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+                _buildModuleCard(
+                  context,
+                  icon: Icons.info,
+                  title: 'About',
+                  description: 'App version, privacy, and legal information',
+                  color: Colors.purple,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SettingsAboutScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 24),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -544,7 +551,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildCustomCurrencyCard(
+  Widget _buildCustomCurrencyTile(
     BuildContext context,
     String code,
     String symbol,

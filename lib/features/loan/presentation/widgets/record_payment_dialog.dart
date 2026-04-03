@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
 import 'package:fintrack/features/loan/data/models/loan_model.dart';
@@ -103,7 +102,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
     return AlertDialog(
       title: Text(
         'Record Payment',
-        style: GoogleFonts.poppins(
+        style: TextStyle(fontFamily: 'Poppins', 
           fontSize: 18,
           fontWeight: FontWeight.w700,
         ),
@@ -127,7 +126,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                   children: [
                     Text(
                       widget.loan.lender,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.textColor,
@@ -139,7 +138,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                       children: [
                         Text(
                           'Remaining',
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 11,
                             color: AppTheme.textSecondaryColor,
                           ),
@@ -149,7 +148,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                             remainingAmount,
                             currencySymbol: currencySymbol,
                           ),
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.errorColor,
@@ -163,7 +162,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                       children: [
                         Text(
                           'EMI Amount',
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 11,
                             color: AppTheme.textSecondaryColor,
                           ),
@@ -173,7 +172,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                             widget.loan.monthlyEmi,
                             currencySymbol: currencySymbol,
                           ),
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.successColor,

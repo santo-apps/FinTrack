@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
@@ -118,7 +117,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
             // Account Type
             Text(
               'Account Type',
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -190,7 +189,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                             if (item.icon != null)
                               Text(
                                 item.icon!,
-                                style: GoogleFonts.poppins(fontSize: 20),
+                                style: TextStyle(fontFamily: 'Poppins', fontSize: 20),
                               )
                             else
                               Icon(
@@ -203,7 +202,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                             const SizedBox(width: 12),
                             Text(
                               item.name,
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(fontFamily: 'Poppins', 
                                 fontSize: 14,
                                 fontWeight: isSelected
                                     ? FontWeight.w600
@@ -327,7 +326,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                     true) ...[
               Text(
                 'Card Network',
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -369,7 +368,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                     true) ...[
               Text(
                 'Expiry Date',
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -392,7 +391,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                         _expiryDate != null
                             ? '${_expiryDate!.month.toString().padLeft(2, '0')}/${_expiryDate!.year}'
                             : 'Select expiry date',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 14,
                           color: _expiryDate != null
                               ? (isDarkMode ? Colors.white : AppTheme.textColor)
@@ -418,7 +417,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                 true) ...[
               Text(
                 'Statement Date',
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -441,7 +440,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                         _statementDate != null
                             ? '${_statementDate!.day.toString().padLeft(2, '0')}/${_statementDate!.month.toString().padLeft(2, '0')}/${_statementDate!.year}'
                             : 'Select statement date',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 14,
                           color: _statementDate != null
                               ? (isDarkMode ? Colors.white : AppTheme.textColor)
@@ -462,7 +461,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
               const SizedBox(height: 16),
               Text(
                 'Payment Due Date',
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -485,7 +484,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                         _dueDate != null
                             ? '${_dueDate!.day.toString().padLeft(2, '0')}/${_dueDate!.month.toString().padLeft(2, '0')}/${_dueDate!.year}'
                             : 'Select due date',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 14,
                           color: _dueDate != null
                               ? (isDarkMode ? Colors.white : AppTheme.textColor)
@@ -509,7 +508,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
             // Linked Account
             Text(
               'Linked Account (Optional)',
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -518,7 +517,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
             const SizedBox(height: 4),
             Text(
               'Link this account to another account (e.g., debit card to bank account)',
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                 fontSize: 12,
                 color:
                     isDarkMode ? Colors.white70 : AppTheme.textSecondaryColor,
@@ -611,7 +610,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                                   item.accountType.isNotEmpty
                                       ? item.accountType[0].toUpperCase()
                                       : '?',
-                                  style: GoogleFonts.poppins(
+                                  style: TextStyle(fontFamily: 'Poppins', 
                                     fontSize: 18,
                                     fontWeight: FontWeight.w600,
                                     color: color,
@@ -626,7 +625,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                                 children: [
                                   Text(
                                     item.displayName,
-                                    style: GoogleFonts.poppins(
+                                    style: TextStyle(fontFamily: 'Poppins', 
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
                                       color: isDarkMode
@@ -636,7 +635,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                                   ),
                                   Text(
                                     item.accountType,
-                                    style: GoogleFonts.poppins(
+                                    style: TextStyle(fontFamily: 'Poppins', 
                                       fontSize: 12,
                                       color: isDarkMode
                                           ? Colors.white70
@@ -666,7 +665,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
             // Color Selection
             Text(
               'Account Color',
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -730,7 +729,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
             SwitchListTile(
               title: Text(
                 'Set as Default Account',
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: AppTheme.textColor,
@@ -738,7 +737,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
               ),
               subtitle: Text(
                 'Use this account by default for transactions',
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 12,
                   color: AppTheme.textSecondaryColor,
                 ),
@@ -754,7 +753,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
             SwitchListTile(
               title: Text(
                 'Active Account',
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: AppTheme.textColor,
@@ -762,7 +761,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
               ),
               subtitle: Text(
                 'Show this account in your active accounts',
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 12,
                   color: AppTheme.textSecondaryColor,
                 ),

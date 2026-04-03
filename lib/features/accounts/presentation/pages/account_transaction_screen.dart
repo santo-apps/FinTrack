@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
@@ -49,11 +48,21 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
     with TickerProviderStateMixin {
   late int _selectedTabIndex;
   final Set<String> _pendingDeletedExpenseIds = <String>{};
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  _TransactionSortOption _sortOption = _TransactionSortOption.date;
+  bool _sortAscending = false;
 
   @override
   void initState() {
     super.initState();
     _selectedTabIndex = 0;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -75,7 +84,8 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
             return Center(
               child: Text(
                 'Account not found',
-                style: GoogleFonts.poppins(
+                style: TextStyle(
+                  fontFamily: 'Poppins',
                   fontSize: 16,
                   color: AppTheme.textSecondaryColor,
                 ),
@@ -93,8 +103,38 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                   !_pendingDeletedExpenseIds.contains(expense.id))
               .toList();
 
-          // Sort by date descending
-          expenses.sort((a, b) => b.date.compareTo(a.date));
+          // Apply search filter
+          final query = _searchQuery.trim().toLowerCase();
+          final filteredExpenses = query.isEmpty
+              ? expenses
+              : expenses.where((expense) {
+                  final haystack = [
+                    expense.title,
+                    expense.category,
+                    expense.paymentMethod,
+                    expense.notes ?? '',
+                  ].join(' ').toLowerCase();
+                  return haystack.contains(query);
+                }).toList();
+
+          // Apply sorting
+          switch (_sortOption) {
+            case _TransactionSortOption.date:
+              filteredExpenses.sort((a, b) => _sortAscending
+                  ? a.date.compareTo(b.date)
+                  : b.date.compareTo(a.date));
+              break;
+            case _TransactionSortOption.amount:
+              filteredExpenses.sort((a, b) => _sortAscending
+                  ? a.amount.compareTo(b.amount)
+                  : b.amount.compareTo(a.amount));
+              break;
+            case _TransactionSortOption.category:
+              filteredExpenses.sort((a, b) => _sortAscending
+                  ? a.category.compareTo(b.category)
+                  : b.category.compareTo(a.category));
+              break;
+          }
 
           // Calculate totals
           double totalDebits = 0;
@@ -108,7 +148,7 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
             }
           }
 
-          if (expenses.isEmpty) {
+          if (filteredExpenses.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -121,7 +161,8 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                   const SizedBox(height: 16),
                   Text(
                     'No transactions',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       color: isDarkMode
@@ -132,7 +173,8 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                   const SizedBox(height: 8),
                   Text(
                     'No expenses recorded for this account',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 14,
                       color: isDarkMode
                           ? Colors.white70
@@ -145,7 +187,12 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
           }
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              contentBottomPadding(context),
+            ),
             children: [
               // Summary Card
               Container(
@@ -180,7 +227,8 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                   children: [
                     Text(
                       'Account Balance',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 14,
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Theme.of(context).colorScheme.onSurfaceVariant
@@ -195,7 +243,8 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                         currencySymbol:
                             context.watch<SettingsProvider>().currencySymbol,
                       ),
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
                         color: Theme.of(context).brightness == Brightness.dark
@@ -209,7 +258,7 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                       children: [
                         _SummaryItem(
                           label: 'Total Transactions',
-                          value: expenses.length.toString(),
+                          value: filteredExpenses.length.toString(),
                         ),
                         _SummaryItem(
                           label: 'Total Debits',
@@ -230,14 +279,73 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
               // Transactions List
               Text(
                 'Transactions',
-                style: GoogleFonts.poppins(
+                style: TextStyle(
+                  fontFamily: 'Poppins',
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: isDarkMode ? Colors.white : AppTheme.textColor,
                 ),
               ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.search),
+                        hintText: 'Search transactions',
+                        suffixIcon: _searchQuery.isEmpty
+                            ? null
+                            : IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _searchController.clear();
+                                    _searchQuery = '';
+                                  });
+                                },
+                                icon: const Icon(Icons.close),
+                              ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  PopupMenuButton<_TransactionSortOption>(
+                    icon: const Icon(Icons.sort),
+                    onSelected: (option) {
+                      setState(() {
+                        if (_sortOption == option) {
+                          _sortAscending = !_sortAscending;
+                        } else {
+                          _sortOption = option;
+                          _sortAscending = false;
+                        }
+                      });
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
+                        value: _TransactionSortOption.date,
+                        child: Text('Date'),
+                      ),
+                      PopupMenuItem(
+                        value: _TransactionSortOption.amount,
+                        child: Text('Amount'),
+                      ),
+                      PopupMenuItem(
+                        value: _TransactionSortOption.category,
+                        child: Text('Category'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
               const SizedBox(height: 12),
-              ...expenses.map((expense) => _TransactionCard(
+              ...filteredExpenses.map((expense) => _TransactionCard(
                     key: Key(expense.id),
                     expense: expense,
                     currentAccountId: currentAccount.id,
@@ -253,19 +361,22 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
           );
         },
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: isDarkMode ? Theme.of(context).colorScheme.surface : null,
-          border: Border(
-            top: BorderSide(
-              color: isDarkMode ? Colors.white24 : Colors.grey.shade200,
-              width: 1,
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDarkMode ? Theme.of(context).colorScheme.surface : null,
+            border: Border(
+              top: BorderSide(
+                color: isDarkMode ? Colors.white24 : Colors.grey.shade200,
+                width: 1,
+              ),
             ),
           ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: _getTransactionTabs(),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: _getTransactionTabs(),
+          ),
         ),
       ),
     );
@@ -303,12 +414,13 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                 children: [
                   Text(
                     tab.$3,
-                    style: GoogleFonts.poppins(fontSize: 20),
+                    style: TextStyle(fontFamily: 'Poppins', fontSize: 20),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     tab.$1,
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 12,
                       fontWeight:
                           isSelected ? FontWeight.w600 : FontWeight.w500,
@@ -343,6 +455,7 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor:
           isDarkMode ? Theme.of(context).colorScheme.surface : null,
       shape: const RoundedRectangleBorder(
@@ -496,6 +609,8 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
     }
   }
 }
+
+enum _TransactionSortOption { date, amount, category }
 
 /// Calculator widget for entering transaction amounts
 class TransactionCalculator extends StatefulWidget {
@@ -654,6 +769,7 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor:
           isDarkMode ? Theme.of(context).colorScheme.surface : null,
       shape: const RoundedRectangleBorder(
@@ -676,13 +792,19 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
 
             return SafeArea(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  16,
+                  16,
+                  effectiveBottomInset(context),
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       title,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -893,7 +1015,8 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
               children: [
                 Text(
                   transactionLabel,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -913,7 +1036,8 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
                   ),
                   child: Text(
                     'SAVE',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
@@ -932,7 +1056,8 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
             child: Text(
               _display,
               textAlign: TextAlign.right,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'Poppins',
                 fontSize: 36,
                 fontWeight: FontWeight.w700,
                 color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -1015,7 +1140,8 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
                       child: Center(
                         child: Text(
                           '=',
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -1048,7 +1174,8 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
                 ),
                 child: Text(
                   'Clear',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: isDarkMode
@@ -1087,7 +1214,8 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
           child: Center(
             child: Text(
               number,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -1112,7 +1240,8 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
           child: Center(
             child: Text(
               op,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppTheme.primaryColor,
@@ -1140,7 +1269,8 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
           child: Center(
             child: Text(
               '.',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -1211,7 +1341,8 @@ class _SummaryItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: TextStyle(
+            fontFamily: 'Poppins',
             fontSize: 12,
             color: Theme.of(context).brightness == Brightness.dark
                 ? Theme.of(context).colorScheme.onSurfaceVariant
@@ -1222,7 +1353,8 @@ class _SummaryItem extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: GoogleFonts.poppins(
+          style: TextStyle(
+            fontFamily: 'Poppins',
             fontSize: 15,
             fontWeight: FontWeight.w600,
             color: Theme.of(context).brightness == Brightness.dark
@@ -1377,7 +1509,8 @@ class _TransactionCard extends StatelessWidget {
                 children: [
                   Text(
                     expense.category,
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -1394,7 +1527,8 @@ class _TransactionCard extends StatelessWidget {
                     ),
                     child: Text(
                       _getTransactionLabel(),
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 9,
                         fontWeight: FontWeight.w600,
                         color: color,
@@ -1404,7 +1538,8 @@ class _TransactionCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     _formatDate(expense.date),
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 11,
                       color: isDarkMode
                           ? Colors.white70
@@ -1415,7 +1550,8 @@ class _TransactionCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       expense.notes!,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 10,
                         color: isDarkMode
                             ? Colors.white70
@@ -1434,7 +1570,8 @@ class _TransactionCard extends StatelessWidget {
             // Amount
             Text(
               '${isDebit ? '-' : '+'} ${AppUtils.formatCurrency(expense.amount.abs(), currencySymbol: currencySymbol)}',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'Poppins',
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: color,

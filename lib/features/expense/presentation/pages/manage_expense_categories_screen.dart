@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
+import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/features/expense/data/models/expense_category_model.dart';
 import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -19,9 +19,8 @@ class _ManageExpenseCategoriesScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manage Categories'),
-        elevation: 0,
+      appBar: const CustomAppBar(
+        title: 'Manage Categories',
       ),
       body: Consumer<ExpenseProvider>(
         builder: (context, provider, _) {
@@ -40,7 +39,8 @@ class _ManageExpenseCategoriesScreenState
                   const SizedBox(height: 16),
                   Text(
                     'No Categories',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.textColor,
@@ -76,13 +76,14 @@ class _ManageExpenseCategoriesScreenState
                     child: Center(
                       child: Text(
                         category.icon,
-                        style: GoogleFonts.poppins(fontSize: 24),
+                        style: TextStyle(fontFamily: 'Poppins', fontSize: 24),
                       ),
                     ),
                   ),
                   title: Text(
                     category.name,
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -109,12 +110,13 @@ class _ManageExpenseCategoriesScreenState
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        mini: true,
-        heroTag: 'manage_expense_categories_fab',
-        onPressed: () => _showCategoryDialog(context),
-        tooltip: 'Add Category',
-        child: const Icon(Icons.add),
+      floatingActionButton: AdaptiveBottomFab(
+        child: FloatingActionButton(
+          mini: true,
+          heroTag: 'manage_expense_categories_fab_add',
+          onPressed: () => _showCategoryDialog(context),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -199,7 +201,7 @@ class _ManageExpenseCategoriesScreenState
                         const SizedBox(width: 12),
                         Text(
                           'Tap to change color',
-                          style: GoogleFonts.poppins(fontSize: 14),
+                          style: TextStyle(fontFamily: 'Poppins', fontSize: 14),
                         ),
                       ],
                     ),

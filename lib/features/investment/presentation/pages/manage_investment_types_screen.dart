@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/features/investment/data/models/investment_type_model.dart';
 import 'package:fintrack/features/investment/presentation/providers/investment_type_provider.dart';
+import 'package:fintrack/core/utils/custom_widgets.dart';
 
 class ManageInvestmentTypesScreen extends StatelessWidget {
   const ManageInvestmentTypesScreen({super.key});
@@ -9,8 +10,8 @@ class ManageInvestmentTypesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manage Investment Types'),
+      appBar: CustomAppBar(
+        title: 'Manage Investment Types',
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -29,7 +30,12 @@ class ManageInvestmentTypesScreen extends StatelessWidget {
           }
 
           return ReorderableListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              contentBottomPadding(context, hasFab: false),
+            ),
             itemCount: types.length,
             onReorder: (oldIndex, newIndex) {
               final list = List<InvestmentType>.from(types);

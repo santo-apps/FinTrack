@@ -8,6 +8,7 @@ import 'package:fintrack/features/accounts/presentation/providers/payment_accoun
 import 'package:fintrack/features/goals/presentation/providers/goal_provider.dart';
 import 'package:fintrack/features/bill/presentation/providers/bill_provider.dart';
 import 'package:fintrack/features/bill/data/models/bill_model.dart';
+import 'package:fintrack/features/bill/data/models/bill_reminder_model.dart';
 
 /// HomeViewModel: Single source of truth for Home screen data
 /// All financial computations happen here, NOT in the UI
@@ -95,8 +96,10 @@ class HomeViewModel extends ChangeNotifier {
   double get investmentCost => _investmentCost;
   double get investmentGainLoss => _investmentGainLoss;
   double get investmentGainLossPercent => _investmentGainLossPercent;
-  int get pendingBillReminderCount =>
-      _billProvider.getPendingReminders().length;
+  int get pendingBillReminderCount => _billProvider
+      .getRemindersForMonth(DateTime.now())
+      .where((r) => r.status == BillReminderStatus.pending)
+      .length;
 
   void _listenToProviders() {
     _expenseProvider.addListener(_computeAll);
@@ -331,7 +334,10 @@ class HomeViewModel extends ChangeNotifier {
     _alerts = [];
 
     // Pending bill reminders alerts
-    final pendingReminders = _billProvider.getPendingReminders();
+    final pendingReminders = _billProvider
+        .getRemindersForMonth(DateTime.now())
+        .where((r) => r.status == BillReminderStatus.pending)
+        .toList();
     final now = DateTime.now();
 
     // Sort by due date - closest due dates first

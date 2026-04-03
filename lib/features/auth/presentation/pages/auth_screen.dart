@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
 import 'package:fintrack/services/security_service.dart';
@@ -114,7 +113,7 @@ class _AuthScreenState extends State<AuthScreen> {
               // Title
               Text(
                 'Secure Access',
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
                 ),
@@ -122,7 +121,7 @@ class _AuthScreenState extends State<AuthScreen> {
               const SizedBox(height: 8),
               Text(
                 'Secure Your Financial Data',
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 14,
                   color: Colors.grey[600],
                 ),
@@ -146,14 +145,14 @@ class _AuthScreenState extends State<AuthScreen> {
                         keyboardType: TextInputType.number,
                         maxLength: 6,
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 24,
                           letterSpacing: 8,
                           fontWeight: FontWeight.w600,
                         ),
                         decoration: InputDecoration(
                           hintText: '••••••',
-                          hintStyle: GoogleFonts.poppins(
+                          hintStyle: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 24,
                             color: Colors.grey[400],
                           ),
@@ -179,7 +178,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                           child: Text(
                             _errorMessage!,
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(fontFamily: 'Poppins', 
                               fontSize: 12,
                               color: Colors.red[700],
                               fontWeight: FontWeight.w500,
@@ -207,7 +206,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 )
                               : Text(
                                   'Unlock',
-                                  style: GoogleFonts.poppins(
+                                  style: TextStyle(fontFamily: 'Poppins', 
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                   ),

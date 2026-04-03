@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
@@ -110,7 +109,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'No accounts yet',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       color: isDarkMode
@@ -121,7 +120,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Add a bank account, card, or wallet',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 14,
                       color: isDarkMode
                           ? Colors.white70
@@ -148,7 +147,12 @@ class _AccountListScreenState extends State<AccountListScreen> {
               groupedAccounts.keys.every((key) => _expandedGroups[key] == true);
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              contentBottomPadding(context),
+            ),
             children: [
               // Summary Card
               Container(
@@ -174,7 +178,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                   children: [
                     Text(
                       'Total Balance',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 14,
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Theme.of(context).colorScheme.onSurfaceVariant
@@ -188,7 +192,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                         provider.getTotalBalance(),
                         currencySymbol: currencySymbol,
                       ),
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
                         color: Theme.of(context).brightness == Brightness.dark
@@ -221,7 +225,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                   Expanded(
                     child: Text(
                       'Your Accounts',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -247,7 +251,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                       ),
                       child: Text(
                         allGroupsExpanded ? 'Collapse all' : 'Expand all',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
@@ -330,12 +334,14 @@ class _AccountListScreenState extends State<AccountListScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        mini: true,
-        heroTag: 'account_list_fab_add',
-        onPressed: _addAccount,
-        tooltip: 'Add Account',
-        child: const Icon(Icons.add),
+      floatingActionButton: AdaptiveBottomFab(
+        child: FloatingActionButton(
+          mini: true,
+          heroTag: 'account_list_fab_add',
+          onPressed: _addAccount,
+          tooltip: 'Add Account',
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -419,7 +425,7 @@ class _SummaryItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: TextStyle(fontFamily: 'Poppins', 
             fontSize: 12,
             color: Theme.of(context).brightness == Brightness.dark
                 ? Theme.of(context).colorScheme.onSurfaceVariant
@@ -430,7 +436,7 @@ class _SummaryItem extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: GoogleFonts.poppins(
+          style: TextStyle(fontFamily: 'Poppins', 
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: Theme.of(context).brightness == Brightness.dark
@@ -504,7 +510,7 @@ class _AccountCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           account.name,
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color:
@@ -546,7 +552,7 @@ class _AccountCard extends StatelessWidget {
                         (account.bankName != null
                             ? ' • ${account.bankName}'
                             : ''),
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 11,
                       color: isDarkMode
                           ? Colors.white70
@@ -560,7 +566,7 @@ class _AccountCard extends StatelessWidget {
                     children: [
                       Text(
                         isCredit ? 'Outstanding' : 'Balance',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 10,
                           color: isDarkMode
                               ? Colors.white70
@@ -578,7 +584,7 @@ class _AccountCard extends StatelessWidget {
                               account.balance,
                               currencySymbol: currencySymbol,
                             ),
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(fontFamily: 'Poppins', 
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               color: isCredit
@@ -608,7 +614,7 @@ class _AccountCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             'Statement: ${account.statementDate!.day.toString().padLeft(2, '0')}/${account.statementDate!.month.toString().padLeft(2, '0')}/${account.statementDate!.year}',
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(fontFamily: 'Poppins', 
                               fontSize: 10,
                               color: isDarkMode
                                   ? Colors.white70
@@ -629,7 +635,7 @@ class _AccountCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             'Due: ${account.dueDate!.day.toString().padLeft(2, '0')}/${account.dueDate!.month.toString().padLeft(2, '0')}/${account.dueDate!.year}',
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(fontFamily: 'Poppins', 
                               fontSize: 10,
                               color: AppTheme.errorColor,
                               fontWeight: FontWeight.w600,
@@ -750,7 +756,7 @@ class _AccountTypeHeader extends StatelessWidget {
                       accountType,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -759,7 +765,7 @@ class _AccountTypeHeader extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       '$accountCount ${accountCount == 1 ? 'account' : 'accounts'}',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 11,
                         color: isDarkMode
                             ? Colors.white70
@@ -782,7 +788,7 @@ class _AccountTypeHeader extends StatelessWidget {
                       children: [
                         Text(
                           'Total',
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 10,
                             color: isDarkMode
                                 ? Colors.white70
@@ -799,7 +805,7 @@ class _AccountTypeHeader extends StatelessWidget {
                               totalBalance,
                               currencySymbol: currencySymbol,
                             ),
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(fontFamily: 'Poppins', 
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               color: AppTheme.primaryColor,

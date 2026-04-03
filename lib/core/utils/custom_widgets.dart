@@ -1,6 +1,48 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
+
+// Returns the safe-area bottom inset still needed in the current scaffold
+// context. Uses MediaQuery.padding.bottom (which parent Scaffolds reduce as
+// they consume insets) rather than viewPadding.bottom (which never changes).
+// This avoids double-counting when this widget lives inside a nested Scaffold
+// (e.g. a home-tab body already positioned above a BottomNavigationBar).
+double effectiveBottomInset(BuildContext context, {double minimum = 0}) {
+  final inset = MediaQuery.of(context).padding.bottom;
+  return math.max(inset, minimum);
+}
+
+double contentBottomPadding(BuildContext context, {bool hasFab = true}) {
+  // Keep a fixed visual gap above the floating button while honoring whatever
+  // bottom safe inset remains in this scaffold context.
+  // hasFab: true  => inset + 84 (56 FAB + 16 scaffold margin + 12 breathing room)
+  // hasFab: false => inset + 16
+  return effectiveBottomInset(context) + (hasFab ? 84 : 16);
+}
+
+class AdaptiveBottomFab extends StatelessWidget {
+  final Widget child;
+  final double spacing;
+
+  const AdaptiveBottomFab({
+    super.key,
+    required this.child,
+    this.spacing = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Scaffold already accounts for bottom safe-area and default FAB margin.
+    // Only apply optional extra spacing requested by the caller.
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: spacing,
+      ),
+      child: child,
+    );
+  }
+}
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -22,15 +64,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final resolvedBackground = backgroundColor ?? theme.colorScheme.surface;
+    final resolvedTextColor = textColor ?? theme.colorScheme.onSurface;
+
     return Container(
       decoration: BoxDecoration(
-        color: backgroundColor ?? AppTheme.surfaceColor,
-        border: const Border(
-          bottom: BorderSide(
-            color: AppTheme.borderColor,
-            width: 1,
-          ),
-        ),
+        color: resolvedBackground,
       ),
       child: SafeArea(
         child: Padding(
@@ -46,7 +86,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     child: Icon(
                       Icons.arrow_back,
                       size: 20,
-                      color: textColor ?? AppTheme.textColor,
+                      color: resolvedTextColor,
                     ),
                   ),
                 )
@@ -56,10 +96,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 child: Text(
                   title,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: resolvedTextColor,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: textColor ?? AppTheme.textColor,
                   ),
                 ),
               ),
@@ -109,7 +149,8 @@ class EmptyStateWidget extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               title,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppTheme.textColor,
@@ -121,7 +162,8 @@ class EmptyStateWidget extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
                 description,
-                style: GoogleFonts.poppins(
+                style: TextStyle(
+                  fontFamily: 'Poppins',
                   fontSize: 14,
                   color: AppTheme.textSecondaryColor,
                 ),
@@ -213,7 +255,8 @@ class ProgressIndicatorWidget extends StatelessWidget {
           children: [
             Text(
               label,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'Poppins',
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: AppTheme.textColor,
@@ -221,7 +264,8 @@ class ProgressIndicatorWidget extends StatelessWidget {
             ),
             Text(
               percentage,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'Poppins',
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: progressColor,
@@ -281,7 +325,8 @@ class AnimatedStatCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 label,
-                style: GoogleFonts.poppins(
+                style: TextStyle(
+                  fontFamily: 'Poppins',
                   fontSize: 12,
                   color: AppTheme.textSecondaryColor,
                   fontWeight: FontWeight.w500,
@@ -290,7 +335,8 @@ class AnimatedStatCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 value,
-                style: GoogleFonts.poppins(
+                style: TextStyle(
+                  fontFamily: 'Poppins',
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textColor,
@@ -322,7 +368,8 @@ class LoadingWidget extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               message!,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'Poppins',
                 fontSize: 14,
                 color: AppTheme.textSecondaryColor,
               ),

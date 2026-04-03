@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
+import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/features/expense/data/models/expense_model.dart';
 import 'package:fintrack/features/expense/data/models/expense_category_model.dart';
 import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
@@ -76,115 +76,120 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
               automaticallyImplyLeading: widget.showBackButton,
             )
           : null,
-      body: Consumer<ExpenseProvider>(
-        builder: (context, provider, _) {
-          final allExpenses = provider.expenses
-              .where((e) => !_pendingDeletedExpenseIds.contains(e.id))
-              .toList();
+      body: SafeArea(
+        child: Consumer<ExpenseProvider>(
+          builder: (context, provider, _) {
+            final allExpenses = provider.expenses
+                .where((e) => !_pendingDeletedExpenseIds.contains(e.id))
+                .toList();
 
-          // Filter expenses based on selected period
-          List<Expense> filteredExpenses;
-          if (_customDateRange != null) {
-            filteredExpenses = allExpenses.where((expense) {
-              return expense.date.isAfter(_customDateRange!.start
-                      .subtract(const Duration(days: 1))) &&
-                  expense.date.isBefore(
-                      _customDateRange!.end.add(const Duration(days: 1)));
-            }).toList();
-          } else {
-            filteredExpenses = allExpenses.where((expense) {
-              return expense.date.year == _selectedMonth.year &&
-                  expense.date.month == _selectedMonth.month;
-            }).toList();
-          }
+            // Filter expenses based on selected period
+            List<Expense> filteredExpenses;
+            if (_customDateRange != null) {
+              filteredExpenses = allExpenses.where((expense) {
+                return expense.date.isAfter(_customDateRange!.start
+                        .subtract(const Duration(days: 1))) &&
+                    expense.date.isBefore(
+                        _customDateRange!.end.add(const Duration(days: 1)));
+              }).toList();
+            } else {
+              filteredExpenses = allExpenses.where((expense) {
+                return expense.date.year == _selectedMonth.year &&
+                    expense.date.month == _selectedMonth.month;
+              }).toList();
+            }
 
-          // Use one consistent dataset across summary + all tabs
-          final overviewExpenses =
-              filteredExpenses.where(_isAccountBreakdownTransaction).toList();
+            // Use one consistent dataset across summary + all tabs
+            final overviewExpenses =
+                filteredExpenses.where(_isAccountBreakdownTransaction).toList();
 
-          // Sort expenses for list usage
-          final sortedExpenses = List<Expense>.from(overviewExpenses);
-          switch (_sortOption) {
-            case SortOption.date:
-              sortedExpenses.sort((a, b) => _sortAscending
-                  ? a.date.compareTo(b.date)
-                  : b.date.compareTo(a.date));
-              break;
-            case SortOption.amount:
-              sortedExpenses.sort((a, b) => _sortAscending
-                  ? a.amount.compareTo(b.amount)
-                  : b.amount.compareTo(a.amount));
-              break;
-            case SortOption.category:
-              sortedExpenses.sort((a, b) => _sortAscending
-                  ? a.category.compareTo(b.category)
-                  : b.category.compareTo(a.category));
-              break;
-          }
+            // Sort expenses for list usage
+            final sortedExpenses = List<Expense>.from(overviewExpenses);
+            switch (_sortOption) {
+              case SortOption.date:
+                sortedExpenses.sort((a, b) => _sortAscending
+                    ? a.date.compareTo(b.date)
+                    : b.date.compareTo(a.date));
+                break;
+              case SortOption.amount:
+                sortedExpenses.sort((a, b) => _sortAscending
+                    ? a.amount.compareTo(b.amount)
+                    : b.amount.compareTo(a.amount));
+                break;
+              case SortOption.category:
+                sortedExpenses.sort((a, b) => _sortAscending
+                    ? a.category.compareTo(b.category)
+                    : b.category.compareTo(a.category));
+                break;
+            }
 
-          final totalAmount = overviewExpenses.fold<double>(
-              0, (sum, expense) => sum + expense.amount);
+            final totalAmount = overviewExpenses.fold<double>(
+                0, (sum, expense) => sum + expense.amount);
 
-          if (allExpenses.isEmpty) {
-            return _buildEmptyState(
-              icon: Icons.receipt_long,
-              title: 'No Expenses',
-              subtitle: 'Start tracking your expenses',
-            );
-          }
+            if (allExpenses.isEmpty) {
+              return _buildEmptyState(
+                icon: Icons.receipt_long,
+                title: 'No Expenses',
+                subtitle: 'Start tracking your expenses',
+              );
+            }
 
-          return Column(
-            children: [
-              // TabBar with sort button
-              Container(
-                color: Theme.of(context).appBarTheme.backgroundColor,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TabBar(
-                        controller: _tabController,
-                        labelStyle:
-                            GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                        tabs: const [
-                          Tab(text: 'Overview'),
-                          Tab(text: 'Categories'),
-                          Tab(text: 'Timeline'),
-                        ],
+            return Column(
+              children: [
+                // TabBar with sort button
+                Container(
+                  color: Theme.of(context).appBarTheme.backgroundColor,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TabBar(
+                          controller: _tabController,
+                          labelStyle: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w600),
+                          tabs: const [
+                            Tab(text: 'Overview'),
+                            Tab(text: 'Categories'),
+                            Tab(text: 'Timeline'),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              // Month/Period Summary Card
-              _buildSummaryCard(totalAmount),
+                // Month/Period Summary Card
+                _buildSummaryCard(totalAmount),
 
-              // Tabs Content
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildOverviewTab(context, sortedExpenses, totalAmount),
-                    _buildCategoryTab(context, sortedExpenses),
-                    _buildTimelineTab(context, sortedExpenses),
-                  ],
+                // Tabs Content
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildOverviewTab(context, sortedExpenses, totalAmount),
+                      _buildCategoryTab(context, sortedExpenses),
+                      _buildTimelineTab(context, sortedExpenses),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        mini: true,
-        heroTag: 'expense_list_fab_add',
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddEditExpenseScreen(),
-            ),
-          );
-        },
-        child: const Icon(Icons.add),
+      floatingActionButton: AdaptiveBottomFab(
+        child: FloatingActionButton(
+          mini: true,
+          heroTag: 'expense_list_fab_add',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AddEditExpenseScreen(),
+              ),
+            );
+          },
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -217,7 +222,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
             Text(
               title,
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: _tabPrimaryTextColor(context),
@@ -227,7 +233,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'Poppins',
                 fontSize: 14,
                 color: _tabSecondaryTextColor(context),
               ),
@@ -269,7 +276,12 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
     }
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        contentBottomPadding(context),
+      ),
       children: [
         _buildSectionTitle('Category Distribution'),
         const SizedBox(height: 8),
@@ -281,7 +293,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               'Showing top 5 of ${overviewExpenses.length} expenses',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'Poppins',
                 fontSize: 11,
                 color: _tabSecondaryTextColor(context),
               ),
@@ -341,7 +354,12 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
     final grouped = _groupExpensesByCategory(expenses);
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        contentBottomPadding(context),
+      ),
       children: grouped.entries.map((entry) {
         final category = entry.key;
         final categoryExpenses = entry.value;
@@ -391,13 +409,14 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                 child: Center(
                   child: Text(
                     categoryIcon,
-                    style: GoogleFonts.poppins(fontSize: 18),
+                    style: TextStyle(fontFamily: 'Poppins', fontSize: 18),
                   ),
                 ),
               ),
               title: Text(
                 category,
-                style: GoogleFonts.poppins(
+                style: TextStyle(
+                  fontFamily: 'Poppins',
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: _tabPrimaryTextColor(context),
@@ -410,7 +429,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                     AppUtils.formatCurrency(total,
                         currencySymbol:
                             context.read<SettingsProvider>().currencySymbol),
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: _tabPrimaryTextColor(context),
@@ -461,7 +481,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
             return haystack.contains(query);
           }).toList();
 
-    final grouped = _groupExpensesByDate(filteredExpenses);
+    final groupedByDate = _groupExpensesByDate(filteredExpenses);
+    final groupedByCategory = _groupExpensesByCategory(filteredExpenses);
 
     return Column(
       children: [
@@ -472,7 +493,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
               Expanded(
                 child: TextField(
                   controller: _timelineSearchController,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Colors.white
                         : AppTheme.textColor,
@@ -484,7 +506,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                   },
                   decoration: InputDecoration(
                     hintText: 'Search timeline',
-                    hintStyle: GoogleFonts.poppins(
+                    hintStyle: TextStyle(
+                      fontFamily: 'Poppins',
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white
                           : AppTheme.textSecondaryColor,
@@ -533,6 +556,20 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                 ),
               ),
               const SizedBox(width: 8),
+              Text(
+                _sortOption == SortOption.date
+                    ? 'Date'
+                    : _sortOption == SortOption.amount
+                        ? 'Amount'
+                        : 'Category',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: _tabSecondaryTextColor(context),
+                ),
+              ),
+              const SizedBox(width: 4),
               _buildSortButton(),
             ],
           ),
@@ -544,35 +581,94 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                   title: 'No matching expenses',
                   subtitle: 'Try a different keyword',
                 )
-              : ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  children: grouped.entries.map((entry) {
-                    final date = entry.key;
-                    final dayExpenses = entry.value;
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8, top: 12),
-                          child: Text(
-                            AppUtils.formatDate(date),
-                            style: GoogleFonts.poppins(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: _tabSecondaryTextColor(context),
+              : _sortOption == SortOption.category
+                  ? ListView(
+                      padding: EdgeInsets.fromLTRB(
+                        16,
+                        0,
+                        16,
+                        contentBottomPadding(context),
+                      ),
+                      children: groupedByCategory.entries.map((entry) {
+                        final category = entry.key;
+                        final categoryExpenses = entry.value;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding:
+                                  const EdgeInsets.only(bottom: 8, top: 12),
+                              child: Text(
+                                category,
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: _tabSecondaryTextColor(context),
+                                ),
+                              ),
                             ),
+                            ...categoryExpenses.map((expense) => ExpenseCard(
+                                  key: ValueKey(expense.id),
+                                  expense: expense,
+                                  onDeleted: _handleExpenseDeleted,
+                                )),
+                          ],
+                        );
+                      }).toList(),
+                    )
+                  : _sortOption == SortOption.amount
+                      ? ListView(
+                          padding: EdgeInsets.fromLTRB(
+                            16,
+                            8,
+                            16,
+                            contentBottomPadding(context),
                           ),
+                          children: filteredExpenses
+                              .map((expense) => ExpenseCard(
+                                    key: ValueKey(expense.id),
+                                    expense: expense,
+                                    onDeleted: _handleExpenseDeleted,
+                                  ))
+                              .toList(),
+                        )
+                      : ListView(
+                          padding: EdgeInsets.fromLTRB(
+                            16,
+                            0,
+                            16,
+                            contentBottomPadding(context),
+                          ),
+                          children: groupedByDate.entries.map((entry) {
+                            final date = entry.key;
+                            final dayExpenses = entry.value;
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.only(bottom: 8, top: 12),
+                                  child: Text(
+                                    AppUtils.formatDate(date),
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: _tabSecondaryTextColor(context),
+                                    ),
+                                  ),
+                                ),
+                                ...dayExpenses.map((expense) => ExpenseCard(
+                                      key: ValueKey(expense.id),
+                                      expense: expense,
+                                      onDeleted: _handleExpenseDeleted,
+                                    )),
+                              ],
+                            );
+                          }).toList(),
                         ),
-                        ...dayExpenses.map((expense) => ExpenseCard(
-                              key: ValueKey(expense.id),
-                              expense: expense,
-                              onDeleted: _handleExpenseDeleted,
-                            )),
-                      ],
-                    );
-                  }).toList(),
-                ),
         ),
       ],
     );
@@ -664,13 +760,12 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? _getCategoryColor(context, entry.key)
-                                  .withOpacity(0.15)
+                              ? _getBreakdownColor(index).withOpacity(0.15)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: isSelected
-                                ? _getCategoryColor(context, entry.key)
+                                ? _getBreakdownColor(index)
                                 : Colors.transparent,
                             width: 2,
                           ),
@@ -685,13 +780,12 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                               height: isSelected ? 10 : 8,
                               margin: const EdgeInsets.only(top: 2),
                               decoration: BoxDecoration(
-                                color: _getCategoryColor(context, entry.key),
+                                color: _getBreakdownColor(index),
                                 shape: BoxShape.circle,
                                 boxShadow: isSelected
                                     ? [
                                         BoxShadow(
-                                          color: _getCategoryColor(
-                                                  context, entry.key)
+                                          color: _getBreakdownColor(index)
                                               .withOpacity(0.6),
                                           blurRadius: 6,
                                           spreadRadius: 1,
@@ -708,7 +802,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                                 children: [
                                   Text(
                                     '${entry.key} (${_formatPercentLabel(entry.value, totalAmount)})',
-                                    style: GoogleFonts.poppins(
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
                                       fontSize: isSelected ? 11 : 10,
                                       fontWeight: isSelected
                                           ? FontWeight.w700
@@ -721,7 +816,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                                   Text(
                                     AppUtils.formatCurrency(entry.value,
                                         currencySymbol: currencySymbol),
-                                    style: GoogleFonts.poppins(
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
                                       fontSize: isSelected ? 10 : 9,
                                       fontWeight: isSelected
                                           ? FontWeight.w600
@@ -749,7 +845,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: GoogleFonts.poppins(
+      style: TextStyle(
+        fontFamily: 'Poppins',
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: _tabPrimaryTextColor(context),
@@ -787,7 +884,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                 Expanded(
                   child: Text(
                     label,
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: _tabPrimaryTextColor(context),
@@ -800,7 +898,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                   children: [
                     Text(
                       '${percentage.toStringAsFixed(1)}%',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: color,
@@ -810,7 +909,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                     Text(
                       AppUtils.formatCurrency(amount,
                           currencySymbol: currencySymbol),
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: _tabSecondaryTextColor(context),
@@ -938,7 +1038,24 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
       breakdown[expense.category] =
           (breakdown[expense.category] ?? 0) + expense.amount;
     }
-    return breakdown;
+
+    final sorted = breakdown.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    const maxSlices = 8;
+    if (sorted.length <= maxSlices) {
+      return Map<String, double>.fromEntries(sorted);
+    }
+
+    final limited = sorted.take(maxSlices - 1).toList();
+    final othersTotal = sorted
+        .skip(maxSlices - 1)
+        .fold<double>(0, (sum, entry) => sum + entry.value);
+
+    return {
+      for (final entry in limited) entry.key: entry.value,
+      'Others': othersTotal,
+    };
   }
 
   Map<String, double> _getPaymentAccountBreakdown(List<Expense> expenses) {
@@ -957,7 +1074,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
 
   bool _isAccountBreakdownTransaction(Expense expense) {
     final transactionType = expense.transactionType ?? 'expense';
-    return transactionType != 'income';
+    return transactionType == 'expense';
   }
 
   String _getExpenseAccountName(Expense expense) {
@@ -987,6 +1104,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
 
   String _formatPercentLabel(double value, double totalAmount) {
     final percentage = totalAmount > 0 ? ((value / totalAmount) * 100) : 0.0;
+    if (percentage > 0 && percentage < 1) {
+      return '<1%';
+    }
     return '${percentage.toStringAsFixed(0)}%';
   }
 
@@ -1012,7 +1132,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
       final isTouched = index == touchedIndex;
       final radius = isTouched ? 43.0 : 39.0;
       final fontSize = isTouched ? 14.0 : 12.0;
-      final baseColor = _getCategoryColor(context, entry.key);
+      final baseColor = _getBreakdownColor(index);
       final color =
           isTouched ? Color.lerp(baseColor, Colors.white, 0.2)! : baseColor;
       index++;
@@ -1023,7 +1143,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
         radius: radius,
         showTitle: true,
         title: _formatPercentLabel(entry.value, totalAmount),
-        titleStyle: GoogleFonts.poppins(
+        titleStyle: TextStyle(
+          fontFamily: 'Poppins',
           color: Colors.white,
           fontWeight: FontWeight.bold,
           fontSize: fontSize,
@@ -1096,37 +1217,19 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Flexible(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _customDateRange != null
-                          ? 'Custom Period'
-                          : _getMonthYearString(_selectedMonth),
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Theme.of(context).colorScheme.onSurfaceVariant
-                            : Colors.white.withOpacity(0.8),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      AppUtils.formatCurrency(totalAmount,
-                          currencySymbol: currencySymbol),
-                      style: GoogleFonts.poppins(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Theme.of(context).colorScheme.onSurface
-                            : Colors.white,
-                      ),
-                    ),
-                  ],
+              Text(
+                _customDateRange != null
+                    ? 'Custom Period'
+                    : _getMonthYearString(_selectedMonth),
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Theme.of(context).colorScheme.onSurfaceVariant
+                      : Colors.white.withOpacity(0.8),
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               if (_customDateRange == null)
@@ -1139,7 +1242,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                               : Colors.white),
                       iconSize: 24,
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                      constraints: const BoxConstraints(minWidth: 28),
                       onPressed: () {
                         setState(() {
                           _selectedMonth = DateTime(
@@ -1157,7 +1260,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                               : Colors.white),
                       iconSize: 22,
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                      constraints: const BoxConstraints(minWidth: 28),
                       tooltip: 'Select Date',
                       offset: const Offset(0, 40),
                       color: Colors.white,
@@ -1177,7 +1280,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                                   size: 18, color: AppTheme.primaryColor),
                               const SizedBox(width: 12),
                               Text('Select Month',
-                                  style: GoogleFonts.poppins(fontSize: 13)),
+                                  style: TextStyle(
+                                      fontFamily: 'Poppins', fontSize: 13)),
                             ],
                           ),
                         ),
@@ -1189,7 +1293,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                                   size: 18, color: AppTheme.primaryColor),
                               const SizedBox(width: 12),
                               Text('Select Date Range',
-                                  style: GoogleFonts.poppins(fontSize: 13)),
+                                  style: TextStyle(
+                                      fontFamily: 'Poppins', fontSize: 13)),
                             ],
                           ),
                         ),
@@ -1203,7 +1308,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                               : Colors.white),
                       iconSize: 24,
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                      constraints: const BoxConstraints(minWidth: 28),
                       onPressed: () {
                         final nextMonth = DateTime(
                           _selectedMonth.year,
@@ -1227,7 +1332,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                           : Colors.white),
                   iconSize: 22,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+                  constraints: const BoxConstraints(minWidth: 28),
                   tooltip: 'Change Date Selection',
                   offset: const Offset(0, 40),
                   color: Colors.white,
@@ -1249,7 +1354,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                               size: 18, color: AppTheme.primaryColor),
                           const SizedBox(width: 12),
                           Text('Switch to Month View',
-                              style: GoogleFonts.poppins(fontSize: 13)),
+                              style: TextStyle(
+                                  fontFamily: 'Poppins', fontSize: 13)),
                         ],
                       ),
                     ),
@@ -1261,13 +1367,32 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                               size: 18, color: AppTheme.primaryColor),
                           const SizedBox(width: 12),
                           Text('Change Date Range',
-                              style: GoogleFonts.poppins(fontSize: 13)),
+                              style: TextStyle(
+                                  fontFamily: 'Poppins', fontSize: 13)),
                         ],
                       ),
                     ),
                   ],
                 ),
             ],
+          ),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              AppUtils.formatCurrency(totalAmount,
+                  currencySymbol: currencySymbol),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Theme.of(context).colorScheme.onSurface
+                    : Colors.white,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           if (_customDateRange != null) ...[
             const SizedBox(height: 8),
@@ -1276,7 +1401,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
               children: [
                 Text(
                   '${AppUtils.formatDateShort(_customDateRange!.start)} - ${AppUtils.formatDateShort(_customDateRange!.end)}',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 11,
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Theme.of(context).colorScheme.onSurfaceVariant
@@ -1310,7 +1436,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                         const SizedBox(width: 4),
                         Text(
                           'Clear',
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
                             fontSize: 11,
                             color:
                                 Theme.of(context).brightness == Brightness.dark
@@ -1368,7 +1495,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
             return AlertDialog(
               title: Text(
                 'Select Month',
-                style: GoogleFonts.poppins(
+                style: TextStyle(
+                  fontFamily: 'Poppins',
                   fontWeight: FontWeight.w600,
                   fontSize: 18,
                 ),
@@ -1392,7 +1520,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                         ),
                         Text(
                           '$selectedYear',
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1452,7 +1581,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                             child: Center(
                               child: Text(
                                 _getMonthShort(month),
-                                style: GoogleFonts.poppins(
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
                                   fontSize: 13,
                                   fontWeight: isSelected
                                       ? FontWeight.w600
@@ -1479,7 +1609,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                   },
                   child: Text(
                     'Cancel',
-                    style: GoogleFonts.poppins(),
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                    ),
                   ),
                 ),
                 ElevatedButton(
@@ -1494,7 +1626,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                   ),
                   child: Text(
                     'Select',
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        fontFamily: 'Poppins', fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -1597,7 +1730,8 @@ class _AccountTransactionsPageState extends State<_AccountTransactionsPage> {
           ? Center(
               child: Text(
                 'No transactions found for this account in the selected period.',
-                style: GoogleFonts.poppins(
+                style: TextStyle(
+                  fontFamily: 'Poppins',
                   fontSize: 14,
                   color: Theme.of(context).brightness == Brightness.dark
                       ? Colors.white
@@ -1611,7 +1745,8 @@ class _AccountTransactionsPageState extends State<_AccountTransactionsPage> {
               children: [
                 Text(
                   'Transactions',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).brightness == Brightness.dark
@@ -1725,7 +1860,8 @@ class ExpenseCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   categoryIcon,
-                  style: GoogleFonts.poppins(fontSize: iconFontSize),
+                  style:
+                      TextStyle(fontFamily: 'Poppins', fontSize: iconFontSize),
                 ),
               ),
             ),
@@ -1736,7 +1872,8 @@ class ExpenseCard extends StatelessWidget {
                 children: [
                   Text(
                     expense.title,
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: titleFontSize,
                       fontWeight: FontWeight.w600,
                       color: primaryTextColor,
@@ -1748,7 +1885,8 @@ class ExpenseCard extends StatelessWidget {
                   Text(
                     AppUtils.formatCurrency(expense.amount,
                         currencySymbol: currencySymbol),
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: amountFontSize,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.errorColor,
@@ -1766,7 +1904,8 @@ class ExpenseCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           expense.category,
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
                             fontSize: metadataFontSize,
                             color: secondaryTextColor,
                           ),
@@ -1789,7 +1928,8 @@ class ExpenseCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             expense.paymentMethod,
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
                               fontSize: metadataFontSize,
                               color: secondaryTextColor,
                             ),
@@ -1811,7 +1951,8 @@ class ExpenseCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         AppUtils.formatDateShort(expense.date),
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
                           fontSize: subMetaFontSize,
                           color: secondaryTextColor,
                         ),
@@ -1827,7 +1968,8 @@ class ExpenseCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             accountData.name,
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
                               fontSize: subMetaFontSize,
                               color: secondaryTextColor,
                             ),
@@ -1861,6 +2003,7 @@ class ExpenseCard extends StatelessWidget {
     final parentContext = context;
     showModalBottomSheet(
       context: parentContext,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -2103,201 +2246,213 @@ class ExpenseDetailScreen extends StatelessWidget {
         title: const Text('Transaction Details'),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Amount Card
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isDarkMode
-                      ? [const Color(0xFF1E3A5F), const Color(0xFF2E4A6F)]
-                      : [
-                          AppTheme.primaryColor,
-                          AppTheme.primaryColor.withOpacity(0.8)
-                        ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            contentBottomPadding(context, hasFab: false),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Amount Card
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isDarkMode
+                        ? [const Color(0xFF1E3A5F), const Color(0xFF2E4A6F)]
+                        : [
+                            AppTheme.primaryColor,
+                            AppTheme.primaryColor.withOpacity(0.8)
+                          ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Text(
-                    AppUtils.formatCurrency(expense.amount,
-                        currencySymbol: currencySymbol),
-                    style: GoogleFonts.poppins(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      expense.category,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Text(
+                      AppUtils.formatCurrency(expense.amount,
+                          currencySymbol: currencySymbol),
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 36,
+                        fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        expense.category,
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            // Transaction Details Card
-            _ModernDetailCard(
-              icon: Icons.receipt_long,
-              label: 'Transaction',
-              value: expense.title,
-              isDarkMode: isDarkMode,
-            ),
-            const SizedBox(height: 12),
-            _ModernDetailCard(
-              icon: Icons.calendar_today,
-              label: 'Date',
-              value: AppUtils.formatDate(expense.date),
-              isDarkMode: isDarkMode,
-            ),
-            const SizedBox(height: 12),
-            _ModernDetailCard(
-              icon: Icons.swap_horiz,
-              label: 'Transaction Type',
-              value: _getTransactionTypeLabel(),
-              isDarkMode: isDarkMode,
-            ),
-            const SizedBox(height: 12),
-            _ModernDetailCard(
-              icon: Icons.account_balance_wallet,
-              label: 'From Account',
-              value: _getAccountName(context),
-              isDarkMode: isDarkMode,
-            ),
-            const SizedBox(height: 12),
-            _ModernDetailCard(
-              icon: Icons.category,
-              label: 'From Account Type',
-              value: _getAccountType(context),
-              isDarkMode: isDarkMode,
-            ),
-            if (_showsDestinationAccount()) ...[
-              const SizedBox(height: 12),
-              _ModernDetailCard(
-                icon: Icons.call_made,
-                label: 'To Account',
-                value: _getDestinationAccountName(context),
-                isDarkMode: isDarkMode,
-              ),
-              const SizedBox(height: 12),
-              _ModernDetailCard(
-                icon: Icons.account_tree,
-                label: 'To Account Type',
-                value: _getDestinationAccountType(context),
-                isDarkMode: isDarkMode,
-              ),
-            ],
-            if (expense.notes != null && expense.notes!.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _ModernDetailCard(
-                icon: Icons.notes,
-                label: 'Notes',
-                value: expense.notes!,
-                isDarkMode: isDarkMode,
-              ),
-            ],
-            if (expense.tags.isNotEmpty) ...[
               const SizedBox(height: 20),
-              Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: isDarkMode
-                        ? Colors.white.withOpacity(0.1)
-                        : Colors.grey.withOpacity(0.2),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.local_offer,
-                            size: 18,
-                            color: isDarkMode
-                                ? Colors.white70
-                                : AppTheme.textSecondaryColor,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Tags',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: isDarkMode
-                                  ? Colors.white
-                                  : AppTheme.textColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: expense.tags
-                            .map((tag) => Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        AppTheme.primaryColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: AppTheme.primaryColor
-                                          .withOpacity(0.3),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    tag,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: AppTheme.primaryColor,
-                                    ),
-                                  ),
-                                ))
-                            .toList(),
-                      ),
-                    ],
-                  ),
-                ),
+              // Transaction Details Card
+              _ModernDetailCard(
+                icon: Icons.receipt_long,
+                label: 'Transaction',
+                value: expense.title,
+                isDarkMode: isDarkMode,
               ),
+              const SizedBox(height: 12),
+              _ModernDetailCard(
+                icon: Icons.calendar_today,
+                label: 'Date',
+                value: AppUtils.formatDate(expense.date),
+                isDarkMode: isDarkMode,
+              ),
+              const SizedBox(height: 12),
+              _ModernDetailCard(
+                icon: Icons.swap_horiz,
+                label: 'Transaction Type',
+                value: _getTransactionTypeLabel(),
+                isDarkMode: isDarkMode,
+              ),
+              const SizedBox(height: 12),
+              _ModernDetailCard(
+                icon: Icons.account_balance_wallet,
+                label: 'From Account',
+                value: _getAccountName(context),
+                isDarkMode: isDarkMode,
+              ),
+              const SizedBox(height: 12),
+              _ModernDetailCard(
+                icon: Icons.category,
+                label: 'From Account Type',
+                value: _getAccountType(context),
+                isDarkMode: isDarkMode,
+              ),
+              if (_showsDestinationAccount()) ...[
+                const SizedBox(height: 12),
+                _ModernDetailCard(
+                  icon: Icons.call_made,
+                  label: 'To Account',
+                  value: _getDestinationAccountName(context),
+                  isDarkMode: isDarkMode,
+                ),
+                const SizedBox(height: 12),
+                _ModernDetailCard(
+                  icon: Icons.account_tree,
+                  label: 'To Account Type',
+                  value: _getDestinationAccountType(context),
+                  isDarkMode: isDarkMode,
+                ),
+              ],
+              if (expense.notes != null && expense.notes!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _ModernDetailCard(
+                  icon: Icons.notes,
+                  label: 'Notes',
+                  value: expense.notes!,
+                  isDarkMode: isDarkMode,
+                ),
+              ],
+              if (expense.tags.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: isDarkMode
+                          ? Colors.white.withOpacity(0.1)
+                          : Colors.grey.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.local_offer,
+                              size: 18,
+                              color: isDarkMode
+                                  ? Colors.white70
+                                  : AppTheme.textSecondaryColor,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Tags',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : AppTheme.textColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: expense.tags
+                              .map((tag) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primaryColor
+                                          .withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: AppTheme.primaryColor
+                                            .withOpacity(0.3),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      tag,
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: AppTheme.primaryColor,
+                                      ),
+                                    ),
+                                  ))
+                              .toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -2353,7 +2508,8 @@ class _ModernDetailCard extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       color: isDarkMode
@@ -2364,7 +2520,8 @@ class _ModernDetailCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     value,
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -2468,6 +2625,8 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
       selectedTransactionType = widget.initialTransactionType ?? 'expense';
       if (selectedTransactionType == 'payment') {
         selectedCategory = 'Credit Card Payment';
+      } else if (selectedTransactionType == 'transfer') {
+        selectedCategory = 'Transfer';
       } else if (selectedTransactionType == 'income') {
         // Check if it's a credit card account (refund) or regular income
         if (widget.initialAccountId != null) {
@@ -2583,15 +2742,16 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                     const SizedBox(width: 8),
                     Text(
                       AppUtils.formatDate(selectedDate),
-                      style: GoogleFonts.poppins(fontSize: 14),
+                      style: TextStyle(fontFamily: 'Poppins', fontSize: 14),
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            // Only show category for expense/transfer/payment types, not for income/refund
-            if (selectedTransactionType != 'income')
+            // Internal transfers should not be categorized as expenses.
+            if (selectedTransactionType != 'income' &&
+                selectedTransactionType != 'transfer')
               DropdownButtonFormField<String>(
                 value: categories.any((c) => c.name == selectedCategory)
                     ? selectedCategory
@@ -2624,7 +2784,8 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                               child: Row(
                                 children: [
                                   Text(category.icon,
-                                      style: GoogleFonts.poppins(fontSize: 18)),
+                                      style: TextStyle(
+                                          fontFamily: 'Poppins', fontSize: 18)),
                                   const SizedBox(width: 8),
                                   Text(category.name),
                                 ],
@@ -2637,7 +2798,9 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                   }
                 },
               ),
-            if (selectedTransactionType != 'income') const SizedBox(height: 16),
+            if (selectedTransactionType != 'income' &&
+                selectedTransactionType != 'transfer')
+              const SizedBox(height: 16),
             // Only show account type and account selectors if not coming from a specific account
             if (widget.initialAccountId == null)
               Consumer2<PaymentAccountProvider, AccountTypeProvider>(
@@ -2667,7 +2830,8 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                             child: Row(
                               children: [
                                 Text(type.icon ?? '📌',
-                                    style: GoogleFonts.poppins(fontSize: 18)),
+                                    style: TextStyle(
+                                        fontFamily: 'Poppins', fontSize: 18)),
                                 const SizedBox(width: 8),
                                 Text(type.name),
                               ],
@@ -2725,7 +2889,8 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                                         children: [
                                           if (account.icon != null)
                                             Text('${account.icon} ',
-                                                style: GoogleFonts.poppins(
+                                                style: TextStyle(
+                                                    fontFamily: 'Poppins',
                                                     fontSize: 18)),
                                           Flexible(
                                             child: Text(
@@ -2883,8 +3048,15 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                                 selectedCategory = isCreditCard
                                     ? 'Refund'
                                     : _getPreferredIncomeCategory(categories);
+                              } else if (value == 'transfer') {
+                                selectedCategory = 'Transfer';
                               } else if (value == 'payment') {
                                 selectedCategory = 'Credit Card Payment';
+                              } else if (!categories
+                                  .any((c) => c.name == selectedCategory)) {
+                                selectedCategory = categories.isNotEmpty
+                                    ? categories.first.name
+                                    : 'Food';
                               }
                             });
                           }
@@ -2921,8 +3093,9 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                                 children: [
                                   if (account.icon != null)
                                     Text('${account.icon} ',
-                                        style:
-                                            GoogleFonts.poppins(fontSize: 18)),
+                                        style: TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontSize: 18)),
                                   Flexible(
                                     child: Text(
                                       account.name,
@@ -2979,8 +3152,9 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                                 children: [
                                   if (account.icon != null)
                                     Text('${account.icon} ',
-                                        style:
-                                            GoogleFonts.poppins(fontSize: 18)),
+                                        style: TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontSize: 18)),
                                   Flexible(
                                     child: Text(
                                       account.name,
