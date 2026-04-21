@@ -11,168 +11,175 @@ class SettingsAboutScreen extends StatelessWidget {
         title: 'About',
         showBackButton: true,
       ),
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          20,
-          16,
-          contentBottomPadding(context, hasFab: false),
-        ),
-        children: [
-          // App Logo & Branding
-          Center(
-            child: Column(
-              children: [
-                Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(context).primaryColor.withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: Image.asset(
-                      'assets/icon/fintrack_icon.png',
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'FinTrack',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Your Personal Financial Manager',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-              ],
-            ),
+      body: SafeArea(
+        top: false,
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            20,
+            16,
+            contentBottomPadding(context, hasFab: false),
           ),
-          const SizedBox(height: 32),
-
-          // Version Card
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: Theme.of(context).dividerColor,
-                width: 0.5,
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Row(
+          children: [
+            // App Logo & Branding
+            Center(
+              child: Column(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    width: 100,
+                    height: 100,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.info,
-                      color: Theme.of(context).primaryColor,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'App Version',
-                          style:
-                              Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '1.0.0',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              Theme.of(context).primaryColor.withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Image.asset(
+                        'assets/icon/fintrack_icon.png',
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'FinTrack',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Your Personal Financial Manager',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                   ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 32),
 
-          // Legal Document Cards
-          _buildLegalCard(
-            context,
-            icon: Icons.privacy_tip,
-            title: 'Privacy Policy',
-            description: 'How we protect your data',
-            onTap: () => _showPrivacyPolicy(context),
-          ),
-          const SizedBox(height: 8),
-          _buildLegalCard(
-            context,
-            icon: Icons.description,
-            title: 'Terms of Service',
-            description: 'Terms and conditions',
-            onTap: () => _showTermsOfService(context),
-          ),
-          const SizedBox(height: 28),
-
-          // About Section
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Theme.of(context).primaryColor.withOpacity(0.15),
-                width: 1,
+            // Version Card
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: Theme.of(context).dividerColor,
+                  width: 0.5,
+                ),
+              ),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.info,
+                        color: Theme.of(context).primaryColor,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'App Version',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '1.0.0',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'About FinTrack',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'FinTrack is a comprehensive personal finance management app that helps you track expenses, manage budgets, monitor investments, and achieve your financial goals. All your data is stored locally on your device for maximum privacy and security.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        height: 1.6,
-                        color: Colors.grey.shade700,
-                      ),
-                ),
-              ],
+            const SizedBox(height: 16),
+
+            // Legal Document Cards
+            _buildLegalCard(
+              context,
+              icon: Icons.privacy_tip,
+              title: 'Privacy Policy',
+              description: 'How we protect your data',
+              onTap: () => _showPrivacyPolicy(context),
             ),
-          ),
-          const SizedBox(height: 8),
-        ],
+            const SizedBox(height: 8),
+            _buildLegalCard(
+              context,
+              icon: Icons.description,
+              title: 'Terms of Service',
+              description: 'Terms and conditions',
+              onTap: () => _showTermsOfService(context),
+            ),
+            const SizedBox(height: 28),
+
+            // About Section
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Theme.of(context).primaryColor.withOpacity(0.15),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'About FinTrack',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'FinTrack is a comprehensive personal finance management app that helps you track expenses, manage budgets, monitor investments, and achieve your financial goals. All your data is stored locally on your device for maximum privacy and security.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          height: 1.6,
+                          color: Colors.grey.shade700,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }

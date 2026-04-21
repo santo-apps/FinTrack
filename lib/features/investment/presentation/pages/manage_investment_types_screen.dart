@@ -19,63 +19,66 @@ class ManageInvestmentTypesScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Consumer<InvestmentTypeProvider>(
-        builder: (context, provider, child) {
-          final types = provider.investmentTypes;
+      body: SafeArea(
+        top: false,
+        child: Consumer<InvestmentTypeProvider>(
+          builder: (context, provider, child) {
+            final types = provider.investmentTypes;
 
-          if (types.isEmpty) {
-            return const Center(
-              child: Text('No investment types available'),
-            );
-          }
-
-          return ReorderableListView.builder(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              contentBottomPadding(context, hasFab: false),
-            ),
-            itemCount: types.length,
-            onReorder: (oldIndex, newIndex) {
-              final list = List<InvestmentType>.from(types);
-              if (newIndex > oldIndex) {
-                newIndex--;
-              }
-              final item = list.removeAt(oldIndex);
-              list.insert(newIndex, item);
-              provider.reorderInvestmentTypes(list);
-            },
-            itemBuilder: (context, index) {
-              final type = types[index];
-              return Card(
-                key: ValueKey(type.id),
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  leading: const Icon(Icons.drag_handle),
-                  title: Text(type.name),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, size: 20),
-                        onPressed: () => _showAddEditDialog(context, type),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.delete,
-                          size: 20,
-                          color: Colors.red,
-                        ),
-                        onPressed: () => _confirmDelete(context, type),
-                      ),
-                    ],
-                  ),
-                ),
+            if (types.isEmpty) {
+              return const Center(
+                child: Text('No investment types available'),
               );
-            },
-          );
-        },
+            }
+
+            return ReorderableListView.builder(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                contentBottomPadding(context, hasFab: false),
+              ),
+              itemCount: types.length,
+              onReorder: (oldIndex, newIndex) {
+                final list = List<InvestmentType>.from(types);
+                if (newIndex > oldIndex) {
+                  newIndex--;
+                }
+                final item = list.removeAt(oldIndex);
+                list.insert(newIndex, item);
+                provider.reorderInvestmentTypes(list);
+              },
+              itemBuilder: (context, index) {
+                final type = types[index];
+                return Card(
+                  key: ValueKey(type.id),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: const Icon(Icons.drag_handle),
+                    title: Text(type.name),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, size: 20),
+                          onPressed: () => _showAddEditDialog(context, type),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete,
+                            size: 20,
+                            color: Colors.red,
+                          ),
+                          onPressed: () => _confirmDelete(context, type),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

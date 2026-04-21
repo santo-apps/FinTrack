@@ -88,161 +88,169 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // App Logo/Icon
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  borderRadius: BorderRadius.circular(20),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // App Logo/Icon
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(
+                    Icons.lock,
+                    size: 40,
+                    color: Colors.white,
+                  ),
                 ),
-                child: Icon(
-                  Icons.lock,
-                  size: 40,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Title
-              Text(
-                'Secure Access',
-                style: TextStyle(fontFamily: 'Poppins', 
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
+                // Title
+                Text(
+                  'Secure Access',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Secure Your Financial Data',
-                style: TextStyle(fontFamily: 'Poppins', 
-                  fontSize: 14,
-                  color: Colors.grey[600],
+                const SizedBox(height: 8),
+                Text(
+                  'Secure Your Financial Data',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 48),
+                const SizedBox(height: 48),
 
-              // PIN Input Section (only if PIN is enabled)
-              Consumer<SettingsProvider>(
-                builder: (context, settingsProvider, _) {
-                  if (!settingsProvider.pinEnabled) {
-                    return const SizedBox.shrink();
-                  }
+                // PIN Input Section (only if PIN is enabled)
+                Consumer<SettingsProvider>(
+                  builder: (context, settingsProvider, _) {
+                    if (!settingsProvider.pinEnabled) {
+                      return const SizedBox.shrink();
+                    }
 
-                  return Column(
-                    children: [
-                      // PIN Input
-                      TextField(
-                        controller: _pinController,
-                        enabled: !_isLoading,
-                        obscureText: true,
-                        keyboardType: TextInputType.number,
-                        maxLength: 6,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontFamily: 'Poppins', 
-                          fontSize: 24,
-                          letterSpacing: 8,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: '••••••',
-                          hintStyle: TextStyle(fontFamily: 'Poppins', 
+                    return Column(
+                      children: [
+                        // PIN Input
+                        TextField(
+                          controller: _pinController,
+                          enabled: !_isLoading,
+                          obscureText: true,
+                          keyboardType: TextInputType.number,
+                          maxLength: 6,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
                             fontSize: 24,
-                            color: Colors.grey[400],
+                            letterSpacing: 8,
+                            fontWeight: FontWeight.w600,
                           ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
-                          ),
-                        ),
-                        onSubmitted: (_) => !_isLoading ? _verifyPIN() : null,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Error Message
-                      if (_errorMessage != null)
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.red[100],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            _errorMessage!,
-                            style: TextStyle(fontFamily: 'Poppins', 
-                              fontSize: 12,
-                              color: Colors.red[700],
-                              fontWeight: FontWeight.w500,
+                          decoration: InputDecoration(
+                            hintText: '••••••',
+                            hintStyle: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 24,
+                              color: Colors.grey[400],
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
                             ),
                           ),
+                          onSubmitted: (_) => !_isLoading ? _verifyPIN() : null,
                         ),
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 16),
 
-                      // Unlock Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _verifyPIN,
-                          child: _isLoading
-                              ? SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation(
-                                      Theme.of(context).primaryColor,
+                        // Error Message
+                        if (_errorMessage != null)
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red[100],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              _errorMessage!,
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                color: Colors.red[700],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 24),
+
+                        // Unlock Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _verifyPIN,
+                            child: _isLoading
+                                ? SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation(
+                                        Theme.of(context).primaryColor,
+                                      ),
+                                    ),
+                                  )
+                                : Text(
+                                    'Unlock',
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                )
-                              : Text(
-                                  'Unlock',
-                                  style: TextStyle(fontFamily: 'Poppins', 
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                  );
-                },
-              ),
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  },
+                ),
 
-              // Biometric Button (if enabled)
-              Consumer<SettingsProvider>(
-                builder: (context, settingsProvider, _) {
-                  return FutureBuilder<bool>(
-                    future: BiometricService.canUseBiometrics(),
-                    builder: (context, snapshot) {
-                      final canUseBiometrics = snapshot.data ?? false;
-                      final isBiometricEnabled =
-                          settingsProvider.biometricEnabled;
+                // Biometric Button (if enabled)
+                Consumer<SettingsProvider>(
+                  builder: (context, settingsProvider, _) {
+                    return FutureBuilder<bool>(
+                      future: BiometricService.canUseBiometrics(),
+                      builder: (context, snapshot) {
+                        final canUseBiometrics = snapshot.data ?? false;
+                        final isBiometricEnabled =
+                            settingsProvider.biometricEnabled;
 
-                      if (!canUseBiometrics || !isBiometricEnabled) {
-                        return const SizedBox.shrink();
-                      }
+                        if (!canUseBiometrics || !isBiometricEnabled) {
+                          return const SizedBox.shrink();
+                        }
 
-                      return TextButton.icon(
-                        onPressed: _isLoading ? null : _tryBiometric,
-                        icon: Icon(Icons.fingerprint),
-                        label: Text('Use Biometric'),
-                      );
-                    },
-                  );
-                },
-              ),
-            ],
+                        return TextButton.icon(
+                          onPressed: _isLoading ? null : _tryBiometric,
+                          icon: Icon(Icons.fingerprint),
+                          label: Text('Use Biometric'),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),

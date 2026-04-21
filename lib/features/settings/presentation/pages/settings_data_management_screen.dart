@@ -34,82 +34,85 @@ class _SettingsDataManagementScreenState
         title: 'Data Management',
         showBackButton: true,
       ),
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          12,
-          16,
-          contentBottomPadding(context, hasFab: false),
+      body: SafeArea(
+        top: false,
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            12,
+            16,
+            contentBottomPadding(context, hasFab: false),
+          ),
+          children: [
+            // Backups Section
+            _buildSectionHeader(context, 'Backups', Icons.backup),
+            const SizedBox(height: 12),
+            _buildActionCard(
+              context,
+              icon: Icons.backup,
+              iconColor: Colors.blue,
+              title: 'Create Backup',
+              description: 'Export encrypted backup of all data',
+              onTap: _createBackup,
+            ),
+            const SizedBox(height: 8),
+            _buildActionCard(
+              context,
+              icon: Icons.restore,
+              iconColor: Colors.green,
+              title: 'Restore Backup',
+              description: 'Import data from a backup file',
+              onTap: _restoreBackup,
+            ),
+            const SizedBox(height: 8),
+            _buildActionCard(
+              context,
+              icon: Icons.download,
+              iconColor: Colors.orange,
+              title: 'Manage Backups',
+              description: 'View and delete existing backups',
+              onTap: _showBackupsDialog,
+            ),
+            const SizedBox(height: 20),
+
+            // Data Exchange Section
+            _buildSectionHeader(context, 'Data Exchange', Icons.share),
+            const SizedBox(height: 12),
+            _buildActionCard(
+              context,
+              icon: Icons.file_download_outlined,
+              iconColor: Colors.purple,
+              title: 'Export Data',
+              description: 'Download as JSON or CSV format',
+              onTap: _showExportDialog,
+            ),
+            const SizedBox(height: 8),
+            _buildActionCard(
+              context,
+              icon: Icons.file_upload_outlined,
+              iconColor: Colors.cyan,
+              title: 'Import Data',
+              description: 'Import data from a backup file',
+              onTap: _showImportDialog,
+            ),
+            const SizedBox(height: 20),
+
+            // Danger Zone Section
+            _buildSectionHeader(context, 'Caution', Icons.warning,
+                isDanger: true),
+            const SizedBox(height: 12),
+            _buildActionCard(
+              context,
+              icon: Icons.delete_forever,
+              iconColor: Colors.red,
+              title: 'Clear All Data',
+              description: 'Permanently delete all financial data',
+              isDanger: true,
+              onTap: _showClearDataDialog,
+            ),
+            const SizedBox(height: 8),
+          ],
         ),
-        children: [
-          // Backups Section
-          _buildSectionHeader(context, 'Backups', Icons.backup),
-          const SizedBox(height: 12),
-          _buildActionCard(
-            context,
-            icon: Icons.backup,
-            iconColor: Colors.blue,
-            title: 'Create Backup',
-            description: 'Export encrypted backup of all data',
-            onTap: () => _createBackup(context),
-          ),
-          const SizedBox(height: 8),
-          _buildActionCard(
-            context,
-            icon: Icons.restore,
-            iconColor: Colors.green,
-            title: 'Restore Backup',
-            description: 'Import data from a backup file',
-            onTap: () => _restoreBackup(context),
-          ),
-          const SizedBox(height: 8),
-          _buildActionCard(
-            context,
-            icon: Icons.download,
-            iconColor: Colors.orange,
-            title: 'Manage Backups',
-            description: 'View and delete existing backups',
-            onTap: () => _showBackupsDialog(context),
-          ),
-          const SizedBox(height: 20),
-
-          // Data Exchange Section
-          _buildSectionHeader(context, 'Data Exchange', Icons.share),
-          const SizedBox(height: 12),
-          _buildActionCard(
-            context,
-            icon: Icons.file_download_outlined,
-            iconColor: Colors.purple,
-            title: 'Export Data',
-            description: 'Download as JSON or CSV format',
-            onTap: () => _showExportDialog(context),
-          ),
-          const SizedBox(height: 8),
-          _buildActionCard(
-            context,
-            icon: Icons.file_upload_outlined,
-            iconColor: Colors.cyan,
-            title: 'Import Data',
-            description: 'Import data from a backup file',
-            onTap: () => _showImportDialog(context),
-          ),
-          const SizedBox(height: 20),
-
-          // Danger Zone Section
-          _buildSectionHeader(context, 'Caution', Icons.warning,
-              isDanger: true),
-          const SizedBox(height: 12),
-          _buildActionCard(
-            context,
-            icon: Icons.delete_forever,
-            iconColor: Colors.red,
-            title: 'Clear All Data',
-            description: 'Permanently delete all financial data',
-            isDanger: true,
-            onTap: () => _showClearDataDialog(context),
-          ),
-          const SizedBox(height: 8),
-        ],
       ),
     );
   }
@@ -227,63 +230,67 @@ class _SettingsDataManagementScreenState
     );
   }
 
-  Future<void> _createBackup(BuildContext context) async {
+  Future<void> _createBackup() async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Creating backup...')),
       );
 
       await BackupService.createLocalBackup();
+      if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Backup created successfully')),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!mounted) return;
+      messenger.showSnackBar(
         SnackBar(content: Text('Error creating backup: $e')),
       );
     }
   }
 
-  Future<void> _restoreBackup(BuildContext context) async {
+  Future<void> _restoreBackup() async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final backupPaths = await BackupService.getLocalBackups();
 
       if (backupPaths.isEmpty) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        if (!mounted) return;
+        messenger.showSnackBar(
           const SnackBar(content: Text('No backups found')),
         );
         return;
       }
 
-      if (!context.mounted) return;
+      if (!mounted) return;
       showDialog(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (dialogContext) => AlertDialog(
           title: const Text('Select Backup'),
           content: SizedBox(
             width: double.maxFinite,
             child: ListView.builder(
               itemCount: backupPaths.length,
-              itemBuilder: (context, index) {
+              itemBuilder: (itemContext, index) {
                 final backupPath = backupPaths[index];
                 final fileName = backupPath.split('/').last;
                 return ListTile(
                   title: Text(fileName),
                   onTap: () async {
-                    Navigator.pop(context);
+                    Navigator.pop(dialogContext);
                     try {
                       await BackupService.restoreFromBackup(backupPath);
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      if (!mounted) return;
+                      messenger.showSnackBar(
                         const SnackBar(
                           content: Text('Backup restored successfully'),
                         ),
                       );
                     } catch (e) {
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      if (!mounted) return;
+                      messenger.showSnackBar(
                         SnackBar(
                           content: Text('Error restoring backup: $e'),
                         ),
@@ -297,35 +304,36 @@ class _SettingsDataManagementScreenState
         ),
       );
     } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!mounted) return;
+      messenger.showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );
     }
   }
 
-  Future<void> _showBackupsDialog(BuildContext context) async {
+  Future<void> _showBackupsDialog() async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final backupPaths = await BackupService.getLocalBackups();
 
       if (backupPaths.isEmpty) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        if (!mounted) return;
+        messenger.showSnackBar(
           const SnackBar(content: Text('No backups found')),
         );
         return;
       }
 
-      if (!context.mounted) return;
+      if (!mounted) return;
       showDialog(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (dialogContext) => AlertDialog(
           title: const Text('Available Backups'),
           content: SizedBox(
             width: double.maxFinite,
             child: ListView.builder(
               itemCount: backupPaths.length,
-              itemBuilder: (context, index) {
+              itemBuilder: (itemContext, index) {
                 final backupPath = backupPaths[index];
                 final fileName = backupPath.split('/').last;
                 final backupFile = File(backupPath);
@@ -336,10 +344,10 @@ class _SettingsDataManagementScreenState
                   title: Text(fileName),
                   subtitle: Text('$sizeKb KB'),
                   trailing: PopupMenuButton(
-                    itemBuilder: (context) => [
+                    itemBuilder: (menuContext) => [
                       PopupMenuItem(
                         child: const Text('Restore'),
-                        onTap: () => _restoreBackupFile(context, backupPath),
+                        onTap: () => _restoreBackupFile(backupPath),
                       ),
                       PopupMenuItem(
                         child: const Text('Delete',
@@ -349,14 +357,14 @@ class _SettingsDataManagementScreenState
                             if (backupFile.existsSync()) {
                               backupFile.deleteSync();
                             }
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            Navigator.pop(dialogContext);
+                            messenger.showSnackBar(
                               const SnackBar(
                                 content: Text('Backup deleted'),
                               ),
                             );
                           } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               SnackBar(content: Text('Error: $e')),
                             );
                           }
@@ -370,51 +378,54 @@ class _SettingsDataManagementScreenState
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Close'),
             ),
           ],
         ),
       );
     } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!mounted) return;
+      messenger.showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );
     }
   }
 
-  Future<void> _restoreBackupFile(BuildContext context, String filePath) async {
+  Future<void> _restoreBackupFile(String filePath) async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
       await BackupService.restoreFromBackup(filePath);
+      if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Backup restored successfully')),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!mounted) return;
+      messenger.showSnackBar(
         SnackBar(content: Text('Error restoring backup: $e')),
       );
     }
   }
 
-  void _showClearDataDialog(BuildContext context) {
+  void _showClearDataDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Clear All Data'),
         content: const Text(
           'Are you sure? This will permanently delete all your financial data. This action cannot be undone.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
-              await _clearAllData(context);
+              Navigator.pop(dialogContext);
+              await _clearAllData();
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -423,9 +434,21 @@ class _SettingsDataManagementScreenState
     );
   }
 
-  Future<void> _clearAllData(BuildContext context) async {
+  Future<void> _clearAllData() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final expenseProvider = context.read<ExpenseProvider>();
+    final budgetProvider = context.read<BudgetProvider>();
+    final subscriptionProvider = context.read<SubscriptionProvider>();
+    final investmentProvider = context.read<InvestmentProvider>();
+    final goalProvider = context.read<GoalProvider>();
+    final loanProvider = context.read<LoanProvider>();
+    final billProvider = context.read<BillProvider>();
+    final debtProvider = context.read<DebtProvider>();
+    final paymentAccountProvider = context.read<PaymentAccountProvider>();
+    final settingsProvider = context.read<SettingsProvider>();
+
     try {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Clearing all data...')),
       );
 
@@ -433,31 +456,31 @@ class _SettingsDataManagementScreenState
 
       if (!mounted) return;
 
-      await context.read<ExpenseProvider>().refreshData();
-      await context.read<BudgetProvider>().refreshData();
-      await context.read<SubscriptionProvider>().refreshData();
-      await context.read<InvestmentProvider>().refreshData();
-      await context.read<GoalProvider>().refreshData();
-      await context.read<LoanProvider>().refreshData();
-      await context.read<BillProvider>().refreshData();
-      await context.read<DebtProvider>().refreshData();
-      context.read<PaymentAccountProvider>().refreshData();
-      await context.read<SettingsProvider>().refreshSettings();
+      await expenseProvider.refreshData();
+      await budgetProvider.refreshData();
+      await subscriptionProvider.refreshData();
+      await investmentProvider.refreshData();
+      await goalProvider.refreshData();
+      await loanProvider.refreshData();
+      await billProvider.refreshData();
+      await debtProvider.refreshData();
+      paymentAccountProvider.refreshData();
+      await settingsProvider.refreshSettings();
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('All data cleared successfully')),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text('Failed to clear data: $e')),
       );
     }
   }
 
-  void _showExportDialog(BuildContext context) {
+  void _showExportDialog() {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -472,7 +495,7 @@ class _SettingsDataManagementScreenState
             onPressed: () async {
               Navigator.pop(dialogContext);
               if (mounted) {
-                await _exportData(context, ExportFormat.json);
+                await _exportData(ExportFormat.json);
               }
             },
             child: const Text('JSON (for backup)'),
@@ -481,7 +504,7 @@ class _SettingsDataManagementScreenState
             onPressed: () async {
               Navigator.pop(dialogContext);
               if (mounted) {
-                await _exportData(context, ExportFormat.csv);
+                await _exportData(ExportFormat.csv);
               }
             },
             child: const Text('CSV (for spreadsheet)'),
@@ -491,7 +514,7 @@ class _SettingsDataManagementScreenState
     );
   }
 
-  Future<void> _exportData(BuildContext context, ExportFormat format) async {
+  Future<void> _exportData(ExportFormat format) async {
     try {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Exporting data...')),
@@ -527,7 +550,7 @@ class _SettingsDataManagementScreenState
     }
   }
 
-  void _showImportDialog(BuildContext context) {
+  void _showImportDialog() {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -543,7 +566,7 @@ class _SettingsDataManagementScreenState
             onPressed: () async {
               Navigator.pop(dialogContext);
               if (mounted) {
-                await _importData(context, mergeData: true);
+                await _importData(mergeData: true);
               }
             },
             child: const Text('Merge'),
@@ -552,7 +575,7 @@ class _SettingsDataManagementScreenState
             onPressed: () async {
               Navigator.pop(dialogContext);
               if (mounted) {
-                await _importData(context, mergeData: false);
+                await _importData(mergeData: false);
               }
             },
             child: const Text('Replace'),
@@ -562,8 +585,7 @@ class _SettingsDataManagementScreenState
     );
   }
 
-  Future<void> _importData(BuildContext context,
-      {required bool mergeData}) async {
+  Future<void> _importData({required bool mergeData}) async {
     try {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

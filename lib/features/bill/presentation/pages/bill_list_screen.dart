@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
-import 'package:collection/collection.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/database/hive_service.dart';
@@ -39,9 +38,9 @@ class _BillListScreenState extends State<BillListScreen> {
   void initState() {
     super.initState();
     _selectedMonth = DateTime.now();
+    final provider = context.read<BillProvider>();
     Future.microtask(() {
       if (mounted) {
-        final provider = Provider.of<BillProvider>(context, listen: false);
         provider.initBills();
         provider.setSelectedMonth(_selectedMonth);
       }
@@ -66,111 +65,117 @@ class _BillListScreenState extends State<BillListScreen> {
                 ],
               )
             : null,
-        body: Column(
-          children: [
-            // Month Selector
-            Container(
-              color: Theme.of(context).colorScheme.surface,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.chevron_left,
-                      color: Theme.of(context).colorScheme.onSurface,
+        body: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              // Month Selector
+              Container(
+                color: Theme.of(context).colorScheme.surface,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.chevron_left,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      onPressed: _previousMonth,
+                      tooltip: 'Previous Month',
                     ),
-                    onPressed: _previousMonth,
-                    tooltip: 'Previous Month',
-                  ),
-                  InkWell(
-                    onTap: _showMonthPicker,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        border:
-                            Border.all(color: Theme.of(context).dividerColor),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        _formatMonth(_selectedMonth),
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
+                    InkWell(
+                      onTap: _showMonthPicker,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          border:
+                              Border.all(color: Theme.of(context).dividerColor),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _formatMonth(_selectedMonth),
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.chevron_right,
-                      color: Theme.of(context).colorScheme.onSurface,
+                    IconButton(
+                      icon: Icon(
+                        Icons.chevron_right,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      onPressed: _nextMonth,
+                      tooltip: 'Next Month',
                     ),
-                    onPressed: _nextMonth,
-                    tooltip: 'Next Month',
+                  ],
+                ),
+              ),
+              Container(
+                color: Theme.of(context).colorScheme.surface,
+                child: TabBar(
+                  labelColor: Theme.of(context).colorScheme.onSurface,
+                  unselectedLabelColor:
+                      Theme.of(context).colorScheme.onSurfaceVariant,
+                  indicatorColor: Theme.of(context).colorScheme.primary,
+                  indicatorWeight: 3,
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 12.0),
+                  labelStyle: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-              ),
-            ),
-            Container(
-              color: Theme.of(context).colorScheme.surface,
-              child: TabBar(
-                labelColor: Theme.of(context).colorScheme.onSurface,
-                unselectedLabelColor:
-                    Theme.of(context).colorScheme.onSurfaceVariant,
-                indicatorColor: Theme.of(context).colorScheme.primary,
-                indicatorWeight: 3,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 12.0),
-                labelStyle: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
+                  unselectedLabelStyle: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  tabs: const [
+                    Tab(text: 'Pending'),
+                    Tab(text: 'Overdue'),
+                    Tab(text: 'Completed'),
+                  ],
                 ),
-                unselectedLabelStyle: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-                tabs: const [
-                  Tab(text: 'Pending'),
-                  Tab(text: 'Overdue'),
-                  Tab(text: 'Completed'),
-                ],
               ),
-            ),
-            Expanded(
-              child: Consumer<BillProvider>(
-                builder: (context, billProvider, _) {
-                  final overdueReminders = billProvider
-                      .getRemindersForMonth(_selectedMonth)
-                      .where((r) => r.status == BillReminderStatus.overdue)
-                      .toList();
-                  final pendingReminders = billProvider
-                      .getRemindersForMonth(_selectedMonth)
-                      .where((r) => r.status == BillReminderStatus.pending)
-                      .toList();
-                  final completedReminders = billProvider
-                      .getRemindersForMonth(_selectedMonth)
-                      .where((r) => r.status == BillReminderStatus.completed)
-                      .toList();
+              Expanded(
+                child: Consumer<BillProvider>(
+                  builder: (context, billProvider, _) {
+                    final overdueReminders = billProvider
+                        .getRemindersForMonth(_selectedMonth)
+                        .where((r) => r.status == BillReminderStatus.overdue)
+                        .toList();
+                    final pendingReminders = billProvider
+                        .getRemindersForMonth(_selectedMonth)
+                        .where((r) => r.status == BillReminderStatus.pending)
+                        .toList();
+                    final completedReminders = billProvider
+                        .getRemindersForMonth(_selectedMonth)
+                        .where((r) => r.status == BillReminderStatus.completed)
+                        .toList();
 
-                  return TabBarView(
-                    children: [
-                      _buildRemindersList(pendingReminders, 'No pending bills'),
-                      _buildRemindersList(overdueReminders, 'No overdue bills'),
-                      _buildRemindersList(
-                          completedReminders, 'No completed bills'),
-                    ],
-                  );
-                },
+                    return TabBarView(
+                      children: [
+                        _buildRemindersList(
+                            pendingReminders, 'No pending bills'),
+                        _buildRemindersList(
+                            overdueReminders, 'No overdue bills'),
+                        _buildRemindersList(
+                            completedReminders, 'No completed bills'),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         floatingActionButton: AdaptiveBottomFab(
           child: FloatingActionButton(
@@ -181,37 +186,6 @@ class _BillListScreenState extends State<BillListScreen> {
             child: const Icon(Icons.add),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildOverviewTab(List<BillReminder> reminders) {
-    if (reminders.isEmpty) {
-      return EmptyStateWidget(
-        icon: Icons.receipt_long,
-        title: 'No Bills',
-        description:
-            'Add manual bills or they will appear from loans, subscriptions, and credit cards',
-        actionLabel: 'Add Manual Bill',
-        onAction: () => _showAddManualBillDialog(context),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: () async {
-        await Provider.of<BillProvider>(context, listen: false).refreshData();
-      },
-      child: ListView.builder(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          16,
-          16,
-          contentBottomPadding(context),
-        ),
-        itemCount: reminders.length,
-        itemBuilder: (context, index) {
-          return _buildReminderCard(reminders[index]);
-        },
       ),
     );
   }
@@ -571,7 +545,10 @@ class _BillListScreenState extends State<BillListScreen> {
                   child: ElevatedButton.icon(
                     onPressed: () => _handleMarkAsPaid(reminder),
                     icon: const Icon(Icons.check),
-                    label: const Text('Mark as Paid'),
+                    label: const Text(
+                      'Mark as Paid',
+                      style: TextStyle(fontFamily: 'Poppins'),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryColor,
                       foregroundColor: Colors.white,
@@ -587,7 +564,10 @@ class _BillListScreenState extends State<BillListScreen> {
                         onPressed: () =>
                             _editCompletedReminderAccount(reminder),
                         icon: const Icon(Icons.edit, size: 18),
-                        label: const Text('Edit Account'),
+                        label: const Text(
+                          'Edit Account',
+                          style: TextStyle(fontFamily: 'Poppins'),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -596,7 +576,10 @@ class _BillListScreenState extends State<BillListScreen> {
                         onPressed: () =>
                             _confirmDeleteCompletedReminder(reminder),
                         icon: const Icon(Icons.delete_outline, size: 18),
-                        label: const Text('Delete'),
+                        label: const Text(
+                          'Delete',
+                          style: TextStyle(fontFamily: 'Poppins'),
+                        ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red.shade700,
                           side: BorderSide(color: Colors.red.shade300),
@@ -730,6 +713,12 @@ class _BillListScreenState extends State<BillListScreen> {
                   onPressed: selectedAccountId == null
                       ? null
                       : () async {
+                          final loanProvider = context.read<LoanProvider>();
+                          final paymentAccountProvider =
+                              context.read<PaymentAccountProvider>();
+                          final billProvider = context.read<BillProvider>();
+                          final messenger = ScaffoldMessenger.of(context);
+
                           final selectedAccount = accounts
                               .firstWhere((a) => a.id == selectedAccountId);
 
@@ -740,9 +729,7 @@ class _BillListScreenState extends State<BillListScreen> {
                             );
                             final updatedLoan =
                                 loan.copyWith(accountId: selectedAccount.id);
-                            await Provider.of<LoanProvider>(context,
-                                    listen: false)
-                                .updateLoan(updatedLoan);
+                            await loanProvider.updateLoan(updatedLoan);
                           } else if (reminder.type ==
                               BillReminderType.creditCard) {
                             final cards = HiveService.getAllPaymentAccounts();
@@ -751,17 +738,16 @@ class _BillListScreenState extends State<BillListScreen> {
                             );
                             final updatedCard = card.copyWith(
                                 linkedAccountId: selectedAccount.id);
-                            await Provider.of<PaymentAccountProvider>(context,
-                                    listen: false)
+                            await paymentAccountProvider
                                 .updateAccount(updatedCard);
                           }
 
-                          if (mounted) {
+                          if (!mounted) return;
+                          if (!context.mounted) return;
+                          {
                             Navigator.pop(context);
-                            await Provider.of<BillProvider>(context,
-                                    listen: false)
-                                .refreshData();
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            await billProvider.refreshData();
+                            messenger.showSnackBar(
                               SnackBar(
                                 content: Text(
                                   'Bank account updated',
@@ -844,14 +830,18 @@ class _BillListScreenState extends State<BillListScreen> {
   }
 
   Future<void> _moveCompletedReminderToPending(BillReminder reminder) async {
+    final billProvider = context.read<BillProvider>();
+    final loanProvider = context.read<LoanProvider>();
+    final subscriptionProvider = context.read<SubscriptionProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+
     try {
       switch (reminder.type) {
         case BillReminderType.bill:
           final bills = HiveService.getAllBills();
           final bill = bills.firstWhere((b) => b.id == reminder.sourceId);
           final updatedBill = bill.copyWith(isPaid: false, paidDate: null);
-          await Provider.of<BillProvider>(context, listen: false)
-              .updateBill(updatedBill);
+          await billProvider.updateBill(updatedBill);
           break;
         case BillReminderType.loan:
           final loans = HiveService.getAllLoans();
@@ -866,7 +856,8 @@ class _BillListScreenState extends State<BillListScreen> {
           await Provider.of<LoanProvider>(context, listen: false)
               .updateLoan(updatedLoan);
           // Refresh loan provider to ensure UI updates
-          await Provider.of<LoanProvider>(context, listen: false).refreshData();
+          await loanProvider.updateLoan(updatedLoan);
+          await loanProvider.refreshData();
           break;
         case BillReminderType.creditCard:
           await _promptCreditCardPendingAmount(reminder);
@@ -880,22 +871,21 @@ class _BillListScreenState extends State<BillListScreen> {
               subscription.renewalDate, subscription.billingCycle);
           final updatedSubscription =
               subscription.copyWith(renewalDate: previousRenewalDate);
-          await Provider.of<SubscriptionProvider>(context, listen: false)
-              .updateSubscription(updatedSubscription);
+          await subscriptionProvider.updateSubscription(updatedSubscription);
           // Refresh subscription provider to ensure UI updates
-          await Provider.of<SubscriptionProvider>(context, listen: false)
-              .refreshData();
+          await subscriptionProvider.refreshData();
           break;
       }
 
-      if (mounted) {
+      if (!mounted) return;
+      if (context.mounted) {
         // Refresh bill provider to update the reminder list
-        await Provider.of<BillProvider>(context, listen: false).refreshData();
+        await billProvider.refreshData();
 
         // Force a rebuild by setting state if needed
         setState(() {});
 
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text(
               'Entry moved to pending',
@@ -907,19 +897,18 @@ class _BillListScreenState extends State<BillListScreen> {
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Unable to update entry: $e',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              ),
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Unable to update entry: $e',
+            style: TextStyle(
+              fontFamily: 'Poppins',
             ),
-            backgroundColor: AppTheme.errorColor,
           ),
-        );
-      }
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
     }
   }
 
@@ -967,9 +956,14 @@ class _BillListScreenState extends State<BillListScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
+              final paymentAccountProvider =
+                  context.read<PaymentAccountProvider>();
+              final billProvider = context.read<BillProvider>();
+              final messenger = ScaffoldMessenger.of(context);
+
               final entered = double.tryParse(controller.text.trim());
               if (entered == null || entered <= 0) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   SnackBar(
                     content: Text(
                       'Please enter a valid amount',
@@ -987,17 +981,16 @@ class _BillListScreenState extends State<BillListScreen> {
               final card = cards.firstWhere((a) => a.id == reminder.sourceId);
               final updatedCard = card.copyWith(balance: entered);
 
-              await Provider.of<PaymentAccountProvider>(context, listen: false)
-                  .updateAccount(updatedCard);
+              await paymentAccountProvider.updateAccount(updatedCard);
               // Refresh payment account provider to ensure UI updates
-              Provider.of<PaymentAccountProvider>(context, listen: false)
-                  .refreshData();
-              await Provider.of<BillProvider>(context, listen: false)
-                  .refreshData();
+              paymentAccountProvider.refreshData();
+              await billProvider.refreshData();
 
-              if (mounted) {
+              if (!mounted) return;
+              if (!context.mounted) return;
+              {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   SnackBar(
                     content: Text(
                       'Entry moved to pending',
@@ -1258,6 +1251,11 @@ class _BillListScreenState extends State<BillListScreen> {
     BillReminder reminder,
     PaymentAccount selectedAccount,
   ) async {
+    final billProvider = context.read<BillProvider>();
+    final expenseProvider = context.read<ExpenseProvider>();
+    final paymentAccountProvider = context.read<PaymentAccountProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+
     try {
       final bills = HiveService.getAllBills();
       final bill = bills.firstWhere((b) => b.id == reminder.sourceId);
@@ -1291,45 +1289,41 @@ class _BillListScreenState extends State<BillListScreen> {
             : selectedAccount.balance - bill.amount, // Other: decrease balance
       );
 
-      if (mounted) {
-        await Provider.of<BillProvider>(context, listen: false)
-            .updateBill(updatedBill);
-        await Provider.of<ExpenseProvider>(context, listen: false)
-            .addExpense(expense);
-        await Provider.of<PaymentAccountProvider>(context, listen: false)
-            .updateAccount(updatedAccount);
+      await billProvider.updateBill(updatedBill);
+      await expenseProvider.addExpense(expense);
+      await paymentAccountProvider.updateAccount(updatedAccount);
+      await billProvider.refreshData();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Bill marked as paid',
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Bill marked as paid',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+            ),
+          ),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => _reverseBillPayment(
+              bill,
+              selectedAccount,
+              expenseId,
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Error: $e',
               style: TextStyle(
                 fontFamily: 'Poppins',
-              ),
-            ),
-            action: SnackBarAction(
-              label: 'Undo',
-              onPressed: () => _reverseBillPayment(
-                bill,
-                selectedAccount,
-                expenseId,
-              ),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                )),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      }
+              )),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
     }
   }
 
@@ -1338,6 +1332,11 @@ class _BillListScreenState extends State<BillListScreen> {
     PaymentAccount paymentAccount,
     String expenseId,
   ) async {
+    final expenseProvider = context.read<ExpenseProvider>();
+    final billProvider = context.read<BillProvider>();
+    final paymentAccountProvider = context.read<PaymentAccountProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+
     try {
       final revertedBill = bill.copyWith(
         isPaid: false,
@@ -1353,39 +1352,34 @@ class _BillListScreenState extends State<BillListScreen> {
             : paymentAccount.balance + bill.amount, // Other: restore balance
       );
 
-      await Provider.of<ExpenseProvider>(context, listen: false)
-          .deleteExpense(expenseId);
-      await Provider.of<BillProvider>(context, listen: false)
-          .updateBill(revertedBill);
-      await Provider.of<PaymentAccountProvider>(context, listen: false)
-          .updateAccount(restoredAccount);
+      await expenseProvider.deleteExpense(expenseId);
+      await billProvider.updateBill(revertedBill);
+      await paymentAccountProvider.updateAccount(restoredAccount);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Bill payment reverted',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              ),
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Bill payment reverted',
+            style: TextStyle(
+              fontFamily: 'Poppins',
             ),
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Error reverting payment: $e',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              ),
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error reverting payment: $e',
+            style: TextStyle(
+              fontFamily: 'Poppins',
             ),
-            backgroundColor: AppTheme.errorColor,
           ),
-        );
-      }
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
     }
   }
 
@@ -1605,6 +1599,12 @@ class _BillListScreenState extends State<BillListScreen> {
     BillReminder reminder,
     PaymentAccount paymentAccount,
   ) async {
+    final loanProvider = context.read<LoanProvider>();
+    final expenseProvider = context.read<ExpenseProvider>();
+    final paymentAccountProvider = context.read<PaymentAccountProvider>();
+    final billProvider = context.read<BillProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+
     try {
       final loans = HiveService.getAllLoans();
       final loan = loans.firstWhere((l) => l.id == reminder.sourceId);
@@ -1634,46 +1634,41 @@ class _BillListScreenState extends State<BillListScreen> {
                 loan.monthlyEmi, // Other: decrease balance
       );
 
-      await Provider.of<LoanProvider>(context, listen: false)
-          .makePayment(loan.id, loan.monthlyEmi);
-      await Provider.of<ExpenseProvider>(context, listen: false)
-          .addExpense(expense);
-      await Provider.of<PaymentAccountProvider>(context, listen: false)
-          .updateAccount(updatedPaymentAccount);
+      await loanProvider.makePayment(loan.id, loan.monthlyEmi);
+      await expenseProvider.addExpense(expense);
+      await paymentAccountProvider.updateAccount(updatedPaymentAccount);
 
-      if (mounted) {
-        await Provider.of<BillProvider>(context, listen: false).refreshData();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Loan EMI payment recorded',
+      await billProvider.refreshData();
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Loan EMI payment recorded',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+            ),
+          ),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => _reverseLoanPayment(
+              loan,
+              paymentAccount,
+              expenseId,
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Error: $e',
               style: TextStyle(
                 fontFamily: 'Poppins',
-              ),
-            ),
-            action: SnackBarAction(
-              label: 'Undo',
-              onPressed: () => _reverseLoanPayment(
-                loan,
-                paymentAccount,
-                expenseId,
-              ),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                )),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      }
+              )),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
     }
   }
 
@@ -1682,6 +1677,12 @@ class _BillListScreenState extends State<BillListScreen> {
     PaymentAccount paymentAccount,
     String expenseId,
   ) async {
+    final expenseProvider = context.read<ExpenseProvider>();
+    final loanProvider = context.read<LoanProvider>();
+    final paymentAccountProvider = context.read<PaymentAccountProvider>();
+    final billProvider = context.read<BillProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+
     try {
       // Check if payment account is a credit card
       final isCreditCard =
@@ -1699,40 +1700,35 @@ class _BillListScreenState extends State<BillListScreen> {
         lastPaymentDate: null,
       );
 
-      await Provider.of<ExpenseProvider>(context, listen: false)
-          .deleteExpense(expenseId);
-      await Provider.of<LoanProvider>(context, listen: false)
-          .updateLoan(updatedLoan);
-      await Provider.of<PaymentAccountProvider>(context, listen: false)
-          .updateAccount(restoredPaymentAccount);
+      await expenseProvider.deleteExpense(expenseId);
+      await loanProvider.updateLoan(updatedLoan);
+      await paymentAccountProvider.updateAccount(restoredPaymentAccount);
 
-      if (mounted) {
-        await Provider.of<BillProvider>(context, listen: false).refreshData();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Loan payment reversed',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              ),
+      await billProvider.refreshData();
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Loan payment reversed',
+            style: TextStyle(
+              fontFamily: 'Poppins',
             ),
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Error reversing payment: $e',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              ),
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error reversing payment: $e',
+            style: TextStyle(
+              fontFamily: 'Poppins',
             ),
-            backgroundColor: AppTheme.errorColor,
           ),
-        );
-      }
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
     }
   }
 
@@ -1969,6 +1965,11 @@ class _BillListScreenState extends State<BillListScreen> {
     BillReminder reminder,
     PaymentAccount paymentAccount,
   ) async {
+    final expenseProvider = context.read<ExpenseProvider>();
+    final paymentAccountProvider = context.read<PaymentAccountProvider>();
+    final billProvider = context.read<BillProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+
     try {
       final creditCardAccount = HiveService.getAllPaymentAccounts()
           .firstWhere((a) => a.id == reminder.sourceId);
@@ -1996,47 +1997,42 @@ class _BillListScreenState extends State<BillListScreen> {
         balance: 0.0,
       );
 
-      await Provider.of<ExpenseProvider>(context, listen: false)
-          .addExpense(expense);
-      await Provider.of<PaymentAccountProvider>(context, listen: false)
-          .updateAccount(updatedPaymentAccount);
-      await Provider.of<PaymentAccountProvider>(context, listen: false)
-          .updateAccount(updatedCreditCardAccount);
+      await expenseProvider.addExpense(expense);
+      await paymentAccountProvider.updateAccount(updatedPaymentAccount);
+      await paymentAccountProvider.updateAccount(updatedCreditCardAccount);
 
-      if (mounted) {
-        await Provider.of<BillProvider>(context, listen: false).refreshData();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Credit card payment recorded',
+      await billProvider.refreshData();
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Credit card payment recorded',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+            ),
+          ),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => _reverseCreditCardPayment(
+              reminder,
+              paymentAccount,
+              creditCardAccount,
+              expenseId,
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Error: $e',
               style: TextStyle(
                 fontFamily: 'Poppins',
-              ),
-            ),
-            action: SnackBarAction(
-              label: 'Undo',
-              onPressed: () => _reverseCreditCardPayment(
-                reminder,
-                paymentAccount,
-                creditCardAccount,
-                expenseId,
-              ),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                )),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      }
+              )),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
     }
   }
 
@@ -2046,6 +2042,11 @@ class _BillListScreenState extends State<BillListScreen> {
     PaymentAccount creditCardAccount,
     String expenseId,
   ) async {
+    final expenseProvider = context.read<ExpenseProvider>();
+    final paymentAccountProvider = context.read<PaymentAccountProvider>();
+    final billProvider = context.read<BillProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+
     try {
       final restoredPaymentAccount = paymentAccount.copyWith(
         balance: paymentAccount.balance + reminder.amount,
@@ -2054,40 +2055,35 @@ class _BillListScreenState extends State<BillListScreen> {
       final restoredCreditCardAccount =
           creditCardAccount.copyWith(balance: reminder.amount);
 
-      await Provider.of<ExpenseProvider>(context, listen: false)
-          .deleteExpense(expenseId);
-      await Provider.of<PaymentAccountProvider>(context, listen: false)
-          .updateAccount(restoredPaymentAccount);
-      await Provider.of<PaymentAccountProvider>(context, listen: false)
-          .updateAccount(restoredCreditCardAccount);
+      await expenseProvider.deleteExpense(expenseId);
+      await paymentAccountProvider.updateAccount(restoredPaymentAccount);
+      await paymentAccountProvider.updateAccount(restoredCreditCardAccount);
 
-      if (mounted) {
-        await Provider.of<BillProvider>(context, listen: false).refreshData();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Credit card payment reversed',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              ),
+      await billProvider.refreshData();
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Credit card payment reversed',
+            style: TextStyle(
+              fontFamily: 'Poppins',
             ),
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Error reversing payment: $e',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              ),
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error reversing payment: $e',
+            style: TextStyle(
+              fontFamily: 'Poppins',
             ),
-            backgroundColor: AppTheme.errorColor,
           ),
-        );
-      }
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
     }
   }
 
@@ -2307,6 +2303,11 @@ class _BillListScreenState extends State<BillListScreen> {
     BillReminder reminder,
     PaymentAccount selectedAccount,
   ) async {
+    final expenseProvider = context.read<ExpenseProvider>();
+    final paymentAccountProvider = context.read<PaymentAccountProvider>();
+    final billProvider = context.read<BillProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+
     try {
       final subscriptions = HiveService.getAllSubscriptions();
       final subscription = subscriptions.firstWhere(
@@ -2341,45 +2342,41 @@ class _BillListScreenState extends State<BillListScreen> {
                 subscription.cost, // Other: decrease balance
       );
 
-      if (mounted) {
-        // No need to update subscription - payment is tracked via expense record
-        await Provider.of<ExpenseProvider>(context, listen: false)
-            .addExpense(expense);
-        await Provider.of<PaymentAccountProvider>(context, listen: false)
-            .updateAccount(updatedAccount);
-        await Provider.of<BillProvider>(context, listen: false).refreshData();
+      // No need to update subscription - payment is tracked via expense record
+      await expenseProvider.addExpense(expense);
+      await paymentAccountProvider.updateAccount(updatedAccount);
+      await billProvider.refreshData();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Subscription payment recorded',
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Subscription payment recorded',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+            ),
+          ),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => _reverseSubscriptionPayment(
+              subscription,
+              selectedAccount,
+              expenseId,
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Error: $e',
               style: TextStyle(
                 fontFamily: 'Poppins',
-              ),
-            ),
-            action: SnackBarAction(
-              label: 'Undo',
-              onPressed: () => _reverseSubscriptionPayment(
-                subscription,
-                selectedAccount,
-                expenseId,
-              ),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                )),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      }
+              )),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
     }
   }
 
@@ -2388,6 +2385,11 @@ class _BillListScreenState extends State<BillListScreen> {
     PaymentAccount paymentAccount,
     String expenseId,
   ) async {
+    final expenseProvider = context.read<ExpenseProvider>();
+    final paymentAccountProvider = context.read<PaymentAccountProvider>();
+    final billProvider = context.read<BillProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+
     try {
       // Restore account balance
       // Check if payment account is a credit card
@@ -2402,38 +2404,34 @@ class _BillListScreenState extends State<BillListScreen> {
       );
 
       // Delete expense record - this will automatically mark period as unpaid
-      await Provider.of<ExpenseProvider>(context, listen: false)
-          .deleteExpense(expenseId);
-      await Provider.of<PaymentAccountProvider>(context, listen: false)
-          .updateAccount(restoredAccount);
+      await expenseProvider.deleteExpense(expenseId);
+      await paymentAccountProvider.updateAccount(restoredAccount);
 
-      if (mounted) {
-        await Provider.of<BillProvider>(context, listen: false).refreshData();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Subscription payment reversed',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              ),
+      await billProvider.refreshData();
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Subscription payment reversed',
+            style: TextStyle(
+              fontFamily: 'Poppins',
             ),
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Error reversing payment: $e',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              ),
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error reversing payment: $e',
+            style: TextStyle(
+              fontFamily: 'Poppins',
             ),
-            backgroundColor: AppTheme.errorColor,
           ),
-        );
-      }
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
     }
   }
 
@@ -2462,7 +2460,8 @@ class _BillListScreenState extends State<BillListScreen> {
       Expense? expense;
 
       // Strategy 1: Match by notes containing the name and amount (any transaction type)
-      expense = expenseProvider.expenses.firstWhereOrNull(
+      expense = _firstWhereOrNull(
+        expenseProvider.expenses,
         (e) =>
             (e.notes?.contains(reminder.name) ?? false) &&
             (e.amount - reminder.amount).abs() <
@@ -2470,7 +2469,8 @@ class _BillListScreenState extends State<BillListScreen> {
       );
 
       // Strategy 2: Match by title containing the name and amount
-      expense ??= expenseProvider.expenses.firstWhereOrNull(
+      expense ??= _firstWhereOrNull(
+        expenseProvider.expenses,
         (e) =>
             e.title.contains(reminder.name) &&
             (e.amount - reminder.amount).abs() < 0.01,
@@ -2484,7 +2484,8 @@ class _BillListScreenState extends State<BillListScreen> {
           'Loan Repayment',
           'Credit Card Payment'
         ];
-        expense = expenseProvider.expenses.firstWhereOrNull(
+        expense = _firstWhereOrNull(
+          expenseProvider.expenses,
           (e) =>
               categories.contains(e.category) &&
               (e.amount - reminder.amount).abs() < 0.01,
@@ -2493,7 +2494,8 @@ class _BillListScreenState extends State<BillListScreen> {
 
       if (expense != null && expense.accountId != null) {
         paymentType = expense.paymentMethod;
-        final account = accountProvider.accounts.firstWhereOrNull(
+        final account = _firstWhereOrNull(
+          accountProvider.accounts,
           (a) => a.id == expense!.accountId,
         );
         if (account != null) {
@@ -2701,6 +2703,15 @@ class _BillListScreenState extends State<BillListScreen> {
       });
     }
   }
+
+  T? _firstWhereOrNull<T>(Iterable<T> items, bool Function(T item) test) {
+    for (final item in items) {
+      if (test(item)) {
+        return item;
+      }
+    }
+    return null;
+  }
 }
 
 // Add manual bill screen (simplified version)
@@ -2831,7 +2842,10 @@ class _AddEditBillScreenState extends State<AddEditBillScreen> {
               ),
               const SizedBox(height: 16),
               CheckboxListTile(
-                title: const Text('Recurring Bill'),
+                title: const Text(
+                  'Recurring Bill',
+                  style: TextStyle(fontFamily: 'Poppins'),
+                ),
                 value: _isRecurring,
                 onChanged: (value) =>
                     setState(() => _isRecurring = value ?? false),
@@ -2844,7 +2858,12 @@ class _AddEditBillScreenState extends State<AddEditBillScreen> {
                     isExpanded: true,
                     items: const ['monthly', 'quarterly', 'yearly']
                         .map((f) => DropdownMenuItem(
-                            value: f, child: Text(f.toUpperCase())))
+                              value: f,
+                              child: Text(
+                                f.toUpperCase(),
+                                style: TextStyle(fontFamily: 'Poppins'),
+                              ),
+                            ))
                         .toList(),
                     onChanged: (value) => setState(
                         () => _recurringFrequency = value ?? 'monthly'),

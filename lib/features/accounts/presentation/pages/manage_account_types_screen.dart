@@ -23,108 +23,114 @@ class _ManageAccountTypeModelsScreenState
         title: 'Manage Account Types',
         showBackButton: true,
       ),
-      body: Consumer<AccountTypeProvider>(
-        builder: (context, provider, child) {
-          final types = provider.accountTypes;
+      body: SafeArea(
+        top: false,
+        child: Consumer<AccountTypeProvider>(
+          builder: (context, provider, child) {
+            final types = provider.accountTypes;
 
-          if (types.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.payment,
-                      size: 64, color: AppTheme.textSecondaryColor),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No account types yet',
-                    style: TextStyle(fontFamily: 'Poppins', 
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap + to add your first account type',
-                    style: TextStyle(fontFamily: 'Poppins', 
-                      fontSize: 14,
-                      color: AppTheme.textSecondaryColor,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ReorderableListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: types.length,
-            onReorder: (oldIndex, newIndex) {
-              if (oldIndex < newIndex) {
-                newIndex -= 1;
-              }
-              final reorderedTypes = List<AccountTypeModel>.from(types);
-              final item = reorderedTypes.removeAt(oldIndex);
-              reorderedTypes.insert(newIndex, item);
-              provider.reorderAccountTypes(reorderedTypes);
-            },
-            itemBuilder: (context, index) {
-              final type = types[index];
-              final color = type.color != null
-                  ? Color(int.parse(type.color!.replaceFirst('#', '0xFF')))
-                  : AppTheme.primaryColor;
-
-              return Card(
-                key: ValueKey(type.id),
-                margin: const EdgeInsets.only(bottom: 12),
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  leading: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Text(
-                        type.icon ?? '💳',
-                        style: TextStyle(fontFamily: 'Poppins', fontSize: 24),
+            if (types.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.payment,
+                        size: 64, color: AppTheme.textSecondaryColor),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No account types yet',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textColor,
                       ),
                     ),
-                  ),
-                  title: Text(
-                    type.name,
-                    style: TextStyle(fontFamily: 'Poppins', 
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textColor,
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tap + to add your first account type',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        color: AppTheme.textSecondaryColor,
+                      ),
                     ),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, size: 20),
-                        onPressed: () => _showAddEditDialog(type: type),
-                        color: AppTheme.primaryColor,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, size: 20),
-                        onPressed: () => _confirmDelete(type),
-                        color: Colors.red,
-                      ),
-                      const Icon(Icons.drag_handle),
-                    ],
-                  ),
+                  ],
                 ),
               );
-            },
-          );
-        },
+            }
+
+            return ReorderableListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: types.length,
+              onReorder: (oldIndex, newIndex) {
+                if (oldIndex < newIndex) {
+                  newIndex -= 1;
+                }
+                final reorderedTypes = List<AccountTypeModel>.from(types);
+                final item = reorderedTypes.removeAt(oldIndex);
+                reorderedTypes.insert(newIndex, item);
+                provider.reorderAccountTypes(reorderedTypes);
+              },
+              itemBuilder: (context, index) {
+                final type = types[index];
+                final color = type.color != null
+                    ? Color(int.parse(type.color!.replaceFirst('#', '0xFF')))
+                    : AppTheme.primaryColor;
+
+                return Card(
+                  key: ValueKey(type.id),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    leading: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(
+                          type.icon ?? '💳',
+                          style: TextStyle(fontFamily: 'Poppins', fontSize: 24),
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      type.name,
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textColor,
+                      ),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, size: 20),
+                          onPressed: () => _showAddEditDialog(type: type),
+                          color: AppTheme.primaryColor,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, size: 20),
+                          onPressed: () => _confirmDelete(type),
+                          color: Colors.red,
+                        ),
+                        const Icon(Icons.drag_handle),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
       floatingActionButton: AdaptiveBottomFab(
         child: FloatingActionButton(
@@ -166,11 +172,12 @@ class _ManageAccountTypeModelsScreenState
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
+      builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: Text(
             isEdit ? 'Edit Account Type' : 'Add Account Type',
-            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+            style:
+                TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -187,7 +194,8 @@ class _ManageAccountTypeModelsScreenState
                 const SizedBox(height: 20),
                 Text(
                   'Icon',
-                  style: TextStyle(fontFamily: 'Poppins', 
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -221,7 +229,8 @@ class _ManageAccountTypeModelsScreenState
                         ),
                         child: Center(
                           child: Text(emoji,
-                              style: TextStyle(fontFamily: 'Poppins', fontSize: 24)),
+                              style: TextStyle(
+                                  fontFamily: 'Poppins', fontSize: 24)),
                         ),
                       ),
                     );
@@ -230,7 +239,8 @@ class _ManageAccountTypeModelsScreenState
                 const SizedBox(height: 20),
                 Text(
                   'Color',
-                  style: TextStyle(fontFamily: 'Poppins', 
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -317,8 +327,8 @@ class _ManageAccountTypeModelsScreenState
                   await provider.addAccountType(newType);
                 }
 
-                if (mounted) {
-                  Navigator.pop(context);
+                if (dialogContext.mounted) {
+                  Navigator.pop(dialogContext);
                 }
               },
               child: Text(isEdit ? 'Update' : 'Add'),
@@ -330,29 +340,30 @@ class _ManageAccountTypeModelsScreenState
   }
 
   void _confirmDelete(AccountTypeModel type) {
+    final provider = context.read<AccountTypeProvider>();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(
           'Delete Account Type',
           style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
         ),
         content: Text(
           'Are you sure you want to delete "${type.name}"?',
-          style: TextStyle(fontFamily: 'Poppins', ),
+          style: TextStyle(
+            fontFamily: 'Poppins',
+          ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
-              await context
-                  .read<AccountTypeProvider>()
-                  .deleteAccountType(type.id);
-              if (mounted) {
-                Navigator.pop(context);
+              await provider.deleteAccountType(type.id);
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext);
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),

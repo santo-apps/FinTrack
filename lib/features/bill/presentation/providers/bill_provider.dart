@@ -102,86 +102,43 @@ class BillProvider extends ChangeNotifier {
 
   /// Get all bill reminders aggregated from multiple sources
   List<BillReminder> getAllReminders() {
-    final List<BillReminder> allReminders = [];
-
-    // Add manual bills
-    final billReminders = _getRemindersFromBills();
-    allReminders.addAll(billReminders);
-    if (kDebugMode) {
-      print('📝 Bills: ${billReminders.length} reminders');
-    }
-
-    // Add credit card payments
-    final cardReminders = _getRemindersFromCreditCards();
-    allReminders.addAll(cardReminders);
-    if (kDebugMode) {
-      print('💳 Credit Cards: ${cardReminders.length} reminders');
-      for (var reminder in cardReminders) {
-        print('  - ${reminder.name}: ${reminder.dueDate} (${reminder.status})');
-      }
-    }
-
-    // Add loan EMI payments
-    final loanReminders = _getRemindersFromLoans();
-    allReminders.addAll(loanReminders);
-    if (kDebugMode) {
-      print('🏦 Loans: ${loanReminders.length} reminders');
-    }
-
-    // Add subscription renewals
-    final subscriptionReminders = _getRemindersFromSubscriptions();
-    allReminders.addAll(subscriptionReminders);
-    if (kDebugMode) {
-      print('📱 Subscriptions: ${subscriptionReminders.length} reminders');
-      for (var reminder in subscriptionReminders) {
-        print('  - ${reminder.name}: ${reminder.dueDate} (${reminder.status})');
-      }
-    }
-
-    if (kDebugMode) {
-      print('📊 Total reminders: ${allReminders.length}');
-    }
-
-    // Sort by due date
-    allReminders.sort((a, b) => a.dueDate.compareTo(b.dueDate));
-
-    return allReminders;
+    return getRemindersForMonth(_selectedMonth);
   }
 
   /// Get reminders filtered by month
   List<BillReminder> getRemindersForMonth(DateTime month) {
-    final allReminders = getAllReminders();
+    final selectedMonth = DateTime(month.year, month.month, 1);
+    final List<BillReminder> allReminders = [];
+
+    final billReminders = _getRemindersFromBills(selectedMonth);
+    final cardReminders = _getRemindersFromCreditCards(selectedMonth);
+    final loanReminders = _getRemindersFromLoans(selectedMonth);
+    final subscriptionReminders = _getRemindersFromSubscriptions(selectedMonth);
+
+    allReminders
+      ..addAll(billReminders)
+      ..addAll(cardReminders)
+      ..addAll(loanReminders)
+      ..addAll(subscriptionReminders);
 
     if (kDebugMode) {
-      print('🗓️ Filtering for month: ${month.year}-${month.month}');
-      print('🗓️ All reminders before filtering: ${allReminders.length}');
+      print('🗓️ Month: ${selectedMonth.year}-${selectedMonth.month}');
+      print('📝 Bills: ${billReminders.length} reminders');
+      print('💳 Credit Cards: ${cardReminders.length} reminders');
+      print('🏦 Loans: ${loanReminders.length} reminders');
+      print('📱 Subscriptions: ${subscriptionReminders.length} reminders');
+      print('📊 Total reminders: ${allReminders.length}');
     }
 
-    final filtered = allReminders.where((reminder) {
-      // For completed reminders, month should follow payment date when present.
-      final monthAnchor = reminder.status == BillReminderStatus.completed &&
-              reminder.paidDate != null
-          ? reminder.paidDate!
-          : reminder.dueDate;
-
-      final matches =
-          monthAnchor.year == month.year && monthAnchor.month == month.month;
-
-      if (kDebugMode && !matches) {
-        print('  ❌ Filtered out: ${reminder.name} (${reminder.dueDate})');
+    allReminders.sort((a, b) {
+      final dateCompare = a.dueDate.compareTo(b.dueDate);
+      if (dateCompare != 0) {
+        return dateCompare;
       }
-      if (kDebugMode && matches) {
-        print('  ✅ Including: ${reminder.name} (${reminder.dueDate})');
-      }
+      return a.name.compareTo(b.name);
+    });
 
-      return matches;
-    }).toList();
-
-    if (kDebugMode) {
-      print('🗓️ Reminders after filtering: ${filtered.length}');
-    }
-
-    return filtered;
+    return allReminders;
   }
 
   /// Get overdue reminders for selected month
@@ -209,57 +166,51 @@ class BillProvider extends ChangeNotifier {
   }
 
   // Convert Bills to BillReminders
-  List<BillReminder> _getRemindersFromBills() {
-    return _bills.map((bill) {
-      DateTime dueDate = bill.dueDate;
-      if (bill.isRecurring) {
-        final today = DateTime.now();
-        final todayDay = DateTime(today.year, today.month, today.day);
-        while (dueDate.isBefore(todayDay)) {
-          switch ((bill.recurringFrequency ?? 'monthly').toLowerCase()) {
-            case 'weekly':
-              dueDate = dueDate.add(const Duration(days: 7));
-              break;
-            case 'yearly':
-            case 'annual':
-              dueDate = DateTime(dueDate.year + 1, dueDate.month, dueDate.day);
-              break;
-            case 'quarterly':
-              dueDate = DateTime(dueDate.year, dueDate.month + 3, dueDate.day);
-              break;
-            default:
-              dueDate = DateTime(dueDate.year, dueDate.month + 1, dueDate.day);
-          }
-        }
+  List<BillReminder> _getRemindersFromBills(DateTime month) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final List<BillReminder> reminders = [];
+
+    for (final bill in _bills) {
+      final dueDate = _resolveBillDueDateForMonth(bill, month);
+      final paidInSelectedMonth =
+          bill.paidDate != null && _isSameMonth(bill.paidDate!, month);
+
+      if (dueDate == null && !paidInSelectedMonth) {
+        continue;
       }
 
-      BillReminderStatus status;
-      if (bill.isPaid) {
-        status = BillReminderStatus.completed;
-      } else if (bill.isOverdue()) {
-        status = BillReminderStatus.overdue;
-      } else {
-        status = BillReminderStatus.pending;
-      }
+      final effectiveDate = dueDate ?? bill.paidDate!;
+      final status = bill.isPaid
+          ? BillReminderStatus.completed
+          : (DateTime(effectiveDate.year, effectiveDate.month,
+                      effectiveDate.day)
+                  .isBefore(today)
+              ? BillReminderStatus.overdue
+              : BillReminderStatus.pending);
 
-      return BillReminder(
-        id: 'bill_${bill.id}',
-        sourceId: bill.id,
-        name: bill.name,
-        amount: bill.amount,
-        dueDate: dueDate,
-        currency: bill.currency,
-        type: BillReminderType.bill,
-        status: status,
-        notes: bill.notes,
-        paidDate: bill.paidDate,
-        isRecurring: bill.isRecurring,
+      reminders.add(
+        BillReminder(
+          id: 'bill_${bill.id}_${month.year}_${month.month}',
+          sourceId: bill.id,
+          name: bill.name,
+          amount: bill.amount,
+          dueDate: effectiveDate,
+          currency: bill.currency,
+          type: BillReminderType.bill,
+          status: status,
+          notes: bill.notes,
+          paidDate: bill.paidDate,
+          isRecurring: bill.isRecurring,
+        ),
       );
-    }).toList();
+    }
+
+    return reminders;
   }
 
   // Convert Credit Cards to BillReminders
-  List<BillReminder> _getRemindersFromCreditCards() {
+  List<BillReminder> _getRemindersFromCreditCards(DateTime month) {
     final accounts = HiveService.getAllPaymentAccounts();
     final expenses = HiveService.getAllExpenses();
     final now = DateTime.now();
@@ -292,50 +243,55 @@ class BillProvider extends ChangeNotifier {
 
     final List<BillReminder> reminders = [];
     for (var card in creditCards) {
-      // Use dueDate if available, otherwise fallback to nextBillingDate or calculated date
-      final nextBillingDate = card.dueDate ??
-          card.nextBillingDate ??
-          _calculateCardDueDate(now, card.billingCycleDay);
-      if (kDebugMode) {
-        print(
-            '  ${card.name} next billing: $nextBillingDate, balance: ${card.balance}, dueDate: ${card.dueDate}');
+      final monthDueDate = _resolveCardDueDateForMonth(card, month);
+      if (monthDueDate == null) {
+        continue;
       }
 
-      // Determine status - check balance FIRST, then date
+      final previousCycleDueDate =
+          _calculateCardDueDate(monthDueDate, card.billingCycleDay, -1);
+      final cycleStart = previousCycleDueDate.add(const Duration(days: 1));
+
+      final cardPayments = expenses.where((e) {
+        final type = e.transactionType ?? 'expense';
+        final isPaymentLike = type == 'transfer' || type == 'payment';
+        final cardMatch = e.destinationAccountId == card.id ||
+            e.title.contains('Credit Card Payment - ${card.name}');
+        return isPaymentLike &&
+            cardMatch &&
+            _isWithinInclusiveRange(e.date, cycleStart, monthDueDate);
+      }).toList()
+        ..sort((a, b) => a.date.compareTo(b.date));
+
+      final hasPayment = cardPayments.isNotEmpty;
+      final paidDate = hasPayment ? cardPayments.last.date : null;
+
+      if (kDebugMode) {
+        print(
+            '  ${card.name} due: $monthDueDate, balance: ${card.balance}, hasPayment: $hasPayment');
+      }
+
       BillReminderStatus status;
-      if (card.balance <= 0) {
-        // Balance is paid off - mark as completed
+      if (hasPayment || card.balance <= 0) {
         status = BillReminderStatus.completed;
       } else if (DateTime(
-              nextBillingDate.year, nextBillingDate.month, nextBillingDate.day)
+              monthDueDate.year, monthDueDate.month, monthDueDate.day)
           .isBefore(startOfToday)) {
-        // Has balance and date has passed - overdue
         status = BillReminderStatus.overdue;
       } else {
-        // Has balance and date is upcoming - pending
         status = BillReminderStatus.pending;
       }
 
-      DateTime? paidDate;
-      if (status == BillReminderStatus.completed) {
-        final cardPayments = expenses.where((e) {
-          final isPayment = (e.transactionType ?? 'expense') == 'payment';
-          final cardMatch = e.destinationAccountId == card.id ||
-              e.title.contains('Credit Card Payment - ${card.name}');
-          return isPayment && cardMatch;
-        }).toList()
-          ..sort((a, b) => a.date.compareTo(b.date));
-        if (cardPayments.isNotEmpty) {
-          paidDate = cardPayments.last.date;
-        }
-      }
+      final reminderAmount = card.balance > 0
+          ? card.balance
+          : (hasPayment ? cardPayments.last.amount : 0.0);
 
       reminders.add(BillReminder(
-        id: 'card_${card.id}_${nextBillingDate.toString()}',
+        id: 'card_${card.id}_${month.year}_${month.month}',
         sourceId: card.id,
         name: 'Credit Card Payment - ${card.name}',
-        amount: card.balance > 0 ? card.balance : 0,
-        dueDate: nextBillingDate,
+        amount: reminderAmount,
+        dueDate: monthDueDate,
         currency: card.currency,
         type: BillReminderType.creditCard,
         status: status,
@@ -353,66 +309,83 @@ class BillProvider extends ChangeNotifier {
   }
 
   // Convert Loans to BillReminders
-  List<BillReminder> _getRemindersFromLoans() {
+  List<BillReminder> _getRemindersFromLoans(DateTime month) {
     final loans = HiveService.getAllLoans();
-    final activeLoans = loans.where((loan) => !loan.isCompleted);
+    final expenses = HiveService.getAllExpenses();
+    final monthStart = _startOfMonth(month);
+    final monthEnd = _endOfMonth(month);
 
     final List<BillReminder> reminders = [];
-    for (var loan in activeLoans) {
-      final nextEmiDate = loan.nextEmiDate;
-      if (nextEmiDate == null) continue;
+    for (var loan in loans) {
+      if (loan.startDate.isAfter(monthEnd)) {
+        continue;
+      }
 
-      BillReminderStatus status;
+      final outstandingAmount =
+          (loan.borrowedAmount - loan.paidAmount).clamp(0.0, double.infinity);
+      final hasOutstanding = outstandingAmount > 0.01;
+
+      final emiDueDate = _safeDayInMonth(month.year, month.month, loan.emiDate);
+      final lastPaymentInMonth = loan.lastPaymentDate != null &&
+          _isSameMonth(loan.lastPaymentDate!, month);
+      final paymentFromExpenses = expenses.where((e) {
+        final type = e.transactionType ?? 'expense';
+        final isPaymentLike = type == 'payment' || type == 'transfer';
+        final matchesLoan =
+            e.title.contains('Loan EMI Payment - ${loan.lender}');
+        return isPaymentLike &&
+            matchesLoan &&
+            _isWithinInclusiveRange(e.date, monthStart, monthEnd);
+      }).toList()
+        ..sort((a, b) => a.date.compareTo(b.date));
+
+      final paidDate = lastPaymentInMonth
+          ? loan.lastPaymentDate
+          : (paymentFromExpenses.isNotEmpty
+              ? paymentFromExpenses.last.date
+              : null);
+      final isPaidForMonth = paidDate != null && _isSameMonth(paidDate, month);
+
+      if (!hasOutstanding && !isPaidForMonth) {
+        continue;
+      }
+
       final now = DateTime.now();
       final startOfToday = DateTime(now.year, now.month, now.day);
-      final currentMonth = DateTime(now.year, now.month);
-      final emiDueThisMonth = DateTime(now.year, now.month, loan.emiDate);
-
-      // Check if payment was made this month
-      final lastPayment = loan.lastPaymentDate;
-      final isPaidThisMonth = lastPayment != null &&
-          lastPayment.year == currentMonth.year &&
-          lastPayment.month == currentMonth.month;
+      BillReminderStatus status;
 
       if (kDebugMode) {
         print('🏦 Loan: ${loan.lender} (${loan.id})');
         print('  EMI Day: ${loan.emiDate}');
-        print('  EMI Due This Month: $emiDueThisMonth');
-        print('  Next EMI Date: $nextEmiDate');
-        print('  Last Payment Date: $lastPayment');
-        print('  Is Paid This Month: $isPaidThisMonth');
+        print('  EMI Due In Month: $emiDueDate');
+        print('  Last Payment Date: ${loan.lastPaymentDate}');
+        print('  Payment Found In Month: $isPaidForMonth');
       }
 
-      if (isPaidThisMonth) {
-        // Payment made for this month's EMI
+      if (isPaidForMonth) {
         status = BillReminderStatus.completed;
-        if (kDebugMode) {
-          print('  Status: COMPLETED ✅');
-        }
-      } else if (emiDueThisMonth.isBefore(startOfToday)) {
-        // EMI was due this month but hasn't been paid yet
+      } else if (emiDueDate.isBefore(startOfToday)) {
         status = BillReminderStatus.overdue;
-        if (kDebugMode) {
-          print('  Status: OVERDUE ⚠️');
-        }
       } else {
-        // EMI is upcoming this month
         status = BillReminderStatus.pending;
-        if (kDebugMode) {
-          print('  Status: PENDING ⏳');
-        }
       }
+
+      final reminderAmount = hasOutstanding
+          ? (outstandingAmount < loan.monthlyEmi
+              ? outstandingAmount
+              : loan.monthlyEmi)
+          : loan.monthlyEmi;
 
       reminders.add(BillReminder(
-        id: 'loan_${loan.id}_${emiDueThisMonth.toString()}',
+        id: 'loan_${loan.id}_${month.year}_${month.month}',
         sourceId: loan.id,
         name: 'Loan EMI - ${loan.lender}',
-        amount: loan.monthlyEmi,
-        dueDate: emiDueThisMonth, // Use current month's EMI date
+        amount: reminderAmount,
+        dueDate: emiDueDate,
         currency: loan.currency,
         type: BillReminderType.loan,
         status: status,
-        paidDate: isPaidThisMonth ? lastPayment : null,
+        paidDate: isPaidForMonth ? paidDate : null,
         lender: loan.lender,
         notes: 'Monthly EMI payment',
       ));
@@ -422,190 +395,97 @@ class BillProvider extends ChangeNotifier {
   }
 
   // Convert Subscriptions to BillReminders
-  List<BillReminder> _getRemindersFromSubscriptions() {
+  List<BillReminder> _getRemindersFromSubscriptions(DateTime month) {
     final subscriptions = HiveService.getAllSubscriptions();
+    final expenses = HiveService.getAllExpenses();
+    final now = DateTime.now();
+    final startOfToday = DateTime(now.year, now.month, now.day);
 
     if (kDebugMode) {
       print('📱 Total subscriptions: ${subscriptions.length}');
     }
 
-    final activeSubscriptions = subscriptions.where((sub) {
-      if (kDebugMode) {
-        print(
-            '  ${sub.name}: autoRenewal=${sub.autoRenewal}, renewalDate=${sub.renewalDate}');
+    final List<BillReminder> reminders = [];
+
+    for (final subscription in subscriptions) {
+      final dueDate = _resolveSubscriptionDueDateForMonth(subscription, month);
+      if (dueDate == null) {
+        continue;
       }
-      return true;
-    });
 
-    if (kDebugMode) {
-      print(
-          '📱 Subscriptions considered for reminders: ${activeSubscriptions.length}');
-    }
+      final previousDueDate =
+          _subtractBillingCycle(dueDate, subscription.billingCycle);
+      final periodStart = previousDueDate.add(const Duration(days: 1));
+      final paymentWindowEnd =
+          _isSameMonth(month, now) && dueDate.isBefore(now) ? now : dueDate;
+      final periodPayments = expenses.where((expense) {
+        final type = expense.transactionType ?? 'expense';
+        final isPaymentLike =
+            type == 'expense' || type == 'payment' || type == 'transfer';
+        final matchesSubscription = expense.title
+            .contains('Subscription Payment - ${subscription.name}');
+        return isPaymentLike &&
+            matchesSubscription &&
+            _isWithinInclusiveRange(
+                expense.date, periodStart, paymentWindowEnd);
+      }).toList()
+        ..sort((a, b) => a.date.compareTo(b.date));
 
-    return activeSubscriptions.map((subscription) {
+      final currentPeriodPaid = periodPayments.isNotEmpty;
+      final paidDate = currentPeriodPaid ? periodPayments.last.date : null;
+
       BillReminderStatus status;
-      final now = DateTime.now();
-      final startOfToday = DateTime(now.year, now.month, now.day);
-      final effectiveDueDate = _getEffectiveSubscriptionDueDate(subscription);
-
-      // Determine if the current billing period has been paid
-      // by checking for expense records for this subscription in current period
-      bool currentPeriodPaid = false;
-      DateTime? paidDate;
-
-      // Calculate the date range for the current billing period
-      DateTime periodStart;
-      DateTime periodEnd = effectiveDueDate;
-
-      switch (subscription.billingCycle.toLowerCase()) {
-        case 'weekly':
-          periodStart = effectiveDueDate.subtract(const Duration(days: 7));
-          break;
-        case 'monthly':
-          periodStart = DateTime(
-            effectiveDueDate.month == 1
-                ? effectiveDueDate.year - 1
-                : effectiveDueDate.year,
-            effectiveDueDate.month == 1 ? 12 : effectiveDueDate.month - 1,
-            effectiveDueDate.day,
-          );
-          break;
-        case 'quarterly':
-          periodStart = DateTime(
-            effectiveDueDate.year,
-            effectiveDueDate.month - 3,
-            effectiveDueDate.day,
-          );
-          break;
-        case 'yearly':
-        case 'annual':
-          periodStart = DateTime(
-            effectiveDueDate.year - 1,
-            effectiveDueDate.month,
-            effectiveDueDate.day,
-          );
-          break;
-        default:
-          periodStart = DateTime(
-            effectiveDueDate.month == 1
-                ? effectiveDueDate.year - 1
-                : effectiveDueDate.year,
-            effectiveDueDate.month == 1 ? 12 : effectiveDueDate.month - 1,
-            effectiveDueDate.day,
-          );
-      }
-
-      // A payment exactly on the previous cycle due date belongs to the
-      // previous cycle, not the current one.
-      periodStart = periodStart.add(const Duration(days: 1));
-
-      // Check for expense records matching this subscription in the current period
-      final expenses =
-          HiveService.getExpensesInDateRange(periodStart, periodEnd)
-              .where((expense) => expense.title
-                  .contains('Subscription Payment - ${subscription.name}'))
-              .toList()
-            ..sort((a, b) => a.date.compareTo(b.date));
-      currentPeriodPaid = expenses.isNotEmpty;
       if (currentPeriodPaid) {
-        paidDate = expenses.last.date;
-      }
-
-      // Determine status
-      if (currentPeriodPaid) {
-        // Current billing period is paid, mark as completed
         status = BillReminderStatus.completed;
-      } else if (DateTime(effectiveDueDate.year, effectiveDueDate.month,
-              effectiveDueDate.day)
+      } else if (DateTime(dueDate.year, dueDate.month, dueDate.day)
           .isBefore(startOfToday)) {
-        // Renewal date has passed and not paid
         status = BillReminderStatus.overdue;
       } else {
-        // Renewal date is upcoming in current period
         status = BillReminderStatus.pending;
       }
 
       if (kDebugMode) {
         print('  Creating reminder for ${subscription.name}: status=$status, '
-            'currentPeriodPaid=$currentPeriodPaid, dueDate=$effectiveDueDate, '
-            'periodStart=$periodStart, periodEnd=$periodEnd, expenseCount=${expenses.length}');
+            'currentPeriodPaid=$currentPeriodPaid, dueDate=$dueDate, '
+            'periodStart=$periodStart, expenseCount=${periodPayments.length}');
       }
 
-      return BillReminder(
-        id: 'subscription_${subscription.id}',
-        sourceId: subscription.id,
-        name: 'Subscription - ${subscription.name}',
-        amount: subscription.cost,
-        dueDate: effectiveDueDate,
-        currency: subscription.currency,
-        type: BillReminderType.subscription,
-        status: status,
-        paidDate: paidDate,
-        notes: subscription.notes,
-        billingCycle: subscription.billingCycle,
+      reminders.add(
+        BillReminder(
+          id: 'subscription_${subscription.id}_${month.year}_${month.month}',
+          sourceId: subscription.id,
+          name: 'Subscription - ${subscription.name}',
+          amount: subscription.cost,
+          dueDate: dueDate,
+          currency: subscription.currency,
+          type: BillReminderType.subscription,
+          status: status,
+          paidDate: paidDate,
+          notes: subscription.notes,
+          billingCycle: subscription.billingCycle,
+        ),
       );
-    }).toList();
+    }
+
+    return reminders;
   }
 
-  DateTime _calculateCardDueDate(DateTime now, int? billingCycleDay) {
-    // If no billing cycle day is set, default to the 5th of next month
+  DateTime _calculateCardDueDate(
+    DateTime anchor,
+    int? billingCycleDay,
+    int monthOffset,
+  ) {
+    final targetMonth = DateTime(anchor.year, anchor.month + monthOffset, 1);
+
     if (billingCycleDay == null) {
-      return DateTime(now.year, now.month + 1, 5);
+      return DateTime(targetMonth.year, targetMonth.month, 5);
     }
 
-    // Helper to get the last day of a month
-    int getLastDayOfMonth(int year, int month) {
-      if (month == 12) {
-        return DateTime(year + 1, 1, 0).day;
-      } else {
-        return DateTime(year, month + 1, 0).day;
-      }
-    }
-
-    // Clamp billing day to valid range for current month
-    int daysInCurrentMonth = getLastDayOfMonth(now.year, now.month);
-    int validBillingDay = billingCycleDay > daysInCurrentMonth
-        ? daysInCurrentMonth
-        : billingCycleDay;
-
-    final currentMonthDueDate = DateTime(now.year, now.month, validBillingDay);
-
-    // If the due date hasn't passed this month, use it
-    if (currentMonthDueDate.isAfter(now) ||
-        currentMonthDueDate.isAtSameMomentAs(now)) {
-      return currentMonthDueDate;
-    }
-
-    // Otherwise, use the billing day in the next month
-    int nextMonth = now.month == 12 ? 1 : now.month + 1;
-    int nextYear = now.month == 12 ? now.year + 1 : now.year;
-    int daysInNextMonth = getLastDayOfMonth(nextYear, nextMonth);
-    int validNextBillingDay =
-        billingCycleDay > daysInNextMonth ? daysInNextMonth : billingCycleDay;
-
-    return DateTime(nextYear, nextMonth, validNextBillingDay);
-  }
-
-  DateTime _getFallbackCardDueDate(DateTime now) {
-    return DateTime(now.year, now.month, now.day + 1);
-  }
-
-  DateTime _getEffectiveSubscriptionDueDate(Subscription subscription) {
-    if (!subscription.autoRenewal) {
-      return subscription.renewalDate;
-    }
-
-    DateTime dueDate = subscription.renewalDate;
-    final now = DateTime.now();
-    int safetyCounter = 0;
-
-    while (dueDate.isBefore(DateTime(now.year, now.month, now.day)) &&
-        safetyCounter < 240) {
-      dueDate = _addBillingCycle(dueDate, subscription.billingCycle);
-      safetyCounter++;
-    }
-
-    return dueDate;
+    return _safeDayInMonth(
+      targetMonth.year,
+      targetMonth.month,
+      billingCycleDay,
+    );
   }
 
   DateTime _addBillingCycle(DateTime date, String billingCycle) {
@@ -613,14 +493,116 @@ class BillProvider extends ChangeNotifier {
       case 'weekly':
         return date.add(const Duration(days: 7));
       case 'monthly':
-        return DateTime(date.year, date.month + 1, date.day);
+        return _safeDayInMonth(date.year, date.month + 1, date.day);
       case 'quarterly':
-        return DateTime(date.year, date.month + 3, date.day);
+        return _safeDayInMonth(date.year, date.month + 3, date.day);
       case 'yearly':
       case 'annual':
-        return DateTime(date.year + 1, date.month, date.day);
+        return _safeDayInMonth(date.year + 1, date.month, date.day);
       default:
-        return DateTime(date.year, date.month + 1, date.day);
+        return _safeDayInMonth(date.year, date.month + 1, date.day);
     }
+  }
+
+  DateTime _subtractBillingCycle(DateTime date, String billingCycle) {
+    switch (billingCycle.toLowerCase()) {
+      case 'weekly':
+        return date.subtract(const Duration(days: 7));
+      case 'monthly':
+        return _safeDayInMonth(date.year, date.month - 1, date.day);
+      case 'quarterly':
+        return _safeDayInMonth(date.year, date.month - 3, date.day);
+      case 'yearly':
+      case 'annual':
+        return _safeDayInMonth(date.year - 1, date.month, date.day);
+      default:
+        return _safeDayInMonth(date.year, date.month - 1, date.day);
+    }
+  }
+
+  DateTime _startOfMonth(DateTime month) =>
+      DateTime(month.year, month.month, 1);
+
+  DateTime _endOfMonth(DateTime month) =>
+      DateTime(month.year, month.month + 1, 0, 23, 59, 59, 999);
+
+  bool _isSameMonth(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month;
+  }
+
+  bool _isWithinInclusiveRange(DateTime value, DateTime start, DateTime end) {
+    final startDay = DateTime(start.year, start.month, start.day);
+    final endDay = DateTime(end.year, end.month, end.day, 23, 59, 59, 999);
+    return !value.isBefore(startDay) && !value.isAfter(endDay);
+  }
+
+  DateTime _safeDayInMonth(int year, int month, int day) {
+    final firstDay = DateTime(year, month, 1);
+    final lastDay = DateTime(firstDay.year, firstDay.month + 1, 0).day;
+    final clampedDay = day.clamp(1, lastDay);
+    return DateTime(firstDay.year, firstDay.month, clampedDay);
+  }
+
+  DateTime? _resolveBillDueDateForMonth(Bill bill, DateTime month) {
+    final monthStart = _startOfMonth(month);
+    final monthEnd = _endOfMonth(month);
+
+    if (!bill.isRecurring) {
+      return _isSameMonth(bill.dueDate, month) ? bill.dueDate : null;
+    }
+
+    DateTime dueDate = bill.dueDate;
+    if (dueDate.isAfter(monthEnd)) {
+      return null;
+    }
+
+    int safetyCounter = 0;
+    while (dueDate.isBefore(monthStart) && safetyCounter < 240) {
+      dueDate = _addBillingCycle(dueDate, bill.recurringFrequency ?? 'monthly');
+      safetyCounter++;
+    }
+
+    return _isSameMonth(dueDate, month) ? dueDate : null;
+  }
+
+  DateTime? _resolveCardDueDateForMonth(dynamic card, DateTime month) {
+    final monthEnd = _endOfMonth(month);
+    if (card.createdAt != null &&
+        monthEnd.isBefore(card.createdAt as DateTime)) {
+      return null;
+    }
+
+    final day = card.dueDate?.day ??
+        card.billingCycleDay ??
+        card.nextBillingDate?.day ??
+        5;
+    return _safeDayInMonth(month.year, month.month, day);
+  }
+
+  DateTime? _resolveSubscriptionDueDateForMonth(
+    Subscription subscription,
+    DateTime month,
+  ) {
+    if (!subscription.autoRenewal) {
+      return _isSameMonth(subscription.renewalDate, month)
+          ? subscription.renewalDate
+          : null;
+    }
+
+    final monthStart = _startOfMonth(month);
+    final monthEnd = _endOfMonth(month);
+    DateTime dueDate = subscription.renewalDate;
+
+    if (dueDate.isAfter(monthEnd)) {
+      return null;
+    }
+
+    int safetyCounter = 0;
+    while (dueDate.isBefore(monthStart) && safetyCounter < 240) {
+      dueDate = _addBillingCycle(dueDate, subscription.billingCycle);
+      safetyCounter++;
+    }
+
+    return _isSameMonth(dueDate, month) ? dueDate : null;
   }
 }

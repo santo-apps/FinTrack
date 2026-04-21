@@ -354,7 +354,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 automaticallyImplyLeading: true,
               ),
               drawer: _buildDrawer(context, bottomModules),
-              body: bottomModules[_currentIndex].screen,
+              body: SafeArea(
+                top: false,
+                child: bottomModules[_currentIndex].screen,
+              ),
               bottomNavigationBar: BottomNavigationBar(
                 currentIndex: _currentIndex,
                 type: bottomModules.length > 3
@@ -467,7 +470,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'FinTrack',
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -476,7 +480,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Personal Finance Manager',
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 13,
                         fontWeight: FontWeight.w400,
                         color: Colors.white.withOpacity(0.9),
@@ -491,7 +496,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
                 child: Text(
                   'Quick Navigation',
-                  style: TextStyle(fontFamily: 'Poppins', 
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey[600],
@@ -529,7 +535,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                 child: Text(
                   'Features',
-                  style: TextStyle(fontFamily: 'Poppins', 
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey[600],
@@ -567,7 +574,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                 child: Text(
                   'Application',
-                  style: TextStyle(fontFamily: 'Poppins', 
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey[600],
@@ -609,7 +617,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Center(
                   child: Text(
                     'v1.0.0',
-                    style: TextStyle(fontFamily: 'Poppins', 
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
                       color: Colors.grey[500],
@@ -666,7 +675,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         title: Text(
           label,
-          style: TextStyle(fontFamily: 'Poppins', 
+          style: TextStyle(
+            fontFamily: 'Poppins',
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
             color:
@@ -751,7 +761,8 @@ class _MiniFloatingActionButton extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Poppins', 
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
                   ),

@@ -39,334 +39,341 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
       appBar: const CustomAppBar(
         title: 'Net Worth Breakdown',
       ),
-      body: Consumer4<PaymentAccountProvider, InvestmentProvider, LoanProvider,
-          SettingsProvider>(
-        builder: (context, accountProvider, investmentProvider, loanProvider,
-            settings, _) {
-          final accounts = accountProvider.activeAccounts
-              .where((account) =>
-                  !account.accountType.toLowerCase().contains('credit'))
-              .toList();
-          final investments = investmentProvider.investments;
-          final loans = loanProvider.activeLoans;
-          final currencySymbol = settings.currencySymbol;
+      body: SafeArea(
+        top: false,
+        child: Consumer4<PaymentAccountProvider, InvestmentProvider,
+            LoanProvider, SettingsProvider>(
+          builder: (context, accountProvider, investmentProvider, loanProvider,
+              settings, _) {
+            final accounts = accountProvider.activeAccounts
+                .where((account) =>
+                    !account.accountType.toLowerCase().contains('credit'))
+                .toList();
+            final investments = investmentProvider.investments;
+            final loans = loanProvider.activeLoans;
+            final currencySymbol = settings.currencySymbol;
 
-          final accountTotal = accounts.fold<double>(
-            0,
-            (sum, account) => sum + account.balance,
-          );
-          final investmentTotal = investments.fold<double>(
-            0,
-            (sum, investment) => sum + _effectiveInvestmentValue(investment),
-          );
-          final totalAssets = accountTotal + investmentTotal;
-          final totalLoans = loans.fold<double>(
-            0,
-            (sum, loan) => sum + loan.pendingAmount,
-          );
-          final totalNetWorth = totalAssets - totalLoans;
+            final accountTotal = accounts.fold<double>(
+              0,
+              (sum, account) => sum + account.balance,
+            );
+            final investmentTotal = investments.fold<double>(
+              0,
+              (sum, investment) => sum + _effectiveInvestmentValue(investment),
+            );
+            final totalAssets = accountTotal + investmentTotal;
+            final totalLoans = loans.fold<double>(
+              0,
+              (sum, loan) => sum + loan.pendingAmount,
+            );
+            final totalNetWorth = totalAssets - totalLoans;
 
-          final isNegative = totalNetWorth < 0;
-          final assetShare = totalAssets + totalLoans > 0
-              ? (totalAssets / (totalAssets + totalLoans))
-              : 0.0;
-          final loanShare = totalAssets + totalLoans > 0
-              ? (totalLoans / (totalAssets + totalLoans))
-              : 0.0;
+            final isNegative = totalNetWorth < 0;
+            final assetShare = totalAssets + totalLoans > 0
+                ? (totalAssets / (totalAssets + totalLoans))
+                : 0.0;
+            final loanShare = totalAssets + totalLoans > 0
+                ? (totalLoans / (totalAssets + totalLoans))
+                : 0.0;
 
-          return ListView(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              12,
-              16,
-              contentBottomPadding(context, hasFab: false),
-            ),
-            children: [
-              Card(
-                elevation: 3,
-                color: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
+            return ListView(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                contentBottomPadding(context, hasFab: false),
+              ),
+              children: [
+                Card(
+                  elevation: 3,
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Net Worth',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  AppUtils.formatCurrency(
+                                    totalNetWorth,
+                                    currencySymbol: currencySymbol,
+                                  ),
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w800,
+                                    color: isNegative
+                                        ? Colors.red.shade700
+                                        : colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (isNegative) ...[
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                size: 22,
+                                color: Colors.red.shade700,
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: SizedBox(
+                            height: 6,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: (assetShare * 1000)
+                                      .round()
+                                      .clamp(0, 1000),
+                                  child:
+                                      Container(color: Colors.green.shade500),
+                                ),
+                                Expanded(
+                                  flex:
+                                      (loanShare * 1000).round().clamp(0, 1000),
+                                  child: Container(color: Colors.red.shade500),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final assetsMetric = _MetricBox(
+                              label: 'Assets',
+                              value: AppUtils.formatCurrency(
+                                totalAssets,
+                                currencySymbol: currencySymbol,
+                              ),
+                              color: Colors.green.shade700,
+                              icon: Icons.trending_up,
+                            );
+
+                            final loansMetric = _MetricBox(
+                              label: 'Loans',
+                              value: AppUtils.formatCurrency(
+                                totalLoans,
+                                currencySymbol: currencySymbol,
+                              ),
+                              color: Colors.red.shade700,
+                              icon: Icons.account_balance,
+                            );
+
+                            if (constraints.maxWidth < 380) {
+                              return Column(
+                                children: [
+                                  assetsMetric,
+                                  const SizedBox(height: 6),
+                                  loansMetric,
+                                ],
+                              );
+                            }
+
+                            return Row(
+                              children: [
+                                Expanded(child: assetsMetric),
+                                const SizedBox(width: 10),
+                                Expanded(child: loansMetric),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Net Worth',
+                const SizedBox(height: 16),
+                Card(
+                  elevation: 1,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      initiallyExpanded: false,
+                      title: Text(
+                        'Assets',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      subtitle: Text(
+                        AppUtils.formatCurrency(
+                          totalAssets,
+                          currencySymbol: currencySymbol,
+                        ),
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurfaceVariant,
+                          color: Colors.green.shade700,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                AppUtils.formatCurrency(
-                                  totalNetWorth,
-                                  currencySymbol: currencySymbol,
-                                ),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Accounts',
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w800,
-                                  color: isNegative
-                                      ? Colors.red.shade700
-                                      : colorScheme.primary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: colorScheme.onSurfaceVariant,
                                 ),
                               ),
-                            ),
-                          ),
-                          if (isNegative) ...[
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.warning_amber_rounded,
-                              size: 22,
-                              color: Colors.red.shade700,
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: SizedBox(
-                          height: 6,
-                          child: Row(
-                            children: [
-                              Expanded(
-                                flex:
-                                    (assetShare * 1000).round().clamp(0, 1000),
-                                child: Container(color: Colors.green.shade500),
+                              const SizedBox(height: 8),
+                              if (accounts.isEmpty)
+                                const _EmptySection(
+                                    message: 'No asset accounts found')
+                              else
+                                ...accounts.map((account) {
+                                  return _DataRowItem(
+                                    title: account.name,
+                                    subtitle: account.accountType,
+                                    value: AppUtils.formatCurrency(
+                                      account.balance,
+                                      currencySymbol: currencySymbol,
+                                    ),
+                                    valueColor: Colors.green.shade700,
+                                  );
+                                }),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Investments',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
                               ),
-                              Expanded(
-                                flex: (loanShare * 1000).round().clamp(0, 1000),
-                                child: Container(color: Colors.red.shade500),
-                              ),
+                              const SizedBox(height: 8),
+                              if (investments.isEmpty)
+                                const _EmptySection(
+                                    message: 'No investments found')
+                              else
+                                ...investments.map((investment) {
+                                  final effectiveValue =
+                                      _effectiveInvestmentValue(investment);
+                                  final invested =
+                                      investment.getTotalInvestmentValue();
+                                  final gain = effectiveValue - invested;
+                                  final gainPercent = invested > 0
+                                      ? (gain / invested) * 100
+                                      : 0;
+
+                                  return _DataRowItem(
+                                    title: investment.name,
+                                    subtitle:
+                                        '${investment.type} • ${gain >= 0 ? 'Gain' : 'Loss'}: ${AppUtils.formatCurrency(gain, currencySymbol: currencySymbol)} (${gainPercent.toStringAsFixed(1)}%)',
+                                    value: AppUtils.formatCurrency(
+                                      effectiveValue,
+                                      currencySymbol: currencySymbol,
+                                    ),
+                                    valueColor: Colors.green.shade700,
+                                  );
+                                }),
                             ],
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  elevation: 1,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      initiallyExpanded: false,
+                      title: Text(
+                        'Loans',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                      const SizedBox(height: 10),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final assetsMetric = _MetricBox(
-                            label: 'Assets',
-                            value: AppUtils.formatCurrency(
-                              totalAssets,
-                              currencySymbol: currencySymbol,
-                            ),
-                            color: Colors.green.shade700,
-                            icon: Icons.trending_up,
-                          );
-
-                          final loansMetric = _MetricBox(
-                            label: 'Loans',
-                            value: AppUtils.formatCurrency(
-                              totalLoans,
-                              currencySymbol: currencySymbol,
-                            ),
-                            color: Colors.red.shade700,
-                            icon: Icons.account_balance,
-                          );
-
-                          if (constraints.maxWidth < 380) {
-                            return Column(
-                              children: [
-                                assetsMetric,
-                                const SizedBox(height: 6),
-                                loansMetric,
-                              ],
-                            );
-                          }
-
-                          return Row(
+                      subtitle: Text(
+                        AppUtils.formatCurrency(
+                          totalLoans,
+                          currencySymbol: currencySymbol,
+                        ),
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red.shade700,
+                        ),
+                      ),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                          child: Column(
                             children: [
-                              Expanded(child: assetsMetric),
-                              const SizedBox(width: 10),
-                              Expanded(child: loansMetric),
+                              if (loans.isEmpty)
+                                const _EmptySection(message: 'No loans found')
+                              else
+                                ...loans.map((loan) {
+                                  return _DataRowItem(
+                                    title: loan.lender,
+                                    subtitle:
+                                        '${loan.remainingMonths} months remaining',
+                                    value: AppUtils.formatCurrency(
+                                      loan.pendingAmount,
+                                      currencySymbol: currencySymbol,
+                                    ),
+                                    valueColor: Colors.red.shade700,
+                                  );
+                                }),
                             ],
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Card(
-                elevation: 1,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    initiallyExpanded: false,
-                    title: Text(
-                      'Assets',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    subtitle: Text(
-                      AppUtils.formatCurrency(
-                        totalAssets,
-                        currencySymbol: currencySymbol,
-                      ),
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.green.shade700,
-                      ),
-                    ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Accounts',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            if (accounts.isEmpty)
-                              const _EmptySection(
-                                  message: 'No asset accounts found')
-                            else
-                              ...accounts.map((account) {
-                                return _DataRowItem(
-                                  title: account.name,
-                                  subtitle: account.accountType,
-                                  value: AppUtils.formatCurrency(
-                                    account.balance,
-                                    currencySymbol: currencySymbol,
-                                  ),
-                                  valueColor: Colors.green.shade700,
-                                );
-                              }),
-                            const SizedBox(height: 10),
-                            Text(
-                              'Investments',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            if (investments.isEmpty)
-                              const _EmptySection(
-                                  message: 'No investments found')
-                            else
-                              ...investments.map((investment) {
-                                final effectiveValue =
-                                    _effectiveInvestmentValue(investment);
-                                final invested =
-                                    investment.getTotalInvestmentValue();
-                                final gain = effectiveValue - invested;
-                                final gainPercent =
-                                    invested > 0 ? (gain / invested) * 100 : 0;
-
-                                return _DataRowItem(
-                                  title: investment.name,
-                                  subtitle:
-                                      '${investment.type} • ${gain >= 0 ? 'Gain' : 'Loss'}: ${AppUtils.formatCurrency(gain, currencySymbol: currencySymbol)} (${gainPercent.toStringAsFixed(1)}%)',
-                                  value: AppUtils.formatCurrency(
-                                    effectiveValue,
-                                    currencySymbol: currencySymbol,
-                                  ),
-                                  valueColor: Colors.green.shade700,
-                                );
-                              }),
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Card(
-                elevation: 1,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    initiallyExpanded: false,
-                    title: Text(
-                      'Loans',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    subtitle: Text(
-                      AppUtils.formatCurrency(
-                        totalLoans,
-                        currencySymbol: currencySymbol,
-                      ),
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.red.shade700,
-                      ),
-                    ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                        child: Column(
-                          children: [
-                            if (loans.isEmpty)
-                              const _EmptySection(message: 'No loans found')
-                            else
-                              ...loans.map((loan) {
-                                return _DataRowItem(
-                                  title: loan.lender,
-                                  subtitle:
-                                      '${loan.remainingMonths} months remaining',
-                                  value: AppUtils.formatCurrency(
-                                    loan.pendingAmount,
-                                    currencySymbol: currencySymbol,
-                                  ),
-                                  valueColor: Colors.red.shade700,
-                                );
-                              }),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-          );
-        },
+                const SizedBox(height: 24),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

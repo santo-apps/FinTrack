@@ -15,94 +15,97 @@ class SettingsContentManagementScreen extends StatelessWidget {
         title: 'Content Management',
         showBackButton: true,
       ),
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          12,
-          16,
-          contentBottomPadding(context, hasFab: false),
+      body: SafeArea(
+        top: false,
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            12,
+            16,
+            contentBottomPadding(context, hasFab: false),
+          ),
+          children: [
+            Text(
+              'Manage your app content',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Customize categories, types, and classifications',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 20),
+            _buildContentCard(
+              context,
+              icon: Icons.category,
+              iconColor: Colors.blue,
+              title: 'Manage Expense Categories',
+              description: 'Add, edit, or delete expense categories',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ManageExpenseCategoriesScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildContentCard(
+              context,
+              icon: Icons.trending_up,
+              iconColor: Colors.green,
+              title: 'Manage Investment Types',
+              description: 'Configure investment categories and types',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ManageInvestmentTypesScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildContentCard(
+              context,
+              icon: Icons.account_balance,
+              iconColor: Colors.orange,
+              title: 'Manage Account Types',
+              description: 'Configure account types (Bank, Card, Wallet)',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ManageAccountTypeModelsScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildContentCard(
+              context,
+              icon: Icons.subscriptions,
+              iconColor: const Color(0xFFFF0A67),
+              title: 'Manage Subscription Categories',
+              description: 'Add, edit, or delete subscription categories',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const ManageSubscriptionCategoriesScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
         ),
-        children: [
-          Text(
-            'Manage your app content',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Customize categories, types, and classifications',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-          const SizedBox(height: 20),
-          _buildContentCard(
-            context,
-            icon: Icons.category,
-            iconColor: Colors.blue,
-            title: 'Manage Expense Categories',
-            description: 'Add, edit, or delete expense categories',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ManageExpenseCategoriesScreen(),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildContentCard(
-            context,
-            icon: Icons.trending_up,
-            iconColor: Colors.green,
-            title: 'Manage Investment Types',
-            description: 'Configure investment categories and types',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ManageInvestmentTypesScreen(),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildContentCard(
-            context,
-            icon: Icons.account_balance,
-            iconColor: Colors.orange,
-            title: 'Manage Account Types',
-            description: 'Configure account types (Bank, Card, Wallet)',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ManageAccountTypeModelsScreen(),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildContentCard(
-            context,
-            icon: Icons.subscriptions,
-            iconColor: const Color(0xFFFF0A67),
-            title: 'Manage Subscription Categories',
-            description: 'Add, edit, or delete subscription categories',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      const ManageSubscriptionCategoriesScreen(),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 8),
-        ],
       ),
     );
   }

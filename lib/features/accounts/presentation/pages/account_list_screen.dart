@@ -92,247 +92,261 @@ class _AccountListScreenState extends State<AccountListScreen> {
               showBackButton: widget.showBackButton,
             )
           : null,
-      body: Consumer<PaymentAccountProvider>(
-        builder: (context, provider, _) {
-          final accounts = provider.accounts;
+      body: SafeArea(
+        top: false,
+        child: Consumer<PaymentAccountProvider>(
+          builder: (context, provider, _) {
+            final accounts = provider.accounts;
 
-          if (accounts.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.account_balance_wallet,
-                    size: 80,
-                    color: AppTheme.textSecondaryColor,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No accounts yet',
-                    style: TextStyle(fontFamily: 'Poppins', 
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: isDarkMode
-                          ? Colors.white
-                          : AppTheme.textSecondaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Add a bank account, card, or wallet',
-                    style: TextStyle(fontFamily: 'Poppins', 
-                      fontSize: 14,
-                      color: isDarkMode
-                          ? Colors.white70
-                          : AppTheme.textSecondaryColor,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final groupedAccounts = _groupAccountsByType(accounts);
-
-          void setAllGroupsExpanded(bool expanded) {
-            setState(() {
-              _expandedGroups = {
-                for (final key in groupedAccounts.keys) key: expanded,
-              };
-            });
-            _saveExpandedGroups();
-          }
-
-          final allGroupsExpanded = groupedAccounts.keys.isNotEmpty &&
-              groupedAccounts.keys.every((key) => _expandedGroups[key] == true);
-
-          return ListView(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              contentBottomPadding(context),
-            ),
-            children: [
-              // Summary Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Theme.of(context).colorScheme.surface
-                      : null,
-                  gradient: Theme.of(context).brightness == Brightness.dark
-                      ? null
-                      : LinearGradient(
-                          colors: [AppTheme.primaryColor, AppTheme.accentColor],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Theme.of(context).brightness == Brightness.dark
-                      ? Border.all(color: Theme.of(context).dividerColor)
-                      : null,
-                ),
+            if (accounts.isEmpty) {
+              return Center(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    Icon(
+                      Icons.account_balance_wallet,
+                      size: 80,
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                    const SizedBox(height: 16),
                     Text(
-                      'Total Balance',
-                      style: TextStyle(fontFamily: 'Poppins', 
-                        fontSize: 14,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Theme.of(context).colorScheme.onSurfaceVariant
-                            : Colors.white70,
-                        fontWeight: FontWeight.w500,
+                      'No accounts yet',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: isDarkMode
+                            ? Colors.white
+                            : AppTheme.textSecondaryColor,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      AppUtils.formatCurrency(
-                        provider.getTotalBalance(),
-                        currencySymbol: currencySymbol,
+                      'Add a bank account, card, or wallet',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        color: isDarkMode
+                            ? Colors.white70
+                            : AppTheme.textSecondaryColor,
                       ),
-                      style: TextStyle(fontFamily: 'Poppins', 
-                        fontSize: 32,
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Theme.of(context).colorScheme.onSurface
-                            : Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _SummaryItem(
-                          label: 'Active Accounts',
-                          value: provider.activeAccounts.length.toString(),
-                        ),
-                        _SummaryItem(
-                          label: 'Total Accounts',
-                          value: accounts.length.toString(),
-                        ),
-                      ],
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 24),
+              );
+            }
 
-              // Grouped Accounts
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Your Accounts',
-                      style: TextStyle(fontFamily: 'Poppins', 
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: isDarkMode ? Colors.white : AppTheme.textColor,
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 30,
-                    child: FilledButton(
-                      onPressed: () => setAllGroupsExpanded(!allGroupsExpanded),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
-                        visualDensity: VisualDensity.compact,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      ),
-                      child: Text(
-                        allGroupsExpanded ? 'Collapse all' : 'Expand all',
-                        style: TextStyle(fontFamily: 'Poppins', 
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ...groupedAccounts.entries.map((entry) {
-                final accountType = entry.key;
-                final groupAccounts = entry.value;
-                final isExpanded =
-                    _expandedGroups.putIfAbsent(accountType, () => false);
-                final groupTotal = _calculateGroupTotal(groupAccounts);
+            final groupedAccounts = _groupAccountsByType(accounts);
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: Card(
-                    color: isDarkMode
+            void setAllGroupsExpanded(bool expanded) {
+              setState(() {
+                _expandedGroups = {
+                  for (final key in groupedAccounts.keys) key: expanded,
+                };
+              });
+              _saveExpandedGroups();
+            }
+
+            final allGroupsExpanded = groupedAccounts.keys.isNotEmpty &&
+                groupedAccounts.keys
+                    .every((key) => _expandedGroups[key] == true);
+
+            return ListView(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                contentBottomPadding(context),
+              ),
+              children: [
+                // Summary Card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
                         ? Theme.of(context).colorScheme.surface
-                        : Colors.white,
-                    elevation: 1,
-                    clipBehavior: Clip.antiAlias,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(
-                        color: isDarkMode
-                            ? Colors.white
-                            : AppTheme.primaryColor.withOpacity(0.12),
-                        width: 1,
+                        : null,
+                    gradient: Theme.of(context).brightness == Brightness.dark
+                        ? null
+                        : LinearGradient(
+                            colors: [
+                              AppTheme.primaryColor,
+                              AppTheme.accentColor
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Theme.of(context).brightness == Brightness.dark
+                        ? Border.all(color: Theme.of(context).dividerColor)
+                        : null,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Total Balance',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 14,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Theme.of(context).colorScheme.onSurfaceVariant
+                              : Colors.white70,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        AppUtils.formatCurrency(
+                          provider.getTotalBalance(),
+                          currencySymbol: currencySymbol,
+                        ),
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 32,
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Theme.of(context).colorScheme.onSurface
+                              : Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _SummaryItem(
+                            label: 'Active Accounts',
+                            value: provider.activeAccounts.length.toString(),
+                          ),
+                          _SummaryItem(
+                            label: 'Total Accounts',
+                            value: accounts.length.toString(),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Grouped Accounts
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Your Accounts',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: isDarkMode ? Colors.white : AppTheme.textColor,
+                        ),
                       ),
                     ),
-                    child: Column(
-                      children: [
-                        _AccountTypeHeader(
-                          accountType: accountType,
-                          accountCount: groupAccounts.length,
-                          totalBalance: groupTotal,
-                          currencySymbol: currencySymbol,
-                          isExpanded: isExpanded,
-                          onTap: () {
-                            setState(() {
-                              _expandedGroups[accountType] = !isExpanded;
-                            });
-                            _saveExpandedGroups();
-                          },
-                        ),
-                        if (isExpanded) ...[
-                          Divider(
-                            height: 1,
-                            thickness: 1,
-                            color: isDarkMode
-                                ? Colors.white
-                                : AppTheme.dividerColor,
-                            indent: 12,
-                            endIndent: 12,
+                    SizedBox(
+                      height: 30,
+                      child: FilledButton(
+                        onPressed: () =>
+                            setAllGroupsExpanded(!allGroupsExpanded),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          foregroundColor: Colors.white,
+                          visualDensity: VisualDensity.compact,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
                           ),
-                          ...groupAccounts.asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final account = entry.value;
-                            return _AccountCard(
-                              account: account,
-                              currencySymbol: currencySymbol,
-                              embedded: true,
-                              showDivider: index != groupAccounts.length - 1,
-                              onTap: () => _viewAccountTransactions(account),
-                              onEdit: () => _editAccount(account),
-                              onDelete: () => _deleteAccount(account),
-                            );
-                          }),
-                        ],
-                      ],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                        child: Text(
+                          allGroupsExpanded ? 'Collapse all' : 'Expand all',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                );
-              }),
-              const SizedBox(height: 4),
-            ],
-          );
-        },
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ...groupedAccounts.entries.map((entry) {
+                  final accountType = entry.key;
+                  final groupAccounts = entry.value;
+                  final isExpanded =
+                      _expandedGroups.putIfAbsent(accountType, () => false);
+                  final groupTotal = _calculateGroupTotal(groupAccounts);
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: Card(
+                      color: isDarkMode
+                          ? Theme.of(context).colorScheme.surface
+                          : Colors.white,
+                      elevation: 1,
+                      clipBehavior: Clip.antiAlias,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(
+                          color: isDarkMode
+                              ? Colors.white
+                              : AppTheme.primaryColor.withOpacity(0.12),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          _AccountTypeHeader(
+                            accountType: accountType,
+                            accountCount: groupAccounts.length,
+                            totalBalance: groupTotal,
+                            currencySymbol: currencySymbol,
+                            isExpanded: isExpanded,
+                            onTap: () {
+                              setState(() {
+                                _expandedGroups[accountType] = !isExpanded;
+                              });
+                              _saveExpandedGroups();
+                            },
+                          ),
+                          if (isExpanded) ...[
+                            Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: isDarkMode
+                                  ? Colors.white
+                                  : AppTheme.dividerColor,
+                              indent: 12,
+                              endIndent: 12,
+                            ),
+                            ...groupAccounts.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final account = entry.value;
+                              return _AccountCard(
+                                account: account,
+                                currencySymbol: currencySymbol,
+                                embedded: true,
+                                showDivider: index != groupAccounts.length - 1,
+                                onTap: () => _viewAccountTransactions(account),
+                                onEdit: () => _editAccount(account),
+                                onDelete: () => _deleteAccount(account),
+                              );
+                            }),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 4),
+              ],
+            );
+          },
+        ),
       ),
       floatingActionButton: AdaptiveBottomFab(
         child: FloatingActionButton(
@@ -425,7 +439,8 @@ class _SummaryItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(fontFamily: 'Poppins', 
+          style: TextStyle(
+            fontFamily: 'Poppins',
             fontSize: 12,
             color: Theme.of(context).brightness == Brightness.dark
                 ? Theme.of(context).colorScheme.onSurfaceVariant
@@ -436,7 +451,8 @@ class _SummaryItem extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: TextStyle(fontFamily: 'Poppins', 
+          style: TextStyle(
+            fontFamily: 'Poppins',
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: Theme.of(context).brightness == Brightness.dark
@@ -510,7 +526,8 @@ class _AccountCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           account.name,
-                          style: TextStyle(fontFamily: 'Poppins', 
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color:
@@ -552,7 +569,8 @@ class _AccountCard extends StatelessWidget {
                         (account.bankName != null
                             ? ' • ${account.bankName}'
                             : ''),
-                    style: TextStyle(fontFamily: 'Poppins', 
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 11,
                       color: isDarkMode
                           ? Colors.white70
@@ -566,7 +584,8 @@ class _AccountCard extends StatelessWidget {
                     children: [
                       Text(
                         isCredit ? 'Outstanding' : 'Balance',
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
                           fontSize: 10,
                           color: isDarkMode
                               ? Colors.white70
@@ -584,7 +603,8 @@ class _AccountCard extends StatelessWidget {
                               account.balance,
                               currencySymbol: currencySymbol,
                             ),
-                            style: TextStyle(fontFamily: 'Poppins', 
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               color: isCredit
@@ -614,7 +634,8 @@ class _AccountCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             'Statement: ${account.statementDate!.day.toString().padLeft(2, '0')}/${account.statementDate!.month.toString().padLeft(2, '0')}/${account.statementDate!.year}',
-                            style: TextStyle(fontFamily: 'Poppins', 
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
                               fontSize: 10,
                               color: isDarkMode
                                   ? Colors.white70
@@ -635,7 +656,8 @@ class _AccountCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             'Due: ${account.dueDate!.day.toString().padLeft(2, '0')}/${account.dueDate!.month.toString().padLeft(2, '0')}/${account.dueDate!.year}',
-                            style: TextStyle(fontFamily: 'Poppins', 
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
                               fontSize: 10,
                               color: AppTheme.errorColor,
                               fontWeight: FontWeight.w600,
@@ -756,7 +778,8 @@ class _AccountTypeHeader extends StatelessWidget {
                       accountType,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -765,7 +788,8 @@ class _AccountTypeHeader extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       '$accountCount ${accountCount == 1 ? 'account' : 'accounts'}',
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 11,
                         color: isDarkMode
                             ? Colors.white70
@@ -788,7 +812,8 @@ class _AccountTypeHeader extends StatelessWidget {
                       children: [
                         Text(
                           'Total',
-                          style: TextStyle(fontFamily: 'Poppins', 
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
                             fontSize: 10,
                             color: isDarkMode
                                 ? Colors.white70
@@ -805,7 +830,8 @@ class _AccountTypeHeader extends StatelessWidget {
                               totalBalance,
                               currencySymbol: currencySymbol,
                             ),
-                            style: TextStyle(fontFamily: 'Poppins', 
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               color: AppTheme.primaryColor,

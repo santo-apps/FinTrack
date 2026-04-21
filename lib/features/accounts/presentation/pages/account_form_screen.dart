@@ -109,683 +109,713 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
         title: isEdit ? 'Edit Account' : 'Add Account',
         showBackButton: true,
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // Account Type
-            Text(
-              'Account Type',
-              style: TextStyle(fontFamily: 'Poppins', 
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isDarkMode ? Colors.white : AppTheme.textColor,
+      body: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // Account Type
+              Text(
+                'Account Type',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isDarkMode ? Colors.white : AppTheme.textColor,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Consumer<AccountTypeProvider>(
-              builder: (context, accountTypeProvider, child) {
-                final accountTypes = accountTypeProvider.activeAccountTypes;
+              const SizedBox(height: 8),
+              Consumer<AccountTypeProvider>(
+                builder: (context, accountTypeProvider, child) {
+                  final accountTypes = accountTypeProvider.activeAccountTypes;
 
-                return DropdownSearch<AccountTypeModel>(
-                  selectedItem: _selectedAccountType != null
-                      ? accountTypeProvider
-                          .getAccountTypeByName(_selectedAccountType!)
-                      : null,
-                  items: accountTypes,
-                  itemAsString: (AccountTypeModel type) => type.name,
-                  dropdownDecoratorProps: DropDownDecoratorProps(
-                    dropdownSearchDecoration: InputDecoration(
-                      hintText: 'Select account type',
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: AppTheme.borderColor),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: AppTheme.borderColor),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide:
-                            BorderSide(color: AppTheme.primaryColor, width: 2),
-                      ),
-                    ),
-                  ),
-                  popupProps: PopupPropsMultiSelection.menu(
-                    showSearchBox: true,
-                    searchFieldProps: TextFieldProps(
-                      decoration: InputDecoration(
-                        hintText: 'Search account type...',
-                        prefixIcon: const Icon(Icons.search),
+                  return DropdownSearch<AccountTypeModel>(
+                    selectedItem: _selectedAccountType != null
+                        ? accountTypeProvider
+                            .getAccountTypeByName(_selectedAccountType!)
+                        : null,
+                    items: accountTypes,
+                    itemAsString: (AccountTypeModel type) => type.name,
+                    dropdownDecoratorProps: DropDownDecoratorProps(
+                      dropdownSearchDecoration: InputDecoration(
+                        hintText: 'Select account type',
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 8),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: AppTheme.borderColor),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: AppTheme.borderColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                              color: AppTheme.primaryColor, width: 2),
                         ),
                       ),
                     ),
-                    menuProps: MenuProps(
-                      borderRadius: BorderRadius.circular(8),
-                      elevation: 4,
-                    ),
-                    itemBuilder: (context, item, isSelected) {
-                      final color = item.color != null
-                          ? Color(
-                              int.parse(item.color!.replaceFirst('#', '0xFF')))
-                          : AppTheme.primaryColor;
-
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isSelected ? color.withOpacity(0.1) : null,
+                    popupProps: PopupPropsMultiSelection.menu(
+                      showSearchBox: true,
+                      searchFieldProps: TextFieldProps(
+                        decoration: InputDecoration(
+                          hintText: 'Search account type...',
+                          prefixIcon: const Icon(Icons.search),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
-                        child: Row(
-                          children: [
-                            if (item.icon != null)
+                      ),
+                      menuProps: MenuProps(
+                        borderRadius: BorderRadius.circular(8),
+                        elevation: 4,
+                      ),
+                      itemBuilder: (context, item, isSelected) {
+                        final color = item.color != null
+                            ? Color(int.parse(
+                                item.color!.replaceFirst('#', '0xFF')))
+                            : AppTheme.primaryColor;
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isSelected ? color.withOpacity(0.1) : null,
+                          ),
+                          child: Row(
+                            children: [
+                              if (item.icon != null)
+                                Text(
+                                  item.icon!,
+                                  style: TextStyle(
+                                      fontFamily: 'Poppins', fontSize: 20),
+                                )
+                              else
+                                Icon(
+                                  Icons.category,
+                                  color: isSelected
+                                      ? color
+                                      : AppTheme.textSecondaryColor,
+                                  size: 20,
+                                ),
+                              const SizedBox(width: 12),
                               Text(
-                                item.icon!,
-                                style: TextStyle(fontFamily: 'Poppins', fontSize: 20),
-                              )
-                            else
-                              Icon(
-                                Icons.category,
-                                color: isSelected
-                                    ? color
-                                    : AppTheme.textSecondaryColor,
-                                size: 20,
+                                item.name,
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 14,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                  color: isSelected
+                                      ? color
+                                      : (isDarkMode
+                                          ? Colors.white
+                                          : AppTheme.textColor),
+                                ),
                               ),
-                            const SizedBox(width: 12),
-                            Text(
-                              item.name,
-                              style: TextStyle(fontFamily: 'Poppins', 
-                                fontSize: 14,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
-                                color: isSelected
-                                    ? color
-                                    : (isDarkMode
-                                        ? Colors.white
-                                        : AppTheme.textColor),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    onChanged: (AccountTypeModel? newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          _selectedAccountType = newValue.name;
+                        });
+                      }
                     },
-                  ),
-                  onChanged: (AccountTypeModel? newValue) {
-                    if (newValue != null) {
-                      setState(() {
-                        _selectedAccountType = newValue.name;
-                      });
-                    }
-                  },
-                  validator: (AccountTypeModel? value) {
-                    if (value == null) {
-                      return 'Please select an account type';
-                    }
-                    return null;
-                  },
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-
-            // Account Name
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Account Name',
-                hintText: 'e.g., Primary Checking',
+                    validator: (AccountTypeModel? value) {
+                      if (value == null) {
+                        return 'Please select an account type';
+                      }
+                      return null;
+                    },
+                  );
+                },
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter account name';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-            // Balance
-            TextFormField(
-              controller: _balanceController,
-              decoration: InputDecoration(
-                labelText:
-                    _selectedAccountType?.toLowerCase().contains('credit') ==
-                            true
-                        ? 'Outstanding Balance'
-                        : 'Current Balance',
-                hintText: '0.00',
-              ),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter balance';
-                }
-                if (double.tryParse(value) == null) {
-                  return 'Please enter a valid number';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Credit Limit (for credit cards)
-            if (_selectedAccountType?.toLowerCase().contains('credit') ==
-                true) ...[
+              // Account Name
               TextFormField(
-                controller: _creditLimitController,
+                controller: _nameController,
                 decoration: const InputDecoration(
-                  labelText: 'Credit Limit',
+                  labelText: 'Account Name',
+                  hintText: 'e.g., Primary Checking',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter account name';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Balance
+              TextFormField(
+                controller: _balanceController,
+                decoration: InputDecoration(
+                  labelText:
+                      _selectedAccountType?.toLowerCase().contains('credit') ==
+                              true
+                          ? 'Outstanding Balance'
+                          : 'Current Balance',
                   hintText: '0.00',
                 ),
                 keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter balance';
+                  }
+                  if (double.tryParse(value) == null) {
+                    return 'Please enter a valid number';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
-            ],
 
-            // Bank Name
-            if (_selectedAccountType?.toLowerCase().contains('bank') == true ||
-                _selectedAccountType?.toLowerCase().contains('credit') ==
-                    true ||
-                _selectedAccountType?.toLowerCase().contains('debit') ==
-                    true) ...[
+              // Credit Limit (for credit cards)
+              if (_selectedAccountType?.toLowerCase().contains('credit') ==
+                  true) ...[
+                TextFormField(
+                  controller: _creditLimitController,
+                  decoration: const InputDecoration(
+                    labelText: 'Credit Limit',
+                    hintText: '0.00',
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Bank Name
+              if (_selectedAccountType?.toLowerCase().contains('bank') ==
+                      true ||
+                  _selectedAccountType?.toLowerCase().contains('credit') ==
+                      true ||
+                  _selectedAccountType?.toLowerCase().contains('debit') ==
+                      true) ...[
+                TextFormField(
+                  controller: _bankNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Bank Name',
+                    hintText: 'e.g., Chase, Bank of America',
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Account Number
               TextFormField(
-                controller: _bankNameController,
+                controller: _accountNumberController,
                 decoration: const InputDecoration(
-                  labelText: 'Bank Name',
-                  hintText: 'e.g., Chase, Bank of America',
+                  labelText: 'Account/Card Number (last 4 digits)',
+                  hintText: '1234',
                 ),
+                keyboardType: TextInputType.number,
+                maxLength: 4,
               ),
               const SizedBox(height: 16),
-            ],
 
-            // Account Number
-            TextFormField(
-              controller: _accountNumberController,
-              decoration: const InputDecoration(
-                labelText: 'Account/Card Number (last 4 digits)',
-                hintText: '1234',
-              ),
-              keyboardType: TextInputType.number,
-              maxLength: 4,
-            ),
-            const SizedBox(height: 16),
-
-            // Card Network (for cards)
-            if (_selectedAccountType?.toLowerCase().contains('credit') ==
-                    true ||
-                _selectedAccountType?.toLowerCase().contains('debit') ==
-                    true) ...[
-              Text(
-                'Card Network',
-                style: TextStyle(fontFamily: 'Poppins', 
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isDarkMode ? Colors.white : AppTheme.textColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppTheme.borderColor),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _cardNetwork,
-                    isExpanded: true,
-                    hint: const Text('Select network'),
-                    items: _cardNetworks.map((network) {
-                      return DropdownMenuItem(
-                        value: network,
-                        child: Text(network),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _cardNetwork = value;
-                      });
-                    },
+              // Card Network (for cards)
+              if (_selectedAccountType?.toLowerCase().contains('credit') ==
+                      true ||
+                  _selectedAccountType?.toLowerCase().contains('debit') ==
+                      true) ...[
+                Text(
+                  'Card Network',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDarkMode ? Colors.white : AppTheme.textColor,
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Expiry Date (for cards)
-            if (_selectedAccountType?.toLowerCase().contains('credit') ==
-                    true ||
-                _selectedAccountType?.toLowerCase().contains('debit') ==
-                    true) ...[
-              Text(
-                'Expiry Date',
-                style: TextStyle(fontFamily: 'Poppins', 
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isDarkMode ? Colors.white : AppTheme.textColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              InkWell(
-                onTap: _selectExpiryDate,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
                     border: Border.all(color: AppTheme.borderColor),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _expiryDate != null
-                            ? '${_expiryDate!.month.toString().padLeft(2, '0')}/${_expiryDate!.year}'
-                            : 'Select expiry date',
-                        style: TextStyle(fontFamily: 'Poppins', 
-                          fontSize: 14,
-                          color: _expiryDate != null
-                              ? (isDarkMode ? Colors.white : AppTheme.textColor)
-                              : (isDarkMode
-                                  ? Colors.white70
-                                  : AppTheme.textSecondaryColor),
-                        ),
-                      ),
-                      Icon(Icons.calendar_today,
-                          color: isDarkMode
-                              ? Colors.white70
-                              : AppTheme.textSecondaryColor,
-                          size: 18),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Statement Date (for credit cards only)
-            if (_selectedAccountType?.toLowerCase().contains('credit') ==
-                true) ...[
-              Text(
-                'Statement Date',
-                style: TextStyle(fontFamily: 'Poppins', 
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isDarkMode ? Colors.white : AppTheme.textColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              InkWell(
-                onTap: _selectStatementDate,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppTheme.borderColor),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _statementDate != null
-                            ? '${_statementDate!.day.toString().padLeft(2, '0')}/${_statementDate!.month.toString().padLeft(2, '0')}/${_statementDate!.year}'
-                            : 'Select statement date',
-                        style: TextStyle(fontFamily: 'Poppins', 
-                          fontSize: 14,
-                          color: _statementDate != null
-                              ? (isDarkMode ? Colors.white : AppTheme.textColor)
-                              : (isDarkMode
-                                  ? Colors.white70
-                                  : AppTheme.textSecondaryColor),
-                        ),
-                      ),
-                      Icon(Icons.calendar_today,
-                          color: isDarkMode
-                              ? Colors.white70
-                              : AppTheme.textSecondaryColor,
-                          size: 18),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Payment Due Date',
-                style: TextStyle(fontFamily: 'Poppins', 
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isDarkMode ? Colors.white : AppTheme.textColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              InkWell(
-                onTap: _selectDueDate,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppTheme.borderColor),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _dueDate != null
-                            ? '${_dueDate!.day.toString().padLeft(2, '0')}/${_dueDate!.month.toString().padLeft(2, '0')}/${_dueDate!.year}'
-                            : 'Select due date',
-                        style: TextStyle(fontFamily: 'Poppins', 
-                          fontSize: 14,
-                          color: _dueDate != null
-                              ? (isDarkMode ? Colors.white : AppTheme.textColor)
-                              : (isDarkMode
-                                  ? Colors.white70
-                                  : AppTheme.textSecondaryColor),
-                        ),
-                      ),
-                      Icon(Icons.calendar_today,
-                          color: isDarkMode
-                              ? Colors.white70
-                              : AppTheme.textSecondaryColor,
-                          size: 18),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Linked Account
-            Text(
-              'Linked Account (Optional)',
-              style: TextStyle(fontFamily: 'Poppins', 
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isDarkMode ? Colors.white : AppTheme.textColor,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Link this account to another account (e.g., debit card to bank account)',
-              style: TextStyle(fontFamily: 'Poppins', 
-                fontSize: 12,
-                color:
-                    isDarkMode ? Colors.white70 : AppTheme.textSecondaryColor,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Consumer<PaymentAccountProvider>(
-              builder: (context, accountProvider, child) {
-                // Filter out current account from list
-                final availableAccounts = accountProvider.accounts
-                    .where((acc) => acc.id != widget.account?.id)
-                    .toList();
-
-                return DropdownSearch<PaymentAccount>(
-                  selectedItem: _linkedAccountId != null
-                      ? availableAccounts.firstWhere(
-                          (acc) => acc.id == _linkedAccountId,
-                          orElse: () => availableAccounts.isNotEmpty
-                              ? availableAccounts.first
-                              : PaymentAccount(
-                                  id: '',
-                                  name: '',
-                                  accountType: '',
-                                  createdAt: DateTime.now(),
-                                ),
-                        )
-                      : null,
-                  items: availableAccounts,
-                  itemAsString: (PaymentAccount acc) => acc.displayName,
-                  dropdownDecoratorProps: DropDownDecoratorProps(
-                    dropdownSearchDecoration: InputDecoration(
-                      hintText: 'Select linked account (optional)',
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: AppTheme.borderColor),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: AppTheme.borderColor),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide:
-                            BorderSide(color: AppTheme.primaryColor, width: 2),
-                      ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _cardNetwork,
+                      isExpanded: true,
+                      hint: const Text('Select network'),
+                      items: _cardNetworks.map((network) {
+                        return DropdownMenuItem(
+                          value: network,
+                          child: Text(network),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _cardNetwork = value;
+                        });
+                      },
                     ),
                   ),
-                  popupProps: PopupPropsMultiSelection.menu(
-                    showSearchBox: true,
-                    searchFieldProps: TextFieldProps(
-                      decoration: InputDecoration(
-                        hintText: 'Search accounts...',
-                        prefixIcon: const Icon(Icons.search),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Expiry Date (for cards)
+              if (_selectedAccountType?.toLowerCase().contains('credit') ==
+                      true ||
+                  _selectedAccountType?.toLowerCase().contains('debit') ==
+                      true) ...[
+                Text(
+                  'Expiry Date',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDarkMode ? Colors.white : AppTheme.textColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: _selectExpiryDate,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppTheme.borderColor),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _expiryDate != null
+                              ? '${_expiryDate!.month.toString().padLeft(2, '0')}/${_expiryDate!.year}'
+                              : 'Select expiry date',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            color: _expiryDate != null
+                                ? (isDarkMode
+                                    ? Colors.white
+                                    : AppTheme.textColor)
+                                : (isDarkMode
+                                    ? Colors.white70
+                                    : AppTheme.textSecondaryColor),
+                          ),
+                        ),
+                        Icon(Icons.calendar_today,
+                            color: isDarkMode
+                                ? Colors.white70
+                                : AppTheme.textSecondaryColor,
+                            size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Statement Date (for credit cards only)
+              if (_selectedAccountType?.toLowerCase().contains('credit') ==
+                  true) ...[
+                Text(
+                  'Statement Date',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDarkMode ? Colors.white : AppTheme.textColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: _selectStatementDate,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppTheme.borderColor),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _statementDate != null
+                              ? '${_statementDate!.day.toString().padLeft(2, '0')}/${_statementDate!.month.toString().padLeft(2, '0')}/${_statementDate!.year}'
+                              : 'Select statement date',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            color: _statementDate != null
+                                ? (isDarkMode
+                                    ? Colors.white
+                                    : AppTheme.textColor)
+                                : (isDarkMode
+                                    ? Colors.white70
+                                    : AppTheme.textSecondaryColor),
+                          ),
+                        ),
+                        Icon(Icons.calendar_today,
+                            color: isDarkMode
+                                ? Colors.white70
+                                : AppTheme.textSecondaryColor,
+                            size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Payment Due Date',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDarkMode ? Colors.white : AppTheme.textColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: _selectDueDate,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppTheme.borderColor),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _dueDate != null
+                              ? '${_dueDate!.day.toString().padLeft(2, '0')}/${_dueDate!.month.toString().padLeft(2, '0')}/${_dueDate!.year}'
+                              : 'Select due date',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            color: _dueDate != null
+                                ? (isDarkMode
+                                    ? Colors.white
+                                    : AppTheme.textColor)
+                                : (isDarkMode
+                                    ? Colors.white70
+                                    : AppTheme.textSecondaryColor),
+                          ),
+                        ),
+                        Icon(Icons.calendar_today,
+                            color: isDarkMode
+                                ? Colors.white70
+                                : AppTheme.textSecondaryColor,
+                            size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Linked Account
+              Text(
+                'Linked Account (Optional)',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isDarkMode ? Colors.white : AppTheme.textColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Link this account to another account (e.g., debit card to bank account)',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  color:
+                      isDarkMode ? Colors.white70 : AppTheme.textSecondaryColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Consumer<PaymentAccountProvider>(
+                builder: (context, accountProvider, child) {
+                  // Filter out current account from list
+                  final availableAccounts = accountProvider.accounts
+                      .where((acc) => acc.id != widget.account?.id)
+                      .toList();
+
+                  return DropdownSearch<PaymentAccount>(
+                    selectedItem: _linkedAccountId != null
+                        ? availableAccounts.firstWhere(
+                            (acc) => acc.id == _linkedAccountId,
+                            orElse: () => availableAccounts.isNotEmpty
+                                ? availableAccounts.first
+                                : PaymentAccount(
+                                    id: '',
+                                    name: '',
+                                    accountType: '',
+                                    createdAt: DateTime.now(),
+                                  ),
+                          )
+                        : null,
+                    items: availableAccounts,
+                    itemAsString: (PaymentAccount acc) => acc.displayName,
+                    dropdownDecoratorProps: DropDownDecoratorProps(
+                      dropdownSearchDecoration: InputDecoration(
+                        hintText: 'Select linked account (optional)',
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 8),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: AppTheme.borderColor),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: AppTheme.borderColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                              color: AppTheme.primaryColor, width: 2),
                         ),
                       ),
                     ),
-                    menuProps: MenuProps(
-                      borderRadius: BorderRadius.circular(8),
-                      elevation: 4,
-                    ),
-                    itemBuilder: (context, item, isSelected) {
-                      final color = item.color != null
-                          ? Color(
-                              int.parse(item.color!.replaceFirst('#', '0xFF')))
-                          : AppTheme.primaryColor;
-
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isSelected ? color.withOpacity(0.1) : null,
+                    popupProps: PopupPropsMultiSelection.menu(
+                      showSearchBox: true,
+                      searchFieldProps: TextFieldProps(
+                        decoration: InputDecoration(
+                          hintText: 'Search accounts...',
+                          prefixIcon: const Icon(Icons.search),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: color.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  item.accountType.isNotEmpty
-                                      ? item.accountType[0].toUpperCase()
-                                      : '?',
-                                  style: TextStyle(fontFamily: 'Poppins', 
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: color,
+                      ),
+                      menuProps: MenuProps(
+                        borderRadius: BorderRadius.circular(8),
+                        elevation: 4,
+                      ),
+                      itemBuilder: (context, item, isSelected) {
+                        final color = item.color != null
+                            ? Color(int.parse(
+                                item.color!.replaceFirst('#', '0xFF')))
+                            : AppTheme.primaryColor;
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isSelected ? color.withOpacity(0.1) : null,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: color.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    item.accountType.isNotEmpty
+                                        ? item.accountType[0].toUpperCase()
+                                        : '?',
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: color,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.displayName,
-                                    style: TextStyle(fontFamily: 'Poppins', 
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDarkMode
-                                          ? Colors.white
-                                          : AppTheme.textColor,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.displayName,
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDarkMode
+                                            ? Colors.white
+                                            : AppTheme.textColor,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    item.accountType,
-                                    style: TextStyle(fontFamily: 'Poppins', 
-                                      fontSize: 12,
-                                      color: isDarkMode
-                                          ? Colors.white70
-                                          : AppTheme.textSecondaryColor,
+                                    Text(
+                                      item.accountType,
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 12,
+                                        color: isDarkMode
+                                            ? Colors.white70
+                                            : AppTheme.textSecondaryColor,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    onChanged: (PaymentAccount? newValue) {
+                      setState(() {
+                        _linkedAccountId = newValue?.id;
+                      });
                     },
-                  ),
-                  onChanged: (PaymentAccount? newValue) {
-                    setState(() {
-                      _linkedAccountId = newValue?.id;
-                    });
-                  },
-                  clearButtonProps: const ClearButtonProps(isVisible: true),
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-
-            //
-            // Color Selection
-            Text(
-              'Account Color',
-              style: TextStyle(fontFamily: 'Poppins', 
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isDarkMode ? Colors.white : AppTheme.textColor,
+                    clearButtonProps: const ClearButtonProps(isVisible: true),
+                  );
+                },
               ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: _accountColors.map((colorHex) {
-                final color =
-                    Color(int.parse(colorHex.replaceFirst('#', '0xFF')));
-                final isSelected = _selectedColor == colorHex;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedColor = colorHex;
-                    });
-                  },
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected ? Colors.white : Colors.transparent,
-                        width: 3,
+              const SizedBox(height: 24),
+
+              //
+              // Color Selection
+              Text(
+                'Account Color',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isDarkMode ? Colors.white : AppTheme.textColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: _accountColors.map((colorHex) {
+                  final color =
+                      Color(int.parse(colorHex.replaceFirst('#', '0xFF')));
+                  final isSelected = _selectedColor == colorHex;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedColor = colorHex;
+                      });
+                    },
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected ? Colors.white : Colors.transparent,
+                          width: 3,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: color.withOpacity(0.5),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
+                            : null,
                       ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: color.withOpacity(0.5),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              )
-                            ]
+                      child: isSelected
+                          ? const Icon(Icons.check, color: Colors.white)
                           : null,
                     ),
-                    child: isSelected
-                        ? const Icon(Icons.check, color: Colors.white)
-                        : null,
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 24),
+
+              // Notes
+              TextFormField(
+                controller: _notesController,
+                decoration: const InputDecoration(
+                  labelText: 'Notes (Optional)',
+                  hintText: 'Add any additional notes',
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 24),
+
+              // Switches
+              SwitchListTile(
+                title: Text(
+                  'Set as Default Account',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textColor,
                   ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 24),
+                ),
+                subtitle: Text(
+                  'Use this account by default for transactions',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    color: AppTheme.textSecondaryColor,
+                  ),
+                ),
+                value: _isDefault,
+                onChanged: (value) {
+                  setState(() {
+                    _isDefault = value;
+                  });
+                },
+                activeColor: AppTheme.primaryColor,
+              ),
+              SwitchListTile(
+                title: Text(
+                  'Active Account',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textColor,
+                  ),
+                ),
+                subtitle: Text(
+                  'Show this account in your active accounts',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    color: AppTheme.textSecondaryColor,
+                  ),
+                ),
+                value: _isActive,
+                onChanged: (value) {
+                  setState(() {
+                    _isActive = value;
+                  });
+                },
+                activeColor: AppTheme.primaryColor,
+              ),
+              const SizedBox(height: 32),
 
-            // Notes
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Notes (Optional)',
-                hintText: 'Add any additional notes',
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 24),
-
-            // Switches
-            SwitchListTile(
-              title: Text(
-                'Set as Default Account',
-                style: TextStyle(fontFamily: 'Poppins', 
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppTheme.textColor,
+              // Save Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _saveAccount,
+                  child: Text(isEdit ? 'Update Account' : 'Add Account'),
                 ),
               ),
-              subtitle: Text(
-                'Use this account by default for transactions',
-                style: TextStyle(fontFamily: 'Poppins', 
-                  fontSize: 12,
-                  color: AppTheme.textSecondaryColor,
-                ),
-              ),
-              value: _isDefault,
-              onChanged: (value) {
-                setState(() {
-                  _isDefault = value;
-                });
-              },
-              activeColor: AppTheme.primaryColor,
-            ),
-            SwitchListTile(
-              title: Text(
-                'Active Account',
-                style: TextStyle(fontFamily: 'Poppins', 
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppTheme.textColor,
-                ),
-              ),
-              subtitle: Text(
-                'Show this account in your active accounts',
-                style: TextStyle(fontFamily: 'Poppins', 
-                  fontSize: 12,
-                  color: AppTheme.textSecondaryColor,
-                ),
-              ),
-              value: _isActive,
-              onChanged: (value) {
-                setState(() {
-                  _isActive = value;
-                });
-              },
-              activeColor: AppTheme.primaryColor,
-            ),
-            const SizedBox(height: 32),
-
-            // Save Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _saveAccount,
-                child: Text(isEdit ? 'Update Account' : 'Add Account'),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
     );

@@ -111,6 +111,13 @@ class HomeViewModel extends ChangeNotifier {
     _billProvider.addListener(_computeAll);
   }
 
+  bool _isSystemSubscriptionPayment(dynamic expense) {
+    final transactionType = expense.transactionType ?? 'expense';
+    return transactionType == 'payment' &&
+        expense.category == 'Subscriptions' &&
+        expense.title.startsWith('Subscription Payment - ');
+  }
+
   void _onInvestmentChanged() {
     if (_isDisposed) return;
     _computeSnapshot();
@@ -152,7 +159,8 @@ class HomeViewModel extends ChangeNotifier {
       return expense.date.year == now.year &&
           expense.date.month == now.month &&
           expense.date.day == now.day &&
-          (transactionType == 'expense' || transactionType == 'payment');
+          (transactionType == 'expense' || transactionType == 'payment') &&
+          !_isSystemSubscriptionPayment(expense);
     });
     _todaySpend = todayExpenses.fold<double>(0, (sum, e) => sum + e.amount);
   }
@@ -219,7 +227,8 @@ class HomeViewModel extends ChangeNotifier {
         return e.date.year == now.year && e.date.month == now.month;
       }).where((e) {
         final transactionType = e.transactionType ?? 'expense';
-        return transactionType == 'expense' || transactionType == 'payment';
+        return (transactionType == 'expense' || transactionType == 'payment') &&
+            !_isSystemSubscriptionPayment(e);
       }).toList();
 
       budget.categoryLimits.forEach((category, limit) {
@@ -242,7 +251,8 @@ class HomeViewModel extends ChangeNotifier {
       return e.date.year == now.year && e.date.month == now.month;
     }).where((e) {
       final transactionType = e.transactionType ?? 'expense';
-      return transactionType == 'expense' || transactionType == 'payment';
+      return (transactionType == 'expense' || transactionType == 'payment') &&
+          !_isSystemSubscriptionPayment(e);
     }).toList();
 
     final categoryTotals = <String, double>{};
@@ -254,11 +264,14 @@ class HomeViewModel extends ChangeNotifier {
     final sorted = categoryTotals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
+    final totalMonthSpend =
+        sorted.fold<double>(0, (sum, entry) => sum + entry.value);
     _topCategories = sorted.take(4).map((e) {
       final budget = _budgetProvider.getBudgetForMonth(now.month, now.year);
       final limit = budget?.categoryLimits[e.key] ?? 0;
-      final percent =
-          (limit > 0 ? (e.value / limit).clamp(0.0, 1.0) : 0.0) as double;
+      final percent = (totalMonthSpend > 0
+          ? (e.value / totalMonthSpend).clamp(0.0, 1.0)
+          : 0.0) as double;
 
       return CategorySpending(
         category: e.key,

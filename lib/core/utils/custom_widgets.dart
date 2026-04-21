@@ -9,7 +9,12 @@ import '../../core/theme/app_theme.dart';
 // This avoids double-counting when this widget lives inside a nested Scaffold
 // (e.g. a home-tab body already positioned above a BottomNavigationBar).
 double effectiveBottomInset(BuildContext context, {double minimum = 0}) {
-  final inset = MediaQuery.of(context).padding.bottom;
+  final mediaQuery = MediaQuery.of(context);
+  // In nested scaffold trees, padding.bottom can become 0 after parent
+  // insets are consumed. Fall back to viewPadding.bottom to still respect
+  // Android navigation button area and avoid clipped bottom content.
+  final inset =
+      math.max(mediaQuery.padding.bottom, mediaQuery.viewPadding.bottom);
   return math.max(inset, minimum);
 }
 

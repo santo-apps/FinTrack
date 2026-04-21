@@ -144,9 +144,14 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                       Expanded(
                         child: TabBar(
                           controller: _tabController,
+                          labelColor: _tabPrimaryTextColor(context),
+                          unselectedLabelColor: _tabSecondaryTextColor(context),
                           labelStyle: TextStyle(
                               fontFamily: 'Poppins',
                               fontWeight: FontWeight.w600),
+                          unselectedLabelStyle: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w500),
                           tabs: const [
                             Tab(text: 'Overview'),
                             Tab(text: 'Categories'),
@@ -1074,7 +1079,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
 
   bool _isAccountBreakdownTransaction(Expense expense) {
     final transactionType = expense.transactionType ?? 'expense';
-    return transactionType == 'expense';
+    return transactionType != 'income' && transactionType != 'transfer';
   }
 
   String _getExpenseAccountName(Expense expense) {
@@ -1163,13 +1168,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
   ExpenseCategory? _getCategoryData(BuildContext context, String category) {
     final categories = context.read<ExpenseProvider>().categories;
     return categories.where((c) => c.name == category).firstOrNull;
-  }
-
-  Color _getCategoryColor(BuildContext context, String category) {
-    final categoryData = _getCategoryData(context, category);
-    return categoryData != null
-        ? _hexToColor(categoryData.color)
-        : AppTheme.primaryColor;
   }
 
   Color _hexToColor(String hexString) {
@@ -1420,7 +1418,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Theme.of(context).brightness == Brightness.dark
-                          ? Theme.of(context).colorScheme.surfaceVariant
+                          ? Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest
                           : Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(4),
                     ),
@@ -1694,7 +1694,6 @@ class _AccountTransactionsPage extends StatefulWidget {
   final List<Expense> expenses;
 
   const _AccountTransactionsPage({
-    super.key,
     required this.accountName,
     required this.expenses,
   });
@@ -2043,6 +2042,7 @@ class ExpenseCard extends StatelessWidget {
 
   void _confirmDelete(BuildContext context) {
     final parentContext = context;
+    final expenseProvider = parentContext.read<ExpenseProvider>();
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -2057,9 +2057,7 @@ class ExpenseCard extends StatelessWidget {
             onPressed: () async {
               // Reverse balance adjustments before deleting
               await _reverseTransactionEffects(parentContext, expense);
-              await parentContext
-                  .read<ExpenseProvider>()
-                  .deleteExpense(expense.id);
+              await expenseProvider.deleteExpense(expense.id);
 
               onDeleted?.call(expense.id);
 
@@ -3343,14 +3341,17 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
         );
 
     if (widget.expense != null) {
+      final expenseProvider = context.read<ExpenseProvider>();
       await _applyTransactionEffects(widget.expense!, reverse: true);
-      context.read<ExpenseProvider>().updateExpense(expense);
+      expenseProvider.updateExpense(expense);
       await _applyTransactionEffects(expense, reverse: false);
     } else {
-      context.read<ExpenseProvider>().addExpense(expense);
+      final expenseProvider = context.read<ExpenseProvider>();
+      expenseProvider.addExpense(expense);
       await _applyTransactionEffects(expense, reverse: false);
     }
 
+    if (!mounted) return;
     Navigator.pop(context);
   }
 

@@ -14,120 +14,123 @@ class ManageSubscriptionCategoriesScreen extends StatelessWidget {
       appBar: const CustomAppBar(
         title: 'Manage Subscription Categories',
       ),
-      body: Consumer<SettingsProvider>(
-        builder: (context, settingsProvider, _) {
-          final categories = settingsProvider.subscriptionCategories;
+      body: SafeArea(
+        top: false,
+        child: Consumer<SettingsProvider>(
+          builder: (context, settingsProvider, _) {
+            final categories = settingsProvider.subscriptionCategories;
 
-          if (categories.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.subscriptions,
-                      size: 64, color: AppTheme.textSecondaryColor),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No subscription categories yet',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap + to add your first category',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 14,
-                      color: AppTheme.textSecondaryColor,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ReorderableListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: categories.length,
-            onReorder: (oldIndex, newIndex) {
-              if (oldIndex < newIndex) {
-                newIndex -= 1;
-              }
-              final reorderedCategories = List.from(categories);
-              final item = reorderedCategories.removeAt(oldIndex);
-              reorderedCategories.insert(newIndex, item);
-              // Note: Add reorder method to SettingsProvider if needed
-            },
-            itemBuilder: (context, index) {
-              final category = categories[index];
-              final isOther = category.name.toLowerCase() == 'other';
-
-              return Card(
-                key: ValueKey(category.id),
-                margin: const EdgeInsets.only(bottom: 12),
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  leading: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Text(
-                        category.icon,
-                        style: TextStyle(fontFamily: 'Poppins', fontSize: 24),
+            if (categories.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.subscriptions,
+                        size: 64, color: AppTheme.textSecondaryColor),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No subscription categories yet',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textColor,
                       ),
                     ),
-                  ),
-                  title: Text(
-                    category.name,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textColor,
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tap + to add your first category',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        color: AppTheme.textSecondaryColor,
+                      ),
                     ),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, size: 18),
-                        onPressed: isOther
-                            ? null
-                            : () => _showCategoryDialog(
-                                  context,
-                                  existingCategory: category,
-                                ),
-                        color: AppTheme.primaryColor,
-                        padding: const EdgeInsets.all(8),
-                        constraints: const BoxConstraints(),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, size: 18),
-                        onPressed: isOther
-                            ? null
-                            : () => _confirmDelete(context, category.name),
-                        color: Colors.red,
-                        padding: const EdgeInsets.all(8),
-                        constraints: const BoxConstraints(),
-                      ),
-                      const Icon(Icons.drag_handle, size: 20),
-                    ],
-                  ),
+                  ],
                 ),
               );
-            },
-          );
-        },
+            }
+
+            return ReorderableListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: categories.length,
+              onReorder: (oldIndex, newIndex) {
+                if (oldIndex < newIndex) {
+                  newIndex -= 1;
+                }
+                final reorderedCategories = List.from(categories);
+                final item = reorderedCategories.removeAt(oldIndex);
+                reorderedCategories.insert(newIndex, item);
+                // Note: Add reorder method to SettingsProvider if needed
+              },
+              itemBuilder: (context, index) {
+                final category = categories[index];
+                final isOther = category.name.toLowerCase() == 'other';
+
+                return Card(
+                  key: ValueKey(category.id),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    leading: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(
+                          category.icon,
+                          style: TextStyle(fontFamily: 'Poppins', fontSize: 24),
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      category.name,
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textColor,
+                      ),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, size: 18),
+                          onPressed: isOther
+                              ? null
+                              : () => _showCategoryDialog(
+                                    context,
+                                    existingCategory: category,
+                                  ),
+                          color: AppTheme.primaryColor,
+                          padding: const EdgeInsets.all(8),
+                          constraints: const BoxConstraints(),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, size: 18),
+                          onPressed: isOther
+                              ? null
+                              : () => _confirmDelete(context, category.name),
+                          color: Colors.red,
+                          padding: const EdgeInsets.all(8),
+                          constraints: const BoxConstraints(),
+                        ),
+                        const Icon(Icons.drag_handle, size: 20),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
       floatingActionButton: AdaptiveBottomFab(
         child: FloatingActionButton(

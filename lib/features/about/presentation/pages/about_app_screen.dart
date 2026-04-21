@@ -6,206 +6,219 @@ class AboutAppScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // Modern App Bar with Hero Image
-          SliverAppBar(
-            expandedHeight: 240,
-            pinned: true,
-            elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                'About FinTrack',
-                style: TextStyle(fontFamily: 'Poppins', 
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Theme.of(context).primaryColor,
-                      Theme.of(context).primaryColor.withOpacity(0.7),
-                    ],
+      body: SafeArea(
+        top: false,
+        child: CustomScrollView(
+          slivers: [
+            // Modern App Bar with Hero Image
+            SliverAppBar(
+              expandedHeight: 240,
+              pinned: true,
+              elevation: 0,
+              flexibleSpace: FlexibleSpaceBar(
+                title: Text(
+                  'About FinTrack',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.white24,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.trending_up,
-                          size: 50,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Main Content
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // App Title and Version
-                  Text(
-                    'FinTrack',
-                    style: TextStyle(fontFamily: 'Poppins', 
-                      fontSize: 32,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).primaryColor,
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Theme.of(context).primaryColor,
+                        Theme.of(context).primaryColor.withOpacity(0.7),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'v1.0.0',
-                    style: TextStyle(fontFamily: 'Poppins', 
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Description
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Theme.of(context).primaryColor.withOpacity(0.3),
-                      ),
-                    ),
-                    child: Text(
-                      'Your personal finance companion designed to help you manage money, track investments, and achieve financial goals with ease and confidence.',
-                      style: TextStyle(fontFamily: 'Poppins', 
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        height: 1.6,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Features Section
-                  Text(
-                    'Features',
-                    style: TextStyle(fontFamily: 'Poppins', 
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Feature Cards
-                  ..._buildFeatureCards(context),
-
-                  const SizedBox(height: 32),
-
-                  // About Section
-                  Text(
-                    'About This App',
-                    style: TextStyle(fontFamily: 'Poppins', 
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildInfoCard(
-                    context,
-                    icon: Icons.info_outline,
-                    title: 'Purpose',
-                    description:
-                        'FinTrack is built to simplify personal finance management by providing comprehensive tools for tracking expenses, managing budgets, and monitoring investments.',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(
-                    context,
-                    icon: Icons.security,
-                    title: 'Privacy & Security',
-                    description:
-                        'Your financial data is stored locally on your device using Hive database. We prioritize your privacy and never share your information with third parties.',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(
-                    context,
-                    icon: Icons.code,
-                    title: 'Technology',
-                    description:
-                        'Built with Flutter and Dart, FinTrack provides a smooth, responsive experience across iOS and Android devices.',
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Contact Section
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                  child: Center(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          'Support & Feedback',
-                          style: TextStyle(fontFamily: 'Poppins', 
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: Colors.white24,
+                            shape: BoxShape.circle,
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'We\'d love to hear from you! If you have suggestions or encounter any issues, please reach out to us.',
-                          style: TextStyle(fontFamily: 'Poppins', 
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            height: 1.5,
-                            color: Colors.grey[700],
+                          child: Icon(
+                            Icons.trending_up,
+                            size: 50,
+                            color: Colors.white,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-
-                  // Footer
-                  Center(
-                    child: Text(
-                      '© 2025 FinTrack. All rights reserved.',
-                      style: TextStyle(fontFamily: 'Poppins', 
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+
+            // Main Content
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // App Title and Version
+                    Text(
+                      'FinTrack',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'v1.0.0',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Description
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color:
+                              Theme.of(context).primaryColor.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Text(
+                        'Your personal finance companion designed to help you manage money, track investments, and achieve financial goals with ease and confidence.',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          height: 1.6,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Features Section
+                    Text(
+                      'Features',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Feature Cards
+                    ..._buildFeatureCards(context),
+
+                    const SizedBox(height: 32),
+
+                    // About Section
+                    Text(
+                      'About This App',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInfoCard(
+                      context,
+                      icon: Icons.info_outline,
+                      title: 'Purpose',
+                      description:
+                          'FinTrack is built to simplify personal finance management by providing comprehensive tools for tracking expenses, managing budgets, and monitoring investments.',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInfoCard(
+                      context,
+                      icon: Icons.security,
+                      title: 'Privacy & Security',
+                      description:
+                          'Your financial data is stored locally on your device using Hive database. We prioritize your privacy and never share your information with third parties.',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInfoCard(
+                      context,
+                      icon: Icons.code,
+                      title: 'Technology',
+                      description:
+                          'Built with Flutter and Dart, FinTrack provides a smooth, responsive experience across iOS and Android devices.',
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Contact Section
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Support & Feedback',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'We\'d love to hear from you! If you have suggestions or encounter any issues, please reach out to us.',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                              height: 1.5,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Footer
+                    Center(
+                      child: Text(
+                        '© 2025 FinTrack. All rights reserved.',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -333,7 +346,8 @@ class AboutAppScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontFamily: 'Poppins', 
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurface,
@@ -342,7 +356,8 @@ class AboutAppScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: TextStyle(fontFamily: 'Poppins', 
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
                     height: 1.4,
@@ -388,7 +403,8 @@ class AboutAppScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontFamily: 'Poppins', 
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurface,
@@ -397,7 +413,8 @@ class AboutAppScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: TextStyle(fontFamily: 'Poppins', 
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
                     height: 1.4,

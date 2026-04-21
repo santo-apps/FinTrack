@@ -53,6 +53,10 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
   _TransactionSortOption _sortOption = _TransactionSortOption.date;
   bool _sortAscending = false;
 
+  String _formatCompactDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -75,291 +79,363 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
         title: widget.account.name,
         showBackButton: true,
       ),
-      body: Consumer2<ExpenseProvider, PaymentAccountProvider>(
-        builder: (context, expenseProvider, accountProvider, _) {
-          // Get the latest account data from provider
-          final currentAccount =
-              accountProvider.getAccountById(widget.account.id);
-          if (currentAccount == null) {
-            return Center(
-              child: Text(
-                'Account not found',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 16,
-                  color: AppTheme.textSecondaryColor,
-                ),
-              ),
-            );
-          }
-
-          // Filter expenses for this account.
-          // Show source-side transactions always, and destination-side
-          // entries for transfer/payment so both involved accounts can see
-          // the same transaction.
-          final expenses = expenseProvider.expenses
-              .where((expense) =>
-                  shouldShowTransactionForAccount(expense, currentAccount.id) &&
-                  !_pendingDeletedExpenseIds.contains(expense.id))
-              .toList();
-
-          // Apply search filter
-          final query = _searchQuery.trim().toLowerCase();
-          final filteredExpenses = query.isEmpty
-              ? expenses
-              : expenses.where((expense) {
-                  final haystack = [
-                    expense.title,
-                    expense.category,
-                    expense.paymentMethod,
-                    expense.notes ?? '',
-                  ].join(' ').toLowerCase();
-                  return haystack.contains(query);
-                }).toList();
-
-          // Apply sorting
-          switch (_sortOption) {
-            case _TransactionSortOption.date:
-              filteredExpenses.sort((a, b) => _sortAscending
-                  ? a.date.compareTo(b.date)
-                  : b.date.compareTo(a.date));
-              break;
-            case _TransactionSortOption.amount:
-              filteredExpenses.sort((a, b) => _sortAscending
-                  ? a.amount.compareTo(b.amount)
-                  : b.amount.compareTo(a.amount));
-              break;
-            case _TransactionSortOption.category:
-              filteredExpenses.sort((a, b) => _sortAscending
-                  ? a.category.compareTo(b.category)
-                  : b.category.compareTo(a.category));
-              break;
-          }
-
-          // Calculate totals
-          double totalDebits = 0;
-
-          for (final expense in expenses) {
-            final isDebit =
-                isDebitTransactionForAccount(expense, currentAccount.id);
-
-            if (isDebit && expense.amount > 0) {
-              totalDebits += expense.amount;
-            }
-          }
-
-          if (filteredExpenses.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.receipt_long,
-                    size: 80,
+      body: SafeArea(
+        top: false,
+        child: Consumer2<ExpenseProvider, PaymentAccountProvider>(
+          builder: (context, expenseProvider, accountProvider, _) {
+            // Get the latest account data from provider
+            final currentAccount =
+                accountProvider.getAccountById(widget.account.id);
+            if (currentAccount == null) {
+              return Center(
+                child: Text(
+                  'Account not found',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
                     color: AppTheme.textSecondaryColor,
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No transactions',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: isDarkMode
-                          ? Colors.white
-                          : AppTheme.textSecondaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'No expenses recorded for this account',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 14,
-                      color: isDarkMode
-                          ? Colors.white70
-                          : AppTheme.textSecondaryColor,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              contentBottomPadding(context),
-            ),
-            children: [
-              // Summary Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Theme.of(context).colorScheme.surface
-                      : null,
-                  gradient: Theme.of(context).brightness == Brightness.dark
-                      ? null
-                      : LinearGradient(
-                          colors: [AppTheme.primaryColor, AppTheme.accentColor],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Theme.of(context).brightness == Brightness.dark
-                      ? Border.all(color: Theme.of(context).dividerColor)
-                      : null,
-                  boxShadow: Theme.of(context).brightness == Brightness.dark
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: AppTheme.primaryColor.withOpacity(0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
                 ),
+              );
+            }
+
+            // Filter expenses for this account.
+            // Show source-side transactions always, and destination-side
+            // entries for transfer/payment so both involved accounts can see
+            // the same transaction.
+            final expenses = expenseProvider.expenses
+                .where((expense) =>
+                    shouldShowTransactionForAccount(
+                        expense, currentAccount.id) &&
+                    !_pendingDeletedExpenseIds.contains(expense.id))
+                .toList();
+
+            // Apply search filter
+            final query = _searchQuery.trim().toLowerCase();
+            final filteredExpenses = query.isEmpty
+                ? expenses
+                : expenses.where((expense) {
+                    final haystack = [
+                      expense.title,
+                      expense.category,
+                      expense.paymentMethod,
+                      expense.notes ?? '',
+                    ].join(' ').toLowerCase();
+                    return haystack.contains(query);
+                  }).toList();
+
+            // Apply sorting
+            switch (_sortOption) {
+              case _TransactionSortOption.date:
+                filteredExpenses.sort((a, b) => _sortAscending
+                    ? a.date.compareTo(b.date)
+                    : b.date.compareTo(a.date));
+                break;
+              case _TransactionSortOption.amount:
+                filteredExpenses.sort((a, b) => _sortAscending
+                    ? a.amount.compareTo(b.amount)
+                    : b.amount.compareTo(a.amount));
+                break;
+              case _TransactionSortOption.category:
+                filteredExpenses.sort((a, b) => _sortAscending
+                    ? a.category.compareTo(b.category)
+                    : b.category.compareTo(a.category));
+                break;
+            }
+
+            // Calculate totals
+            double totalDebits = 0;
+
+            for (final expense in expenses) {
+              final isDebit =
+                  isDebitTransactionForAccount(expense, currentAccount.id);
+
+              if (isDebit && expense.amount > 0) {
+                totalDebits += expense.amount;
+              }
+            }
+
+            if (filteredExpenses.isEmpty) {
+              return Center(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    Icon(
+                      Icons.receipt_long,
+                      size: 80,
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                    const SizedBox(height: 16),
                     Text(
-                      'Account Balance',
+                      'No transactions',
                       style: TextStyle(
                         fontFamily: 'Poppins',
-                        fontSize: 14,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Theme.of(context).colorScheme.onSurfaceVariant
-                            : Colors.white70,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: isDarkMode
+                            ? Colors.white
+                            : AppTheme.textSecondaryColor,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      AppUtils.formatCurrency(
-                        currentAccount.balance,
-                        currencySymbol:
-                            context.watch<SettingsProvider>().currencySymbol,
-                      ),
+                      'No expenses recorded for this account',
                       style: TextStyle(
                         fontFamily: 'Poppins',
-                        fontSize: 32,
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Theme.of(context).colorScheme.onSurface
-                            : Colors.white,
+                        fontSize: 14,
+                        color: isDarkMode
+                            ? Colors.white70
+                            : AppTheme.textSecondaryColor,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _SummaryItem(
-                          label: 'Total Transactions',
-                          value: filteredExpenses.length.toString(),
-                        ),
-                        _SummaryItem(
-                          label: 'Total Debits',
-                          value: AppUtils.formatCurrency(
-                            totalDebits,
-                            currencySymbol: context
-                                .watch<SettingsProvider>()
-                                .currencySymbol,
+                  ],
+                ),
+              );
+            }
+
+            return ListView(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                contentBottomPadding(context),
+              ),
+              children: [
+                // Summary Card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Theme.of(context).colorScheme.surface
+                        : null,
+                    gradient: Theme.of(context).brightness == Brightness.dark
+                        ? null
+                        : LinearGradient(
+                            colors: [
+                              AppTheme.primaryColor,
+                              AppTheme.accentColor
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Theme.of(context).brightness == Brightness.dark
+                        ? Border.all(color: Theme.of(context).dividerColor)
+                        : null,
+                    boxShadow: Theme.of(context).brightness == Brightness.dark
+                        ? []
+                        : [
+                            BoxShadow(
+                              color: AppTheme.primaryColor.withOpacity(0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Account Balance',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 14,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Theme.of(context).colorScheme.onSurfaceVariant
+                              : Colors.white70,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        AppUtils.formatCurrency(
+                          currentAccount.balance,
+                          currencySymbol:
+                              context.watch<SettingsProvider>().currencySymbol,
+                        ),
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 32,
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Theme.of(context).colorScheme.onSurface
+                              : Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _SummaryItem(
+                            label: 'Total Transactions',
+                            value: filteredExpenses.length.toString(),
+                          ),
+                          _SummaryItem(
+                            label: 'Total Debits',
+                            value: AppUtils.formatCurrency(
+                              totalDebits,
+                              currencySymbol: context
+                                  .watch<SettingsProvider>()
+                                  .currencySymbol,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (currentAccount.accountType
+                              .toLowerCase()
+                              .contains('credit') &&
+                          (currentAccount.statementDate != null ||
+                              currentAccount.dueDate != null)) ...[
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (currentAccount.statementDate != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Theme.of(context).colorScheme.surface
+                                      : Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Statement: ${_formatCompactDate(currentAccount.statementDate!)}',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 11,
+                                    color: Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant
+                                        : Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            if (currentAccount.dueDate != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Theme.of(context).colorScheme.surface
+                                      : Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Due: ${_formatCompactDate(currentAccount.dueDate!)}',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 11,
+                                    color: Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant
+                                        : Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Transactions List
+                Text(
+                  'Transactions',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: isDarkMode ? Colors.white : AppTheme.textColor,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                        },
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.search),
+                          hintText: 'Search transactions',
+                          suffixIcon: _searchQuery.isEmpty
+                              ? null
+                              : IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _searchController.clear();
+                                      _searchQuery = '';
+                                    });
+                                  },
+                                  icon: const Icon(Icons.close),
+                                ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    PopupMenuButton<_TransactionSortOption>(
+                      icon: const Icon(Icons.sort),
+                      onSelected: (option) {
+                        setState(() {
+                          if (_sortOption == option) {
+                            _sortAscending = !_sortAscending;
+                          } else {
+                            _sortOption = option;
+                            _sortAscending = false;
+                          }
+                        });
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: _TransactionSortOption.date,
+                          child: Text('Date'),
+                        ),
+                        PopupMenuItem(
+                          value: _TransactionSortOption.amount,
+                          child: Text('Amount'),
+                        ),
+                        PopupMenuItem(
+                          value: _TransactionSortOption.category,
+                          child: Text('Category'),
                         ),
                       ],
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 24),
-
-              // Transactions List
-              Text(
-                'Transactions',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: isDarkMode ? Colors.white : AppTheme.textColor,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: (value) {
-                        setState(() {
-                          _searchQuery = value;
-                        });
-                      },
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.search),
-                        hintText: 'Search transactions',
-                        suffixIcon: _searchQuery.isEmpty
-                            ? null
-                            : IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _searchController.clear();
-                                    _searchQuery = '';
-                                  });
-                                },
-                                icon: const Icon(Icons.close),
-                              ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  PopupMenuButton<_TransactionSortOption>(
-                    icon: const Icon(Icons.sort),
-                    onSelected: (option) {
-                      setState(() {
-                        if (_sortOption == option) {
-                          _sortAscending = !_sortAscending;
-                        } else {
-                          _sortOption = option;
-                          _sortAscending = false;
-                        }
-                      });
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(
-                        value: _TransactionSortOption.date,
-                        child: Text('Date'),
-                      ),
-                      PopupMenuItem(
-                        value: _TransactionSortOption.amount,
-                        child: Text('Amount'),
-                      ),
-                      PopupMenuItem(
-                        value: _TransactionSortOption.category,
-                        child: Text('Category'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              ...filteredExpenses.map((expense) => _TransactionCard(
-                    key: Key(expense.id),
-                    expense: expense,
-                    currentAccountId: currentAccount.id,
-                    currencySymbol:
-                        context.watch<SettingsProvider>().currencySymbol,
-                    isCreditCard: currentAccount.accountType
-                        .toLowerCase()
-                        .contains('credit'),
-                    onEdit: () => _editTransaction(expense),
-                    onDelete: () => _deleteTransaction(expense),
-                  )),
-            ],
-          );
-        },
+                const SizedBox(height: 12),
+                ...filteredExpenses.map((expense) => _TransactionCard(
+                      key: Key(expense.id),
+                      expense: expense,
+                      currentAccountId: currentAccount.id,
+                      currencySymbol:
+                          context.watch<SettingsProvider>().currencySymbol,
+                      isCreditCard: currentAccount.accountType
+                          .toLowerCase()
+                          .contains('credit'),
+                      onEdit: () => _editTransaction(expense),
+                      onDelete: () => _deleteTransaction(expense),
+                    )),
+              ],
+            );
+          },
+        ),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -490,6 +566,9 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
   }
 
   void _deleteTransaction(Expense expense) async {
+    final accountProvider = context.read<PaymentAccountProvider>();
+    final expenseProvider = context.read<ExpenseProvider>();
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -514,10 +593,6 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
     );
 
     if (confirmed != true) return;
-
-    // Get providers from current context
-    final accountProvider = context.read<PaymentAccountProvider>();
-    final expenseProvider = context.read<ExpenseProvider>();
 
     // Optimistically hide the item so UI updates immediately.
     if (mounted) {

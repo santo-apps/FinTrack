@@ -31,365 +31,370 @@ class _AssetBreakdownScreenState extends State<AssetBreakdownScreen> {
       appBar: const CustomAppBar(
         title: 'Asset Breakdown',
       ),
-      body: Consumer3<PaymentAccountProvider, InvestmentProvider,
-          SettingsProvider>(
-        builder: (context, accountProvider, investmentProvider, settings, _) {
-          final accounts = accountProvider.activeAccounts
-              .where((account) =>
-                  !account.accountType.toLowerCase().contains('credit'))
-              .toList();
-          final investments = investmentProvider.investments;
-          final currencySymbol = settings.currencySymbol;
+      body: SafeArea(
+        top: false,
+        child: Consumer3<PaymentAccountProvider, InvestmentProvider,
+            SettingsProvider>(
+          builder: (context, accountProvider, investmentProvider, settings, _) {
+            final accounts = accountProvider.activeAccounts
+                .where((account) =>
+                    !account.accountType.toLowerCase().contains('credit'))
+                .toList();
+            final investments = investmentProvider.investments;
+            final currencySymbol = settings.currencySymbol;
 
-          final accountTotal = accounts.fold<double>(
-            0,
-            (sum, account) => sum + account.balance,
-          );
-          final investmentTotal = investments.fold<double>(
-            0,
-            (sum, investment) => sum + _effectiveInvestmentValue(investment),
-          );
-          final totalAssets = accountTotal + investmentTotal;
-          final accountShare =
-              totalAssets > 0 ? (accountTotal / totalAssets) : 0.0;
-          final investmentShare =
-              totalAssets > 0 ? (investmentTotal / totalAssets) : 0.0;
+            final accountTotal = accounts.fold<double>(
+              0,
+              (sum, account) => sum + account.balance,
+            );
+            final investmentTotal = investments.fold<double>(
+              0,
+              (sum, investment) => sum + _effectiveInvestmentValue(investment),
+            );
+            final totalAssets = accountTotal + investmentTotal;
+            final accountShare =
+                totalAssets > 0 ? (accountTotal / totalAssets) : 0.0;
+            final investmentShare =
+                totalAssets > 0 ? (investmentTotal / totalAssets) : 0.0;
 
-          return ListView(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              12,
-              16,
-              contentBottomPadding(context, hasFab: false),
-            ),
-            children: [
-              Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
+            return ListView(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                contentBottomPadding(context, hasFab: false),
+              ),
+              children: [
+                Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Total Assets',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          AppUtils.formatCurrency(
+                            totalAssets,
+                            currencySymbol: currencySymbol,
+                          ),
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: SizedBox(
+                            height: 6,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: (accountShare * 1000)
+                                      .round()
+                                      .clamp(0, 1000),
+                                  child:
+                                      Container(color: Colors.green.shade500),
+                                ),
+                                Expanded(
+                                  flex: (investmentShare * 1000)
+                                      .round()
+                                      .clamp(0, 1000),
+                                  child: Container(color: colorScheme.primary),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final accountMetric = _SummaryMetric(
+                              title: 'Accounts',
+                              value: AppUtils.formatCurrency(
+                                accountTotal,
+                                currencySymbol: currencySymbol,
+                              ),
+                              icon: Icons.account_balance_wallet_outlined,
+                              color: Colors.green.shade700,
+                            );
+
+                            final investmentMetric = _SummaryMetric(
+                              title: 'Investments',
+                              value: AppUtils.formatCurrency(
+                                investmentTotal,
+                                currencySymbol: currencySymbol,
+                              ),
+                              icon: Icons.trending_up_outlined,
+                              color: colorScheme.primary,
+                            );
+
+                            if (constraints.maxWidth < 380) {
+                              return Column(
+                                children: [
+                                  accountMetric,
+                                  const SizedBox(height: 6),
+                                  investmentMetric,
+                                ],
+                              );
+                            }
+
+                            return Row(
+                              children: [
+                                Expanded(child: accountMetric),
+                                const SizedBox(width: 10),
+                                Expanded(child: investmentMetric),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Total Assets',
+                const SizedBox(height: 14),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isCompact = constraints.maxWidth < 420;
+                    final buttonTextStyle = TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: isCompact ? 11 : 13,
+                      fontWeight: FontWeight.w600,
+                    );
+
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 10,
+                              shadowColor: colorScheme.primary.withOpacity(0.6),
+                              surfaceTintColor: colorScheme.primary,
+                              disabledBackgroundColor:
+                                  colorScheme.primary.withOpacity(0.5),
+                              minimumSize: Size.fromHeight(isCompact ? 40 : 44),
+                              visualDensity: isCompact
+                                  ? VisualDensity.compact
+                                  : VisualDensity.standard,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isCompact ? 8 : 12,
+                                vertical: isCompact ? 10 : 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const AccountListScreen(
+                                      showBackButton: true),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              isCompact ? 'Accounts' : 'View Accounts',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: buttonTextStyle,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 10,
+                              shadowColor: colorScheme.primary.withOpacity(0.6),
+                              surfaceTintColor: colorScheme.primary,
+                              disabledBackgroundColor:
+                                  colorScheme.primary.withOpacity(0.5),
+                              minimumSize: Size.fromHeight(isCompact ? 40 : 44),
+                              visualDensity: isCompact
+                                  ? VisualDensity.compact
+                                  : VisualDensity.standard,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isCompact ? 8 : 12,
+                                vertical: isCompact ? 10 : 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const InvestmentPortfolioScreen(
+                                    showAppBar: true,
+                                    showBackButton: true,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              isCompact ? 'Investments' : 'View Investments',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: buttonTextStyle,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  elevation: 1,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      initiallyExpanded: false,
+                      title: Text(
+                        'Accounts',
                         style: TextStyle(
                           fontFamily: 'Poppins',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
+                      subtitle: Text(
                         AppUtils.formatCurrency(
-                          totalAssets,
+                          accountTotal,
                           currencySymbol: currencySymbol,
                         ),
                         style: TextStyle(
                           fontFamily: 'Poppins',
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                          child: Column(
+                            children: [
+                              if (accounts.isEmpty)
+                                const _EmptySection(
+                                    message: 'No asset accounts found')
+                              else
+                                ...accounts.map((account) {
+                                  return _DataRowItem(
+                                    title: account.name,
+                                    subtitle: account.accountType,
+                                    value: AppUtils.formatCurrency(
+                                      account.balance,
+                                      currencySymbol: currencySymbol,
+                                    ),
+                                    valueColor: Colors.green.shade700,
+                                  );
+                                }),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  elevation: 1,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      initiallyExpanded: false,
+                      title: Text(
+                        'Investments',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      subtitle: Text(
+                        AppUtils.formatCurrency(
+                          investmentTotal,
+                          currencySymbol: currencySymbol,
+                        ),
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                           color: colorScheme.primary,
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: SizedBox(
-                          height: 6,
-                          child: Row(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                          child: Column(
                             children: [
-                              Expanded(
-                                flex: (accountShare * 1000)
-                                    .round()
-                                    .clamp(0, 1000),
-                                child: Container(color: Colors.green.shade500),
-                              ),
-                              Expanded(
-                                flex: (investmentShare * 1000)
-                                    .round()
-                                    .clamp(0, 1000),
-                                child: Container(color: colorScheme.primary),
-                              ),
+                              if (investments.isEmpty)
+                                const _EmptySection(
+                                    message: 'No investments found')
+                              else
+                                ...investments.map((investment) {
+                                  final effectiveValue =
+                                      _effectiveInvestmentValue(investment);
+                                  final invested =
+                                      investment.getTotalInvestmentValue();
+                                  final gain = effectiveValue - invested;
+                                  final gainPercent = invested > 0
+                                      ? (gain / invested) * 100
+                                      : 0;
+
+                                  return _DataRowItem(
+                                    title: investment.name,
+                                    subtitle:
+                                        '${investment.type} • ${gain >= 0 ? 'Gain' : 'Loss'}: ${AppUtils.formatCurrency(gain, currencySymbol: currencySymbol)} (${gainPercent.toStringAsFixed(1)}%)',
+                                    value: AppUtils.formatCurrency(
+                                      effectiveValue,
+                                      currencySymbol: currencySymbol,
+                                    ),
+                                    valueColor: colorScheme.primary,
+                                  );
+                                }),
                             ],
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final accountMetric = _SummaryMetric(
-                            title: 'Accounts',
-                            value: AppUtils.formatCurrency(
-                              accountTotal,
-                              currencySymbol: currencySymbol,
-                            ),
-                            icon: Icons.account_balance_wallet_outlined,
-                            color: Colors.green.shade700,
-                          );
-
-                          final investmentMetric = _SummaryMetric(
-                            title: 'Investments',
-                            value: AppUtils.formatCurrency(
-                              investmentTotal,
-                              currencySymbol: currencySymbol,
-                            ),
-                            icon: Icons.trending_up_outlined,
-                            color: colorScheme.primary,
-                          );
-
-                          if (constraints.maxWidth < 380) {
-                            return Column(
-                              children: [
-                                accountMetric,
-                                const SizedBox(height: 6),
-                                investmentMetric,
-                              ],
-                            );
-                          }
-
-                          return Row(
-                            children: [
-                              Expanded(child: accountMetric),
-                              const SizedBox(width: 10),
-                              Expanded(child: investmentMetric),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 14),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final isCompact = constraints.maxWidth < 420;
-                  final buttonTextStyle = TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: isCompact ? 11 : 13,
-                    fontWeight: FontWeight.w600,
-                  );
-
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: colorScheme.primary,
-                            foregroundColor: Colors.white,
-                            elevation: 10,
-                            shadowColor: colorScheme.primary.withOpacity(0.6),
-                            surfaceTintColor: colorScheme.primary,
-                            disabledBackgroundColor:
-                                colorScheme.primary.withOpacity(0.5),
-                            minimumSize: Size.fromHeight(isCompact ? 40 : 44),
-                            visualDensity: isCompact
-                                ? VisualDensity.compact
-                                : VisualDensity.standard,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: isCompact ? 8 : 12,
-                              vertical: isCompact ? 10 : 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const AccountListScreen(
-                                    showBackButton: true),
-                              ),
-                            );
-                          },
-                          child: Text(
-                            isCompact ? 'Accounts' : 'View Accounts',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: buttonTextStyle,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: colorScheme.primary,
-                            foregroundColor: Colors.white,
-                            elevation: 10,
-                            shadowColor: colorScheme.primary.withOpacity(0.6),
-                            surfaceTintColor: colorScheme.primary,
-                            disabledBackgroundColor:
-                                colorScheme.primary.withOpacity(0.5),
-                            minimumSize: Size.fromHeight(isCompact ? 40 : 44),
-                            visualDensity: isCompact
-                                ? VisualDensity.compact
-                                : VisualDensity.standard,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: isCompact ? 8 : 12,
-                              vertical: isCompact ? 10 : 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const InvestmentPortfolioScreen(
-                                  showAppBar: true,
-                                  showBackButton: true,
-                                ),
-                              ),
-                            );
-                          },
-                          child: Text(
-                            isCompact ? 'Investments' : 'View Investments',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: buttonTextStyle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              Card(
-                elevation: 1,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    initiallyExpanded: false,
-                    title: Text(
-                      'Accounts',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    subtitle: Text(
-                      AppUtils.formatCurrency(
-                        accountTotal,
-                        currencySymbol: currencySymbol,
-                      ),
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.green.shade700,
-                      ),
-                    ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                        child: Column(
-                          children: [
-                            if (accounts.isEmpty)
-                              const _EmptySection(
-                                  message: 'No asset accounts found')
-                            else
-                              ...accounts.map((account) {
-                                return _DataRowItem(
-                                  title: account.name,
-                                  subtitle: account.accountType,
-                                  value: AppUtils.formatCurrency(
-                                    account.balance,
-                                    currencySymbol: currencySymbol,
-                                  ),
-                                  valueColor: Colors.green.shade700,
-                                );
-                              }),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Card(
-                elevation: 1,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    initiallyExpanded: false,
-                    title: Text(
-                      'Investments',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    subtitle: Text(
-                      AppUtils.formatCurrency(
-                        investmentTotal,
-                        currencySymbol: currencySymbol,
-                      ),
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                        child: Column(
-                          children: [
-                            if (investments.isEmpty)
-                              const _EmptySection(
-                                  message: 'No investments found')
-                            else
-                              ...investments.map((investment) {
-                                final effectiveValue =
-                                    _effectiveInvestmentValue(investment);
-                                final invested =
-                                    investment.getTotalInvestmentValue();
-                                final gain = effectiveValue - invested;
-                                final gainPercent =
-                                    invested > 0 ? (gain / invested) * 100 : 0;
-
-                                return _DataRowItem(
-                                  title: investment.name,
-                                  subtitle:
-                                      '${investment.type} • ${gain >= 0 ? 'Gain' : 'Loss'}: ${AppUtils.formatCurrency(gain, currencySymbol: currencySymbol)} (${gainPercent.toStringAsFixed(1)}%)',
-                                  value: AppUtils.formatCurrency(
-                                    effectiveValue,
-                                    currencySymbol: currencySymbol,
-                                  ),
-                                  valueColor: colorScheme.primary,
-                                );
-                              }),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }

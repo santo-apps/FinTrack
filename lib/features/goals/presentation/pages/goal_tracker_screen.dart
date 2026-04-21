@@ -37,181 +37,185 @@ class _GoalTrackerScreenState extends State<GoalTrackerScreen> {
               showBackButton: widget.showBackButton,
             )
           : null,
-      body: Consumer2<GoalProvider, SettingsProvider>(
-        builder: (context, goalProvider, settingsProvider, _) {
-          final currencySymbol = settingsProvider.currencySymbol;
-          final goals = goalProvider.goals;
-          final activeGoals = goalProvider.activeGoals;
+      body: SafeArea(
+        top: false,
+        child: Consumer2<GoalProvider, SettingsProvider>(
+          builder: (context, goalProvider, settingsProvider, _) {
+            final currencySymbol = settingsProvider.currencySymbol;
+            final goals = goalProvider.goals;
+            final activeGoals = goalProvider.activeGoals;
 
-          if (goals.isEmpty) {
-            return EmptyStateWidget(
-              icon: Icons.flag_outlined,
-              title: 'No Goals',
-              description: 'Set financial goals to track your progress',
-              actionLabel: 'Create Goal',
-              onAction: () => _showAddEditDialog(context),
-            );
-          }
+            if (goals.isEmpty) {
+              return EmptyStateWidget(
+                icon: Icons.flag_outlined,
+                title: 'No Goals',
+                description: 'Set financial goals to track your progress',
+                actionLabel: 'Create Goal',
+                onAction: () => _showAddEditDialog(context),
+              );
+            }
 
-          double totalTarget = 0;
-          double totalSaved = 0;
-          for (var goal in activeGoals) {
-            totalTarget += goal.targetAmount;
-            totalSaved += goal.currentAmount;
-          }
+            double totalTarget = 0;
+            double totalSaved = 0;
+            for (var goal in activeGoals) {
+              totalTarget += goal.targetAmount;
+              totalSaved += goal.currentAmount;
+            }
 
-          return SingleChildScrollView(
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: contentBottomPadding(context),
-              ),
-              child: Column(
-                children: [
-                  if (activeGoals.isNotEmpty) ...[
-                    Container(
-                      margin: const EdgeInsets.all(16),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Theme.of(context).primaryColor,
-                            Theme.of(context).primaryColor.withOpacity(0.8)
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+            return SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: contentBottomPadding(context),
+                ),
+                child: Column(
+                  children: [
+                    if (activeGoals.isNotEmpty) ...[
+                      Container(
+                        margin: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).primaryColor,
+                              Theme.of(context).primaryColor.withOpacity(0.8)
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Overall Progress',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(color: Colors.white70),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '$currencySymbol${totalSaved.toStringAsFixed(2)} / $currencySymbol${totalTarget.toStringAsFixed(2)}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Overall Progress',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(color: Colors.white70),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '$currencySymbol${totalSaved.toStringAsFixed(2)} / $currencySymbol${totalTarget.toStringAsFixed(2)}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            const SizedBox(height: 16),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: LinearProgressIndicator(
+                                value: totalTarget > 0
+                                    ? (totalSaved / totalTarget).clamp(0, 1)
+                                    : 0,
+                                minHeight: 8,
+                                backgroundColor: Colors.white24,
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
                                 ),
-                          ),
-                          const SizedBox(height: 16),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: LinearProgressIndicator(
-                              value: totalTarget > 0
-                                  ? (totalSaved / totalTarget).clamp(0, 1)
-                                  : 0,
-                              minHeight: 8,
-                              backgroundColor: Colors.white24,
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                Colors.white,
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${((totalSaved / totalTarget) * 100).clamp(0, 100).toStringAsFixed(1)}% complete',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(color: Colors.white),
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+                            Text(
+                              '${((totalSaved / totalTarget) * 100).clamp(0, 100).toStringAsFixed(1)}% complete',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: Colors.white),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                  ListView.builder(
-                    physics: const NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: activeGoals.length,
-                    itemBuilder: (context, index) {
-                      final goal = activeGoals[index];
-                      return _GoalCard(
-                        goal: goal,
-                        onEdit: () => _showAddEditDialog(context, goal),
-                        onDelete: () => _deleteGoal(context, goal),
-                        onAddAmount: () =>
-                            _showAddProgressDialog(context, goal),
-                        currencySymbol: currencySymbol,
-                      );
-                    },
-                  ),
-                  if (goals.where((g) => g.isCompleted).isNotEmpty) ...[
-                    const SizedBox(height: 24),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Completed Goals',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ],
-                      ),
-                    ),
+                    ],
                     ListView.builder(
                       physics: const NeverScrollableScrollPhysics(),
                       shrinkWrap: true,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: goals.where((g) => g.isCompleted).length,
+                      itemCount: activeGoals.length,
                       itemBuilder: (context, index) {
-                        final goal =
-                            goals.where((g) => g.isCompleted).toList()[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: () => _showGoalDetailsDialog(context, goal),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        goal.goalName,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleSmall,
-                                      ),
-                                      const Icon(Icons.check_circle,
-                                          color: Colors.green),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Completed: ${_formatDate(goal.completedDate!)}',
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                        final goal = activeGoals[index];
+                        return _GoalCard(
+                          goal: goal,
+                          onEdit: () => _showAddEditDialog(context, goal),
+                          onDelete: () => _deleteGoal(context, goal),
+                          onAddAmount: () =>
+                              _showAddProgressDialog(context, goal),
+                          currencySymbol: currencySymbol,
                         );
                       },
                     ),
+                    if (goals.where((g) => g.isCompleted).isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Completed Goals',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ],
+                        ),
+                      ),
+                      ListView.builder(
+                        physics: const NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: goals.where((g) => g.isCompleted).length,
+                        itemBuilder: (context, index) {
+                          final goal =
+                              goals.where((g) => g.isCompleted).toList()[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () =>
+                                  _showGoalDetailsDialog(context, goal),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          goal.goalName,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleSmall,
+                                        ),
+                                        const Icon(Icons.check_circle,
+                                            color: Colors.green),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Completed: ${_formatDate(goal.completedDate!)}',
+                                      style:
+                                          Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                    const SizedBox(height: 16),
                   ],
-                  const SizedBox(height: 16),
-                ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
       floatingActionButton: AdaptiveBottomFab(
         child: FloatingActionButton(
@@ -532,7 +536,8 @@ class _AddEditGoalScreenState extends State<AddEditGoalScreen> {
                 children: [
                   Text(
                     widget.goal != null ? 'Edit Goal' : 'Create Goal',
-                    style: TextStyle(fontFamily: 'Poppins', 
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                     ),

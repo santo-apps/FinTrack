@@ -17,6 +17,13 @@ class ExpenseProvider extends ChangeNotifier {
     _loadInitialData();
   }
 
+  bool _isSystemSubscriptionPayment(Expense expense) {
+    final transactionType = expense.transactionType ?? 'expense';
+    return transactionType == 'payment' &&
+        expense.category == 'Subscriptions' &&
+        expense.title.startsWith('Subscription Payment - ');
+  }
+
   void _loadInitialData() {
     _expenses = HiveService.getAllExpenses();
     _categories = HiveService.getAllCategories();
@@ -103,7 +110,9 @@ class ExpenseProvider extends ChangeNotifier {
     final monthlyExpenses =
         getExpensesInDateRange(period['start'], period['end']).where((e) {
       final transactionType = e.transactionType ?? 'expense';
-      return transactionType == 'expense' || transactionType == 'payment';
+      final isExpenseLike =
+          transactionType == 'expense' || transactionType == 'payment';
+      return isExpenseLike && !_isSystemSubscriptionPayment(e);
     });
     return monthlyExpenses.fold<double>(0, (sum, e) => sum + e.amount);
   }
@@ -113,7 +122,9 @@ class ExpenseProvider extends ChangeNotifier {
     final monthlyExpenses =
         getExpensesInDateRange(period['start'], period['end']).where((e) {
       final transactionType = e.transactionType ?? 'expense';
-      return transactionType == 'expense' || transactionType == 'payment';
+      final isExpenseLike =
+          transactionType == 'expense' || transactionType == 'payment';
+      return isExpenseLike && !_isSystemSubscriptionPayment(e);
     });
     final breakdown = <String, double>{};
     for (var expense in monthlyExpenses) {

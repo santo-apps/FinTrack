@@ -26,8 +26,9 @@ class _InvestmentPortfolioScreenState extends State<InvestmentPortfolioScreen> {
   @override
   void initState() {
     super.initState();
+    final investmentProvider = context.read<InvestmentProvider>();
     Future.microtask(() {
-      Provider.of<InvestmentProvider>(context, listen: false).initInvestments();
+      investmentProvider.initInvestments();
     });
   }
 

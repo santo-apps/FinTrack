@@ -474,19 +474,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final settings = context.watch<SettingsProvider>();
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).colorScheme.primary.withOpacity(0.12),
-              Theme.of(context).colorScheme.secondary.withOpacity(0.10),
-              Theme.of(context).scaffoldBackgroundColor,
-            ],
+      body: SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.primary.withOpacity(0.12),
+                Theme.of(context).colorScheme.secondary.withOpacity(0.10),
+                Theme.of(context).scaffoldBackgroundColor,
+              ],
+            ),
           ),
-        ),
-        child: SafeArea(
           child: Column(
             children: [
               Padding(

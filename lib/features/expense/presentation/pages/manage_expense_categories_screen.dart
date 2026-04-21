@@ -22,93 +22,96 @@ class _ManageExpenseCategoriesScreenState
       appBar: const CustomAppBar(
         title: 'Manage Categories',
       ),
-      body: Consumer<ExpenseProvider>(
-        builder: (context, provider, _) {
-          final categories = provider.categories;
+      body: SafeArea(
+        top: false,
+        child: Consumer<ExpenseProvider>(
+          builder: (context, provider, _) {
+            final categories = provider.categories;
 
-          if (categories.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.category_outlined,
-                    size: 80,
-                    color: AppTheme.primaryColor.withOpacity(0.3),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No Categories',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textColor,
+            if (categories.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.category_outlined,
+                      size: 80,
+                      color: AppTheme.primaryColor.withOpacity(0.3),
                     ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: categories.length,
-            itemBuilder: (context, index) {
-              final category = categories[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  leading: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: _hexToColor(category.color).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Text(
-                        category.icon,
-                        style: TextStyle(fontFamily: 'Poppins', fontSize: 24),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No Categories',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textColor,
                       ),
                     ),
-                  ),
-                  title: Text(
-                    category.name,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => _showCategoryDialog(
-                          context,
-                          category: category,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _confirmDelete(context, category),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
               );
-            },
-          );
-        },
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: categories.length,
+              itemBuilder: (context, index) {
+                final category = categories[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    leading: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: _hexToColor(category.color).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(
+                          category.icon,
+                          style: TextStyle(fontFamily: 'Poppins', fontSize: 24),
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      category.name,
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () => _showCategoryDialog(
+                            context,
+                            category: category,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _confirmDelete(context, category),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
       floatingActionButton: AdaptiveBottomFab(
         child: FloatingActionButton(
@@ -217,8 +220,11 @@ class _ManageExpenseCategoriesScreenState
             ),
             TextButton(
               onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final expenseProvider = context.read<ExpenseProvider>();
+
                 if (nameController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     const SnackBar(
                       content: Text('Please enter a category name'),
                     ),
@@ -227,7 +233,7 @@ class _ManageExpenseCategoriesScreenState
                 }
 
                 if (iconController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     const SnackBar(
                       content: Text('Please enter an emoji icon'),
                     ),
@@ -246,17 +252,15 @@ class _ManageExpenseCategoriesScreenState
                 );
 
                 if (isEditing) {
-                  await context
-                      .read<ExpenseProvider>()
-                      .updateCategory(newCategory);
+                  await expenseProvider.updateCategory(newCategory);
                 } else {
-                  await context
-                      .read<ExpenseProvider>()
-                      .addCategory(newCategory);
+                  await expenseProvider.addCategory(newCategory);
                 }
 
+                if (!dialogContext.mounted) return;
                 Navigator.pop(dialogContext);
-                ScaffoldMessenger.of(context).showSnackBar(
+                if (!mounted) return;
+                messenger.showSnackBar(
                   SnackBar(
                     content: Text(
                       isEditing
@@ -275,21 +279,26 @@ class _ManageExpenseCategoriesScreenState
   }
 
   void _confirmDelete(BuildContext context, ExpenseCategory category) {
+    final parentContext = context;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Category'),
         content: Text('Are you sure you want to delete "${category.name}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
-              await context.read<ExpenseProvider>().deleteCategory(category.id);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
+              final expenseProvider = parentContext.read<ExpenseProvider>();
+              final messenger = ScaffoldMessenger.of(parentContext);
+              await expenseProvider.deleteCategory(category.id);
+              if (!dialogContext.mounted) return;
+              Navigator.pop(dialogContext);
+              if (!mounted) return;
+              messenger.showSnackBar(
                 const SnackBar(
                   content: Text('Category deleted successfully'),
                 ),
