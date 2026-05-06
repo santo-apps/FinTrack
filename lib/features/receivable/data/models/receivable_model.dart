@@ -113,4 +113,64 @@ class Receivable extends HiveObject {
     final reminderDate = dueDay.subtract(Duration(days: remindBeforeDays));
     return !today.isBefore(reminderDate) && !today.isAfter(dueDay);
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'amount': amount,
+      'dueDate': dueDate.toIso8601String(),
+      'currency': currency,
+      'isReceived': isReceived,
+      'receivedDate': receivedDate?.toIso8601String(),
+      'remindBeforeDays': remindBeforeDays,
+      'notes': notes,
+      'createdAt': createdAt.toIso8601String(),
+      'accountId': accountId,
+      'isRecurring': isRecurring,
+      'recurringEndDate': recurringEndDate?.toIso8601String(),
+      'recurrenceGroupId': recurrenceGroupId,
+    };
+  }
+
+  static Receivable fromJson(Map<String, dynamic> json) {
+    DateTime parseDate(dynamic value, DateTime fallback) {
+      if (value is DateTime) {
+        return value;
+      }
+      if (value is String && value.isNotEmpty) {
+        return DateTime.tryParse(value) ?? fallback;
+      }
+      return fallback;
+    }
+
+    DateTime? parseNullableDate(dynamic value) {
+      if (value is DateTime) {
+        return value;
+      }
+      if (value is String && value.isNotEmpty) {
+        return DateTime.tryParse(value);
+      }
+      return null;
+    }
+
+    final now = DateTime.now();
+
+    return Receivable(
+      id: json['id']?.toString() ?? now.microsecondsSinceEpoch.toString(),
+      title: json['title']?.toString() ?? '',
+      amount: (json['amount'] as num?)?.toDouble() ?? 0,
+      dueDate: parseDate(json['dueDate'], now),
+      currency: json['currency']?.toString() ?? 'USD',
+      isReceived: json['isReceived'] == true,
+      receivedDate: parseNullableDate(json['receivedDate']),
+      remindBeforeDays: (json['remindBeforeDays'] as num?)?.toInt() ?? 3,
+      notes: json['notes']?.toString(),
+      createdAt: parseDate(json['createdAt'], now),
+      accountId: json['accountId']?.toString(),
+      isRecurring: json['isRecurring'] == true,
+      recurringEndDate: parseNullableDate(json['recurringEndDate']),
+      recurrenceGroupId: json['recurrenceGroupId']?.toString(),
+    );
+  }
 }

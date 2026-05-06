@@ -1,19 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
+import 'package:fintrack/core/utils/data_refresh_utils.dart';
 import 'package:fintrack/database/hive_service.dart';
-import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
-import 'package:fintrack/features/bill/presentation/providers/bill_provider.dart';
-import 'package:fintrack/features/budget/presentation/providers/budget_provider.dart';
-import 'package:fintrack/features/debt/presentation/providers/debt_provider.dart';
-import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
-import 'package:fintrack/features/goals/presentation/providers/goal_provider.dart';
-import 'package:fintrack/features/investment/presentation/providers/investment_provider.dart';
-import 'package:fintrack/features/loan/presentation/providers/loan_provider.dart';
-import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
-import 'package:fintrack/features/subscription/presentation/providers/subscription_provider.dart';
 import 'package:fintrack/services/backup_service.dart';
 import 'package:fintrack/services/data_exchange_service.dart';
 
@@ -95,6 +85,15 @@ class _SettingsDataManagementScreenState
               description: 'Import data from a backup file',
               onTap: _showImportDialog,
             ),
+            const SizedBox(height: 8),
+            _buildActionCard(
+              context,
+              icon: Icons.rule_folder_outlined,
+              iconColor: Colors.teal,
+              title: 'Preflight Import Check',
+              description: 'Validate backup totals before import',
+              onTap: _runImportPreflight,
+            ),
             const SizedBox(height: 20),
 
             // Danger Zone Section
@@ -131,8 +130,8 @@ class _SettingsDataManagementScreenState
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: isDanger
-                  ? Colors.red.withOpacity(0.1)
-                  : Theme.of(context).primaryColor.withOpacity(0.1),
+                  ? Colors.red.withValues(alpha: 0.1)
+                  : Theme.of(context).primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -168,12 +167,12 @@ class _SettingsDataManagementScreenState
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: isDanger
-              ? Colors.red.withOpacity(0.2)
+              ? Colors.red.withValues(alpha: 0.2)
               : Theme.of(context).dividerColor,
           width: isDanger ? 1 : 0.5,
         ),
       ),
-      color: isDanger ? Colors.red.withOpacity(0.03) : null,
+      color: isDanger ? Colors.red.withValues(alpha: 0.03) : null,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -184,7 +183,7 @@ class _SettingsDataManagementScreenState
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.15),
+                  color: iconColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -282,6 +281,7 @@ class _SettingsDataManagementScreenState
                     Navigator.pop(dialogContext);
                     try {
                       await BackupService.restoreFromBackup(backupPath);
+                      await _refreshAllProviders();
                       if (!mounted) return;
                       messenger.showSnackBar(
                         const SnackBar(
@@ -396,6 +396,7 @@ class _SettingsDataManagementScreenState
     final messenger = ScaffoldMessenger.of(context);
     try {
       await BackupService.restoreFromBackup(filePath);
+      await _refreshAllProviders();
       if (!mounted) return;
       Navigator.pop(context);
       messenger.showSnackBar(
@@ -436,16 +437,6 @@ class _SettingsDataManagementScreenState
 
   Future<void> _clearAllData() async {
     final messenger = ScaffoldMessenger.of(context);
-    final expenseProvider = context.read<ExpenseProvider>();
-    final budgetProvider = context.read<BudgetProvider>();
-    final subscriptionProvider = context.read<SubscriptionProvider>();
-    final investmentProvider = context.read<InvestmentProvider>();
-    final goalProvider = context.read<GoalProvider>();
-    final loanProvider = context.read<LoanProvider>();
-    final billProvider = context.read<BillProvider>();
-    final debtProvider = context.read<DebtProvider>();
-    final paymentAccountProvider = context.read<PaymentAccountProvider>();
-    final settingsProvider = context.read<SettingsProvider>();
 
     try {
       messenger.showSnackBar(
@@ -456,16 +447,7 @@ class _SettingsDataManagementScreenState
 
       if (!mounted) return;
 
-      await expenseProvider.refreshData();
-      await budgetProvider.refreshData();
-      await subscriptionProvider.refreshData();
-      await investmentProvider.refreshData();
-      await goalProvider.refreshData();
-      await loanProvider.refreshData();
-      await billProvider.refreshData();
-      await debtProvider.refreshData();
-      paymentAccountProvider.refreshData();
-      await settingsProvider.refreshSettings();
+      await _refreshAllProviders();
 
       if (!mounted) return;
 
@@ -598,10 +580,22 @@ class _SettingsDataManagementScreenState
       if (!mounted) return;
 
       if (result['success']) {
+        await _refreshAllProviders();
+        if (!mounted) return;
+
+        final comparison = result['comparison'] as Map<String, dynamic>?;
+
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Data imported successfully')),
-        );
+
+        if (comparison != null) {
+          _showIntegrityReport(
+            comparison: comparison,
+            importSnapshot:
+                result['importSnapshot'] as Map<String, dynamic>? ?? const {},
+            afterSnapshot:
+                result['afterSnapshot'] as Map<String, dynamic>? ?? const {},
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -615,5 +609,162 @@ class _SettingsDataManagementScreenState
         SnackBar(content: Text('Import error: $e')),
       );
     }
+  }
+
+  Future<void> _runImportPreflight() async {
+    if (!mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Running import preflight...')),
+    );
+
+    final result = await DataExchangeService.preflightImportFile();
+    if (!mounted) return;
+
+    messenger.hideCurrentSnackBar();
+
+    if (result['success'] != true) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(result['message']?.toString() ?? 'Failed')),
+      );
+      return;
+    }
+
+    _showPreflightReport(
+      selectedPath: result['selectedPath']?.toString() ?? '',
+      currentSnapshot:
+          result['currentSnapshot'] as Map<String, dynamic>? ?? const {},
+      fileSnapshot: result['fileSnapshot'] as Map<String, dynamic>? ?? const {},
+      replaceDelta: result['replaceDelta'] as Map<String, dynamic>? ?? const {},
+    );
+  }
+
+  Future<void> _refreshAllProviders() async {
+    await DataRefreshUtils.refreshAllAndSignal(context);
+  }
+
+  void _showIntegrityReport({
+    required Map<String, dynamic> comparison,
+    required Map<String, dynamic> importSnapshot,
+    required Map<String, dynamic> afterSnapshot,
+  }) {
+    if (!mounted) return;
+
+    final mismatches =
+        (comparison['mismatches'] as List?)?.cast<Map<String, dynamic>>() ??
+            const [];
+    final isMatch = comparison['isMatch'] == true;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          isMatch ? 'Import Complete' : 'Integrity Differences Found',
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: isMatch
+              ? const Text('Data imported successfully.')
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: mismatches.length,
+                  itemBuilder: (context, index) {
+                    final mismatch = mismatches[index];
+                    final key = mismatch['key']?.toString() ?? 'unknown';
+                    final expected = mismatch['expected'];
+                    final actual = mismatch['actual'];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text('$key: expected=$expected, actual=$actual'),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Close'),
+          ),
+          if (!isMatch)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                final summary =
+                    'Imported: ${importSnapshot['expensesCount'] ?? 0} expenses, ${importSnapshot['receivablesCount'] ?? 0} receivables | After: ${afterSnapshot['expensesCount'] ?? 0} expenses, ${afterSnapshot['receivablesCount'] ?? 0} receivables';
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(summary)),
+                );
+              },
+              child: const Text('Show Summary'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showPreflightReport({
+    required String selectedPath,
+    required Map<String, dynamic> currentSnapshot,
+    required Map<String, dynamic> fileSnapshot,
+    required Map<String, dynamic> replaceDelta,
+  }) {
+    if (!mounted) return;
+
+    final mismatches =
+        (replaceDelta['mismatches'] as List?)?.cast<Map<String, dynamic>>() ??
+            const [];
+    final willChange = mismatches.isNotEmpty;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(willChange
+            ? 'Preflight: Differences Detected'
+            : 'Preflight: No Differences'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Text('File: ${selectedPath.split('/').last}'),
+              const SizedBox(height: 8),
+              Text(
+                  'Current expenses: ${currentSnapshot['expensesCount'] ?? 0} | File: ${fileSnapshot['expensesCount'] ?? 0}'),
+              Text(
+                  'Current receivables: ${currentSnapshot['receivablesCount'] ?? 0} | File: ${fileSnapshot['receivablesCount'] ?? 0}'),
+              Text(
+                  'Current accounts: ${currentSnapshot['accountsCount'] ?? 0} | File: ${fileSnapshot['accountsCount'] ?? 0}'),
+              Text(
+                  'Current currency: ${currentSnapshot['currency'] ?? '-'} | File: ${fileSnapshot['currency'] ?? '-'}'),
+              if (willChange) ...[
+                const SizedBox(height: 10),
+                const Text('Replace mode changes:'),
+                const SizedBox(height: 6),
+                ...mismatches.map(
+                  (row) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(
+                      '${row['key']}: file=${row['expected']} | current=${row['actual']}',
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
+              const Text(
+                'Note: Merge mode appends/overwrites by IDs and does not guarantee exact parity.',
+                style: TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 }

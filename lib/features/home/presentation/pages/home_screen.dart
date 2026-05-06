@@ -28,13 +28,6 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   bool _isFabExpanded = false;
 
-  static const _NavModule _homeModule = _NavModule(
-    id: 'home',
-    label: 'Home',
-    icon: Icons.home,
-    screen: DashboardScreen(),
-  );
-
   static const List<_NavModule> _allModules = [
     _NavModule(
       id: 'expenses',
@@ -354,7 +347,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final currentModule = bottomModules[_currentIndex];
 
-        final isHomeModule = currentModule.id == _homeModule.id;
+        final isHomeModule = currentModule.id == 'home';
 
         return Stack(
           children: [
@@ -402,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: GestureDetector(
                   onTap: () => setState(() => _isFabExpanded = false),
                   child: Container(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                   ),
                 ),
               ),
@@ -424,6 +417,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<_NavModule> _buildBottomModules(SettingsProvider settingsProvider) {
+    final homeModule = _NavModule(
+      id: 'home',
+      label: 'Home',
+      icon: Icons.home,
+      screen:
+          DashboardScreen(refreshToken: settingsProvider.dataRefreshVersion),
+    );
+
     final selectedIds = settingsProvider.bottomNavItems;
     final selectedModules = selectedIds
         .map((id) => _allModules.firstWhere(
@@ -438,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .where((module) => module.id != 'unknown')
         .toList();
 
-    return [_homeModule, ...selectedModules];
+    return [homeModule, ...selectedModules];
   }
 
   Widget _buildDrawer(BuildContext context, List<_NavModule> bottomModules) {
@@ -478,7 +479,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.18),
+                            color: Colors.black.withValues(alpha: 0.18),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -507,7 +508,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w400,
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -748,12 +749,12 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: isSelected
-            ? Theme.of(context).primaryColor.withOpacity(0.1)
+            ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
         border: isSelected
             ? Border.all(
-                color: Theme.of(context).primaryColor.withOpacity(0.3),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
                 width: 1.5,
               )
             : null,
@@ -765,7 +766,7 @@ class _HomeScreenState extends State<HomeScreen> {
           height: 40,
           decoration: BoxDecoration(
             color: isSelected
-                ? Theme.of(context).primaryColor.withOpacity(0.15)
+                ? Theme.of(context).primaryColor.withValues(alpha: 0.15)
                 : Colors.grey[200],
             borderRadius: BorderRadius.circular(8),
           ),
@@ -816,7 +817,7 @@ class _HomeScreenState extends State<HomeScreen> {
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(

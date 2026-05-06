@@ -57,6 +57,23 @@ class SettingsContentManagementScreen extends StatelessWidget {
             const SizedBox(height: 12),
             _buildContentCard(
               context,
+              icon: Icons.pie_chart,
+              iconColor: Colors.purple,
+              title: 'Manage Budget Categories',
+              description:
+                  'Budget module uses expense categories. Manage them here.',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ManageExpenseCategoriesScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildContentCard(
+              context,
               icon: Icons.trending_up,
               iconColor: Colors.green,
               title: 'Manage Investment Types',
@@ -137,7 +154,7 @@ class SettingsContentManagementScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.15),
+                  color: iconColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(

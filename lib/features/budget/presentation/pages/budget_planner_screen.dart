@@ -7,11 +7,10 @@ import 'package:fintrack/core/constants/app_constants.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/features/budget/data/models/budget_model.dart';
 import 'package:fintrack/features/budget/presentation/providers/budget_provider.dart';
-import 'package:fintrack/features/expense/data/models/expense_category_model.dart';
 import 'package:fintrack/features/expense/data/models/expense_model.dart';
+import 'package:fintrack/features/expense/presentation/pages/manage_expense_categories_screen.dart';
 import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class BudgetPlannerScreen extends StatefulWidget {
   final bool showAppBar;
@@ -159,7 +158,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                           Icon(
                             Icons.pie_chart_outline,
                             size: 64,
-                            color: AppTheme.textSecondaryColor.withOpacity(0.5),
+                            color: AppTheme.textSecondaryColor
+                                .withValues(alpha: 0.5),
                           ),
                           const SizedBox(height: 12),
                           Text(
@@ -339,7 +339,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
               : LinearGradient(
                   colors: [
                     AppTheme.primaryColor,
-                    AppTheme.primaryColor.withOpacity(0.7)
+                    AppTheme.primaryColor.withValues(alpha: 0.7)
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -352,7 +352,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
             BoxShadow(
               color: Theme.of(context).brightness == Brightness.dark
                   ? Colors.transparent
-                  : AppTheme.primaryColor.withOpacity(0.3),
+                  : AppTheme.primaryColor.withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -372,7 +372,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                       fontSize: 12,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Theme.of(context).colorScheme.onSurface
-                          : Colors.white.withOpacity(0.9),
+                          : Colors.white.withValues(alpha: 0.9),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -380,7 +380,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                     _summaryExpanded ? Icons.expand_less : Icons.expand_more,
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Theme.of(context).colorScheme.onSurface
-                        : Colors.white.withOpacity(0.9),
+                        : Colors.white.withValues(alpha: 0.9),
                     size: 18,
                   ),
                 ],
@@ -407,7 +407,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                     ? Theme.of(context)
                                         .colorScheme
                                         .onSurfaceVariant
-                                    : Colors.white.withOpacity(0.9),
+                                    : Colors.white.withValues(alpha: 0.9),
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -436,13 +436,14 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                           'Spent',
                                           style: TextStyle(
                                             fontSize: 11,
-                                            color: Theme.of(context)
-                                                        .brightness ==
-                                                    Brightness.dark
-                                                ? Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant
-                                                : Colors.white.withOpacity(0.8),
+                                            color:
+                                                Theme.of(context).brightness ==
+                                                        Brightness.dark
+                                                    ? Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurfaceVariant
+                                                    : Colors.white
+                                                        .withValues(alpha: 0.8),
                                           ),
                                         ),
                                         Text(
@@ -472,13 +473,14 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                           'Remaining',
                                           style: TextStyle(
                                             fontSize: 11,
-                                            color: Theme.of(context)
-                                                        .brightness ==
-                                                    Brightness.dark
-                                                ? Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant
-                                                : Colors.white.withOpacity(0.8),
+                                            color:
+                                                Theme.of(context).brightness ==
+                                                        Brightness.dark
+                                                    ? Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurfaceVariant
+                                                    : Colors.white
+                                                        .withValues(alpha: 0.8),
                                           ),
                                         ),
                                         Text(
@@ -534,7 +536,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                     backgroundColor: Theme.of(context).brightness ==
                             Brightness.dark
                         ? Theme.of(context).colorScheme.surfaceContainerHighest
-                        : Colors.white.withOpacity(0.3),
+                        : Colors.white.withValues(alpha: 0.3),
                     valueColor: AlwaysStoppedAnimation<Color>(
                       percentage >= 1.0
                           ? Colors.red.shade300
@@ -551,7 +553,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                     fontSize: 11,
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Theme.of(context).colorScheme.onSurfaceVariant
-                        : Colors.white.withOpacity(0.9),
+                        : Colors.white.withValues(alpha: 0.9),
                   ),
                 ),
               ] else ...[
@@ -564,7 +566,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                     backgroundColor: Theme.of(context).brightness ==
                             Brightness.dark
                         ? Theme.of(context).colorScheme.surfaceContainerHighest
-                        : Colors.white.withOpacity(0.3),
+                        : Colors.white.withValues(alpha: 0.3),
                     valueColor: AlwaysStoppedAnimation<Color>(
                       percentage >= 1.0
                           ? Colors.red.shade300
@@ -631,14 +633,14 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
       background: Container(
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.8),
+          color: Colors.red.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(12),
         ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
-      confirmDismiss: (_) => _confirmDeleteBudget(context, category),
+      confirmDismiss: (_) => _confirmDeleteBudget(category),
       child: GestureDetector(
         onTap: () => _showCategoryExpenses(
           context,
@@ -656,8 +658,10 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(
-                  Theme.of(context).brightness == Brightness.dark ? 0.0 : 0.06,
+                color: Colors.black.withValues(
+                  alpha: Theme.of(context).brightness == Brightness.dark
+                      ? 0.0
+                      : 0.06,
                 ),
                 blurRadius: 14,
                 offset: const Offset(0, 6),
@@ -673,7 +677,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: categoryColor.withOpacity(0.2),
+                      color: categoryColor.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
@@ -748,10 +752,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                         size: 18, color: Colors.red),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
-                    onPressed: () => _confirmDeleteBudget(
-                      context,
-                      category,
-                    ),
+                    onPressed: () => _confirmDeleteBudget(category),
                     tooltip: 'Delete budget',
                   ),
                 ],
@@ -787,7 +788,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppTheme.errorColor.withOpacity(0.1),
+                        color: AppTheme.errorColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -833,153 +834,16 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
     return '${months[date.month - 1]} ${date.year}';
   }
 
-  String _colorToHex(Color color) {
-    return '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
-  }
-
-  void _showCategoryDialog(
-    BuildContext context, {
-    required Function(ExpenseCategory) onCategoryAdded,
-  }) {
-    final nameController = TextEditingController();
-    final iconController = TextEditingController();
-    Color selectedColor = Colors.blue;
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('New Category'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Category Name',
-                    border: OutlineInputBorder(),
-                  ),
-                  textCapitalization: TextCapitalization.words,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: iconController,
-                  decoration: const InputDecoration(
-                    labelText: 'Icon (Emoji)',
-                    border: OutlineInputBorder(),
-                    helperText: 'Enter a single emoji',
-                  ),
-                  maxLength: 2,
-                ),
-                const SizedBox(height: 16),
-                InkWell(
-                  onTap: () async {
-                    await showDialog(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Pick a color'),
-                        content: SingleChildScrollView(
-                          child: BlockPicker(
-                            pickerColor: selectedColor,
-                            onColorChanged: (color) {
-                              setState(() {
-                                selectedColor = color;
-                              });
-                            },
-                          ),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: const Text('Done'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppTheme.borderColor),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: selectedColor,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Tap to change color',
-                          style: TextStyle(fontSize: 14),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                if (nameController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter a category name'),
-                    ),
-                  );
-                  return;
-                }
-
-                if (iconController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter an emoji icon'),
-                    ),
-                  );
-                  return;
-                }
-
-                final newCategory = ExpenseCategory(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  name: nameController.text.trim(),
-                  icon: iconController.text.trim(),
-                  color: _colorToHex(selectedColor),
-                  isDefault: false,
-                  createdAt: DateTime.now(),
-                );
-
-                await context.read<ExpenseProvider>().addCategory(newCategory);
-
-                if (!context.mounted) return;
-                Navigator.pop(dialogContext);
-                onCategoryAdded(newCategory);
-
-                if (!mounted) return;
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Category added successfully'),
-                  ),
-                );
-              },
-              child: const Text('Add'),
-            ),
-          ],
-        ),
+  Future<bool> _showCategoryDialog(BuildContext context) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (pageContext) => const ManageExpenseCategoriesScreen(),
       ),
     );
+
+    if (!context.mounted) return false;
+
+    return true;
   }
 
   void _showAddBudgetDialog(
@@ -1039,7 +903,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                           color: Theme.of(context)
                               .colorScheme
                               .onSurfaceVariant
-                              .withOpacity(0.3),
+                              .withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -1061,16 +925,30 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                 .map((cat) => cat.name as String)
                                 .toList(),
                             selectedItem: selectedCategory,
-                            popupProps: PopupProps.dialog(
+                            popupProps: PopupProps.menu(
                               showSearchBox: true,
+                              constraints: const BoxConstraints(maxHeight: 320),
+                              fit: FlexFit.loose,
+                              menuProps: MenuProps(
+                                borderRadius: BorderRadius.circular(12),
+                                elevation: 6,
+                              ),
+                              searchFieldProps: TextFieldProps(
+                                decoration: InputDecoration(
+                                  hintText: 'Search categories',
+                                  prefixIcon: const Icon(Icons.search),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
                               itemBuilder: (context, item, isSelected) {
                                 final cat = categoryMap[item];
                                 return ListTile(
                                   leading: cat == null
                                       ? null
                                       : Text(cat.icon,
-                                          style: TextStyle(
-                                              fontSize: 20)),
+                                          style: TextStyle(fontSize: 20)),
                                   title: Text(
                                     item,
                                     style: const TextStyle(),
@@ -1079,9 +957,29 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                               },
                             ),
                             dropdownDecoratorProps: DropDownDecoratorProps(
-                              dropdownSearchDecoration: const InputDecoration(
+                              dropdownSearchDecoration: InputDecoration(
                                 labelText: 'Category',
-                                border: OutlineInputBorder(),
+                                border: const OutlineInputBorder(),
+                                suffixIcon: IconButton(
+                                  tooltip: 'Manage Categories',
+                                  icon: const Icon(Icons.settings, size: 20),
+                                  onPressed: () async {
+                                    final changed =
+                                        await _showCategoryDialog(rootContext);
+                                    if (!changed) return;
+                                    if (!mounted) return;
+                                    setState(() {
+                                      currentCategories = rootContext
+                                          .read<ExpenseProvider>()
+                                          .categories;
+                                      if (selectedCategory != null &&
+                                          !currentCategories.any((cat) =>
+                                              cat.name == selectedCategory)) {
+                                        selectedCategory = null;
+                                      }
+                                    });
+                                  },
+                                ),
                               ),
                             ),
                             dropdownBuilder: (context, selectedItem) {
@@ -1093,10 +991,15 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                               return Row(
                                 children: [
                                   Text(cat.icon,
-                                      style: TextStyle(
-                                          fontSize: 18)),
+                                      style: TextStyle(fontSize: 18)),
                                   const SizedBox(width: 8),
-                                  Text(cat.name),
+                                  Expanded(
+                                    child: Text(
+                                      cat.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
                                 ],
                               );
                             },
@@ -1110,21 +1013,24 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                         ),
                         const SizedBox(width: 8),
                         IconButton(
+                          tooltip: 'Create Category',
                           icon: const Icon(Icons.add_circle_outline),
-                          onPressed: () {
-                            _showCategoryDialog(
-                              rootContext,
-                              onCategoryAdded: (newCategory) {
-                                setState(() {
-                                  currentCategories = [
-                                    ...currentCategories,
-                                    newCategory,
-                                  ];
-                                  selectedCategory = newCategory.name;
-                                  errorMsg = null;
-                                });
-                              },
-                            );
+                          onPressed: () async {
+                            final changed =
+                                await _showCategoryDialog(rootContext);
+                            if (!changed) return;
+                            if (!mounted) return;
+                            setState(() {
+                              currentCategories = rootContext
+                                  .read<ExpenseProvider>()
+                                  .categories;
+                              if (selectedCategory != null &&
+                                  !currentCategories.any(
+                                      (cat) => cat.name == selectedCategory)) {
+                                selectedCategory = null;
+                              }
+                              errorMsg = null;
+                            });
                           },
                         ),
                       ],
@@ -1148,10 +1054,10 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
+                          color: Colors.red.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
-                          border:
-                              Border.all(color: Colors.red.withOpacity(0.3)),
+                          border: Border.all(
+                              color: Colors.red.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
@@ -1161,9 +1067,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                             Expanded(
                               child: Text(
                                 errorMsg!,
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.red),
+                                style:
+                                    TextStyle(fontSize: 12, color: Colors.red),
                               ),
                             ),
                           ],
@@ -1180,44 +1085,38 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Column(
-                        children: [
-                          RadioListTile<String>(
-                            title: const Text('One-Time'),
-                            subtitle: Text(
-                              'Budget for ${_getMonthYearString(_selectedMonth)} only',
-                              style: TextStyle(
-                                  fontSize: 12),
+                      RadioGroup<String>(
+                        groupValue: recurrenceType,
+                        onChanged: (value) {
+                          setState(() {
+                            recurrenceType = value ?? 'oneTime';
+                            if (recurrenceType == 'oneTime') endDate = null;
+                          });
+                        },
+                        child: Column(
+                          children: [
+                            RadioListTile<String>(
+                              title: const Text('One-Time'),
+                              subtitle: Text(
+                                'Budget for ${_getMonthYearString(_selectedMonth)} only',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              value: 'oneTime',
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
                             ),
-                            value: 'oneTime',
-                            groupValue: recurrenceType,
-                            dense: true,
-                            contentPadding: EdgeInsets.zero,
-                            onChanged: (value) {
-                              setState(() {
-                                recurrenceType = value ?? 'oneTime';
-                                if (recurrenceType == 'oneTime') endDate = null;
-                              });
-                            },
-                          ),
-                          RadioListTile<String>(
-                            title: const Text('Monthly Recurring'),
-                            subtitle: Text(
-                              'Repeat every month from now onwards',
-                              style: TextStyle(
-                                  fontSize: 12),
+                            RadioListTile<String>(
+                              title: const Text('Monthly Recurring'),
+                              subtitle: Text(
+                                'Repeat every month from now onwards',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              value: 'monthly',
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
                             ),
-                            value: 'monthly',
-                            groupValue: recurrenceType,
-                            dense: true,
-                            contentPadding: EdgeInsets.zero,
-                            onChanged: (value) {
-                              setState(() {
-                                recurrenceType = value ?? 'oneTime';
-                              });
-                            },
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       if (recurrenceType == 'monthly') ...[
                         const SizedBox(height: 12),
@@ -1228,8 +1127,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                 endDate == null
                                     ? 'No end date'
                                     : 'Until ${endDate!.year}-${endDate!.month.toString().padLeft(2, "0")}',
-                                style: TextStyle(
-                                    fontSize: 13),
+                                style: TextStyle(fontSize: 13),
                               ),
                             ),
                             TextButton(
@@ -1417,12 +1315,10 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
     );
   }
 
-  Future<bool> _confirmDeleteBudget(
-    BuildContext context,
-    String category,
-  ) async {
+  Future<bool> _confirmDeleteBudget(String category) async {
+    final scaffoldContext = context;
     final shouldDelete = await showDialog<bool>(
-      context: context,
+      context: scaffoldContext,
       builder: (context) => AlertDialog(
         title: Text(
           'Delete Budget',
@@ -1455,11 +1351,11 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
       return false;
     }
 
-    if (!mounted) {
+    if (!scaffoldContext.mounted) {
       return false;
     }
 
-    final budgetProvider = context.read<BudgetProvider>();
+    final budgetProvider = scaffoldContext.read<BudgetProvider>();
     final budget = budgetProvider.getBudgetForMonth(
       _selectedMonth.month,
       _selectedMonth.year,
@@ -1480,7 +1376,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
       }
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    ScaffoldMessenger.of(scaffoldContext).showSnackBar(
       const SnackBar(content: Text('Budget deleted')),
     );
     return true;
@@ -1516,7 +1412,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Colors.blue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -1636,7 +1532,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: categoryColor.withOpacity(0.1),
+                color: categoryColor.withValues(alpha: 0.1),
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(16)),
               ),
@@ -1646,7 +1542,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppTheme.textSecondaryColor.withOpacity(0.3),
+                      color: AppTheme.textSecondaryColor.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1657,13 +1553,11 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: categoryColor.withOpacity(0.2),
+                          color: categoryColor.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Center(
-                          child: Text(icon,
-                              style: TextStyle(
-                                  fontSize: 24)),
+                          child: Text(icon, style: TextStyle(fontSize: 24)),
                         ),
                       ),
                       const SizedBox(width: 12),

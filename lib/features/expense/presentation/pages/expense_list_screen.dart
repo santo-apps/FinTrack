@@ -2131,7 +2131,7 @@ class ExpenseDetailScreen extends StatelessWidget {
       case 'income':
         return '💰 Income';
       case 'transfer':
-        return '🔄 Transfer';
+        return '↔️ Transfer';
       case 'payment':
         return '💳 Payment';
       default:
@@ -2285,7 +2285,7 @@ class ExpenseDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               _ModernDetailCard(
-                icon: Icons.swap_horiz,
+                icon: Icons.sync_alt,
                 label: 'Transaction Type',
                 value: _getTransactionTypeLabel(),
                 isDarkMode: isDarkMode,
@@ -2519,6 +2519,17 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
   String selectedTransactionType =
       'expense'; // 'expense', 'income', 'transfer', 'payment'
   String? selectedDestinationAccountId;
+
+  List<PaymentAccount> _uniqueAccountsById(Iterable<PaymentAccount> accounts) {
+    final seen = <String>{};
+    final unique = <PaymentAccount>[];
+    for (final account in accounts) {
+      if (seen.add(account.id)) {
+        unique.add(account);
+      }
+    }
+    return unique;
+  }
 
   String _getPreferredIncomeCategory(List<ExpenseCategory> categories) {
     for (final category in categories) {
@@ -2799,17 +2810,18 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                         const SizedBox(height: 16),
                         Builder(
                           builder: (context) {
-                            final filteredAccounts = accounts
-                                .where((a) =>
-                                    a.accountType == selectedAccountType &&
-                                    a.isActive)
-                                .toList();
+                            final filteredAccounts =
+                                _uniqueAccountsById(accounts)
+                                    .where((a) =>
+                                        a.accountType == selectedAccountType &&
+                                        a.isActive)
+                                    .toList();
                             final hasFilteredAccounts =
                                 filteredAccounts.isNotEmpty;
 
                             // Ensure selectedAccountId is valid
                             final validAccountIds =
-                                filteredAccounts.map((a) => a.id).toList();
+                                filteredAccounts.map((a) => a.id).toSet();
                             final validatedAccountId = (selectedAccountId !=
                                         null &&
                                     validAccountIds.contains(selectedAccountId))
@@ -2967,7 +2979,8 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
               Consumer<PaymentAccountProvider>(
                 builder: (context, accountProvider, _) {
                   final selectedAccount = selectedAccountId != null
-                      ? accountProvider.accounts.firstWhere(
+                      ? _uniqueAccountsById(accountProvider.accounts)
+                          .firstWhere(
                           (a) => a.id == selectedAccountId,
                           orElse: () => null as dynamic,
                         ) as PaymentAccount?
@@ -3005,7 +3018,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                           final labels = {
                             'expense': '💸 Expense',
                             'income': isCreditCard ? '💰 Refund' : '💰 Income',
-                            'transfer': '🔄 Transfer',
+                            'transfer': '↔️ Transfer',
                             'payment': '💳 Payment',
                           };
                           return DropdownMenuItem(
@@ -3043,7 +3056,12 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                           selectedTransactionType == 'payment') ...[
                         const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
-                          initialValue: selectedDestinationAccountId,
+                          initialValue:
+                              _uniqueAccountsById(accountProvider.accounts).any(
+                                      (a) =>
+                                          a.id == selectedDestinationAccountId)
+                                  ? selectedDestinationAccountId
+                                  : null,
                           decoration: InputDecoration(
                             labelText: selectedTransactionType == 'transfer'
                                 ? 'Transfer To'
@@ -3052,7 +3070,8 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                                 ? 'Select destination account'
                                 : 'Select bank account to pay from',
                           ),
-                          items: accountProvider.accounts.where((account) {
+                          items: _uniqueAccountsById(accountProvider.accounts)
+                              .where((account) {
                             if (!account.isActive ||
                                 account.id == selectedAccountId) {
                               return false;
@@ -3100,7 +3119,12 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                       if (selectedTransactionType == 'transfer' ||
                           selectedTransactionType == 'payment') ...[
                         DropdownButtonFormField<String>(
-                          initialValue: selectedDestinationAccountId,
+                          initialValue:
+                              _uniqueAccountsById(accountProvider.accounts).any(
+                                      (a) =>
+                                          a.id == selectedDestinationAccountId)
+                                  ? selectedDestinationAccountId
+                                  : null,
                           decoration: InputDecoration(
                             labelText: selectedTransactionType == 'transfer'
                                 ? 'Transfer To'
@@ -3109,7 +3133,8 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                                 ? 'Select destination account'
                                 : 'Select bank account to pay from',
                           ),
-                          items: accountProvider.accounts.where((account) {
+                          items: _uniqueAccountsById(accountProvider.accounts)
+                              .where((account) {
                             if (!account.isActive ||
                                 account.id == selectedAccountId) {
                               return false;

@@ -51,6 +51,9 @@ class HomeViewModel extends ChangeNotifier {
   double _investmentGainLossPercent = 0;
   double _pendingReceivableTotal = 0;
   int _pendingReceivableCount = 0;
+  int _receivedReceivableCount = 0;
+  int _totalAccounts = 0;
+  double _liquidAccountBalance = 0;
   bool _isDisposed = false;
 
   HomeViewModel({
@@ -104,6 +107,9 @@ class HomeViewModel extends ChangeNotifier {
   double get investmentGainLossPercent => _investmentGainLossPercent;
   double get pendingReceivableTotal => _pendingReceivableTotal;
   int get pendingReceivableCount => _pendingReceivableCount;
+  int get receivedReceivableCount => _receivedReceivableCount;
+  int get totalAccounts => _totalAccounts;
+  double get liquidAccountBalance => _liquidAccountBalance;
   int get pendingBillReminderCount => _billProvider
       .getRemindersForMonth(DateTime.now())
       .where((r) => r.status == BillReminderStatus.pending)
@@ -153,6 +159,8 @@ class HomeViewModel extends ChangeNotifier {
     // Assets = Investments + Non-credit account balances
     _assetInvestmentComponent = _getEffectiveInvestmentValueFromStore();
     _assetAccountComponent = _getAssetAccountBalance();
+    _totalAccounts = _accountProvider.activeAccounts.length;
+    _liquidAccountBalance = _getLiquidAccountBalance();
 
     _assets = _assetInvestmentComponent + _assetAccountComponent;
 
@@ -191,6 +199,18 @@ class HomeViewModel extends ChangeNotifier {
     return _accountProvider.activeAccounts.fold<double>(0, (sum, account) {
       final isCredit = account.accountType.toLowerCase().contains('credit');
       if (isCredit) return sum;
+      return sum + account.balance;
+    });
+  }
+
+  double _getLiquidAccountBalance() {
+    return _accountProvider.activeAccounts.fold<double>(0, (sum, account) {
+      final accountType = account.accountType.toLowerCase();
+      final isCredit = accountType.contains('credit');
+      final isLiquidType = accountType.contains('bank') ||
+          accountType.contains('cash') ||
+          accountType.contains('wallet');
+      if (isCredit || !isLiquidType) return sum;
       return sum + account.balance;
     });
   }
@@ -258,7 +278,9 @@ class HomeViewModel extends ChangeNotifier {
   void _computeReceivables() {
     final now = DateTime.now();
     final pending = _receivableProvider.getPendingForMonth(now);
+    final received = _receivableProvider.getReceivedForMonth(now);
     _pendingReceivableCount = pending.length;
+    _receivedReceivableCount = received.length;
     _pendingReceivableTotal =
         pending.fold<double>(0, (sum, item) => sum + item.amount);
   }

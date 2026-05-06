@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
+import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
+import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
 import 'package:fintrack/features/receivable/data/models/receivable_model.dart';
 import 'package:fintrack/features/receivable/presentation/providers/receivable_provider.dart';
 import 'package:fintrack/features/receivable/presentation/pages/receivable_overview_screen.dart';
@@ -85,6 +87,22 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
     if (!shouldDelete) return;
     if (!mounted) return;
     await context.read<ReceivableProvider>().deleteReceivable(receivable.id);
+  }
+
+  Future<void> _markAsReceived(Receivable item) async {
+    await context.read<ReceivableProvider>().markAsReceived(item);
+    if (!mounted) return;
+    await context.read<ExpenseProvider>().refreshData();
+    if (!mounted) return;
+    context.read<PaymentAccountProvider>().refreshData();
+  }
+
+  Future<void> _markAsPending(Receivable item) async {
+    await context.read<ReceivableProvider>().markAsPending(item);
+    if (!mounted) return;
+    await context.read<ExpenseProvider>().refreshData();
+    if (!mounted) return;
+    context.read<PaymentAccountProvider>().refreshData();
   }
 
   @override
@@ -347,16 +365,12 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
                   width: double.infinity,
                   child: item.isReceived
                       ? OutlinedButton.icon(
-                          onPressed: () => context
-                              .read<ReceivableProvider>()
-                              .markAsPending(item),
+                          onPressed: () => _markAsPending(item),
                           icon: const Icon(Icons.restore, size: 16),
                           label: const Text('Move to Pending'),
                         )
                       : ElevatedButton.icon(
-                          onPressed: () => context
-                              .read<ReceivableProvider>()
-                              .markAsReceived(item),
+                          onPressed: () => _markAsReceived(item),
                           icon:
                               const Icon(Icons.check_circle_outline, size: 16),
                           style: ElevatedButton.styleFrom(

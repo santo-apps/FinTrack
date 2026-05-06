@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
 import 'package:fintrack/features/dashboard/presentation/providers/home_viewmodel.dart';
-import 'package:fintrack/features/dashboard/presentation/pages/asset_breakdown_screen.dart';
 import 'package:fintrack/features/dashboard/presentation/pages/networth_breakdown_screen.dart';
+import 'package:fintrack/features/accounts/presentation/pages/account_list_screen.dart';
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
 import 'package:fintrack/features/loan/presentation/pages/loan_tracker_screen.dart';
 import 'package:fintrack/features/budget/presentation/pages/budget_planner_screen.dart';
@@ -26,11 +26,14 @@ import 'package:fintrack/features/receivable/presentation/pages/receivable_list_
 /// DashboardScreen: Premium financial control center
 /// Clean, calm, structured – manual discipline MVP
 class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+  final int refreshToken;
+
+  const DashboardScreen({super.key, this.refreshToken = 0});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
+      key: ValueKey('dashboard_vm_$refreshToken'),
       create: (context) => HomeViewModel(
         expenseProvider: Provider.of<ExpenseProvider>(context, listen: false),
         budgetProvider: Provider.of<BudgetProvider>(context, listen: false),
@@ -120,13 +123,11 @@ class _DashboardScreenContentState extends State<_DashboardScreenContent>
                     // 1️⃣ Snapshot Card
                     _SnapshotCard(
                       assets: viewModel.assets,
+                      liquidAccountBalance: viewModel.liquidAccountBalance,
                       investmentAsset: viewModel.assetInvestmentComponent,
                       accountAsset: viewModel.assetAccountComponent,
                       loans: viewModel.loans,
                       netWorth: viewModel.netWorth,
-                      todaySpend: viewModel.todaySpend,
-                      remainingBudget: viewModel.remainingBudget,
-                      savingsRate: viewModel.savingsRate,
                       currencySymbol: settings.currencySymbol,
                       animation: _netWorthAnimationController,
                     ),
@@ -139,9 +140,11 @@ class _DashboardScreenContentState extends State<_DashboardScreenContent>
                       const SizedBox(height: 16),
                     ],
 
-                    if (viewModel.pendingReceivableCount > 0) ...[
+                    if (viewModel.pendingReceivableCount > 0 ||
+                        viewModel.receivedReceivableCount > 0) ...[
                       _ReceivableSummaryCard(
                         pendingCount: viewModel.pendingReceivableCount,
+                        receivedCount: viewModel.receivedReceivableCount,
                         pendingTotal: viewModel.pendingReceivableTotal,
                         currencySymbol: settings.currencySymbol,
                       ),
@@ -210,25 +213,21 @@ class _DashboardScreenContentState extends State<_DashboardScreenContent>
 
 class _SnapshotCard extends StatelessWidget {
   final double assets;
+  final double liquidAccountBalance;
   final double investmentAsset;
   final double accountAsset;
   final double loans;
   final double netWorth;
-  final double todaySpend;
-  final double remainingBudget;
-  final double savingsRate;
   final String currencySymbol;
   final AnimationController animation;
 
   const _SnapshotCard({
     required this.assets,
+    required this.liquidAccountBalance,
     required this.investmentAsset,
     required this.accountAsset,
     required this.loans,
     required this.netWorth,
-    required this.todaySpend,
-    required this.remainingBudget,
-    required this.savingsRate,
     required this.currencySymbol,
     required this.animation,
   });
@@ -252,7 +251,10 @@ class _SnapshotCard extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (context) => const AssetBreakdownScreen(),
+                          builder: (context) => const AccountListScreen(
+                            showAppBar: true,
+                            showBackButton: true,
+                          ),
                         ),
                       );
                     },
@@ -265,12 +267,13 @@ class _SnapshotCard extends StatelessWidget {
                             : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: const Color(0xFF10B981).withOpacity(0.4),
+                          color: const Color(0xFF10B981).withValues(alpha: 0.4),
                           width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF10B981).withOpacity(0.1),
+                            color:
+                                const Color(0xFF10B981).withValues(alpha: 0.1),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -282,20 +285,24 @@ class _SnapshotCard extends StatelessWidget {
                           Row(
                             children: [
                               Icon(
-                                Icons.trending_up,
+                                Icons.account_balance_wallet,
                                 size: 14,
                                 color: const Color(0xFF059669),
                               ),
                               const SizedBox(width: 4),
-                              Text(
-                                'Assets',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey.shade700,
+                              Expanded(
+                                child: Text(
+                                  'Accounts',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey.shade700,
+                                  ),
                                 ),
                               ),
-                              const Spacer(),
+                              const SizedBox(width: 4),
                               Icon(
                                 Icons.chevron_right,
                                 size: 16,
@@ -308,7 +315,7 @@ class _SnapshotCard extends StatelessWidget {
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerLeft,
                             child: Text(
-                              AppUtils.formatCurrency(assets,
+                              AppUtils.formatCurrency(liquidAccountBalance,
                                   currencySymbol: currencySymbol),
                               style: TextStyle(
                                 fontSize: 15,
@@ -344,12 +351,13 @@ class _SnapshotCard extends StatelessWidget {
                             : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: const Color(0xFFF59E0B).withOpacity(0.4),
+                          color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
                           width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFF59E0B).withOpacity(0.1),
+                            color:
+                                const Color(0xFFF59E0B).withValues(alpha: 0.1),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -429,15 +437,15 @@ class _SnapshotCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isNegative
-                        ? const Color(0xFFEF4444).withOpacity(0.4)
-                        : const Color(0xFF8B5CF6).withOpacity(0.5),
+                        ? const Color(0xFFEF4444).withValues(alpha: 0.4)
+                        : const Color(0xFF8B5CF6).withValues(alpha: 0.5),
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: isNegative
-                          ? const Color(0xFFEF4444).withOpacity(0.12)
-                          : const Color(0xFF8B5CF6).withOpacity(0.15),
+                          ? const Color(0xFFEF4444).withValues(alpha: 0.12)
+                          : const Color(0xFF8B5CF6).withValues(alpha: 0.15),
                       blurRadius: 10,
                       offset: const Offset(0, 3),
                     ),
@@ -504,72 +512,42 @@ class _SnapshotCard extends StatelessWidget {
             ),
             const SizedBox(height: 14),
 
-            // Compact Metrics Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _CompactMetric(
-                  label: 'Today',
-                  value: AppUtils.formatCurrency(todaySpend,
-                      currencySymbol: currencySymbol),
-                  color: const Color(0xFFF59E0B),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2563EB).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.28),
                 ),
-                _CompactMetric(
-                  label: 'Budget Left',
-                  value: AppUtils.formatCurrency(remainingBudget,
-                      currencySymbol: currencySymbol),
-                  color: const Color(0xFF3B82F6),
-                ),
-                _CompactMetric(
-                  label: 'Savings',
-                  value: '${savingsRate.toStringAsFixed(0)}%',
-                  color: const Color(0xFF10B981),
-                ),
-              ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total Asset Balance',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1E40AF),
+                    ),
+                  ),
+                  Text(
+                    AppUtils.formatCurrency(assets,
+                        currencySymbol: currencySymbol),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _CompactMetric extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-
-  const _CompactMetric({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 4),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -632,8 +610,8 @@ class _InvestmentSummaryCard extends StatelessWidget {
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: isPositive
-                          ? Colors.green.withOpacity(0.1)
-                          : Colors.red.withOpacity(0.1),
+                          ? Colors.green.withValues(alpha: 0.1)
+                          : Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -784,7 +762,8 @@ class _BudgetOverviewCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.pie_chart_outline,
-                    size: 48, color: AppTheme.primaryColor.withOpacity(0.6)),
+                    size: 48,
+                    color: AppTheme.primaryColor.withValues(alpha: 0.6)),
                 const SizedBox(height: 12),
                 Text(
                   'No Budget Set',
@@ -888,9 +867,10 @@ class _BudgetOverviewCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: usageColor.withOpacity(0.1),
+                      color: usageColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: usageColor.withOpacity(0.3)),
+                      border:
+                          Border.all(color: usageColor.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1185,7 +1165,7 @@ class _StreakCard extends StatelessWidget {
                     : LinearGradient(
                         colors: [
                           AppTheme.primaryColor,
-                          AppTheme.primaryColor.withOpacity(0.7),
+                          AppTheme.primaryColor.withValues(alpha: 0.7),
                         ],
                       ),
                 shape: BoxShape.circle,
@@ -1264,9 +1244,9 @@ class _AlertsStrip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.05),
+            color: Colors.red.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.red.withOpacity(0.3)),
+            border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -1315,11 +1295,13 @@ class _AlertsStrip extends StatelessWidget {
 
 class _ReceivableSummaryCard extends StatelessWidget {
   final int pendingCount;
+  final int receivedCount;
   final double pendingTotal;
   final String currencySymbol;
 
   const _ReceivableSummaryCard({
     required this.pendingCount,
+    required this.receivedCount,
     required this.pendingTotal,
     required this.currencySymbol,
   });
@@ -1342,9 +1324,9 @@ class _ReceivableSummaryCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.05),
+            color: Colors.green.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.green.withOpacity(0.3)),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -1359,7 +1341,7 @@ class _ReceivableSummaryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Pending Receivables',
+                      'Receivables',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -1368,11 +1350,19 @@ class _ReceivableSummaryCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$pendingCount item${pendingCount != 1 ? 's' : ''} • $currencySymbol ${pendingTotal.toStringAsFixed(2)}',
+                      '$pendingCount pending • $receivedCount received',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: Colors.green.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Pending amount: $currencySymbol ${pendingTotal.toStringAsFixed(2)} · Tap to view all',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.green.shade800,
                       ),
                     ),
                   ],
@@ -1421,7 +1411,7 @@ class _GoalsSection extends StatelessWidget {
                   children: [
                     Icon(Icons.flag_outlined,
                         size: 48,
-                        color: AppTheme.primaryColor.withOpacity(0.6)),
+                        color: AppTheme.primaryColor.withValues(alpha: 0.6)),
                     const SizedBox(height: 12),
                     Text(
                       'No Goals Set',

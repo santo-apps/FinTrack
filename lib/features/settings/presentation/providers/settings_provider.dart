@@ -33,6 +33,7 @@ class SettingsProvider extends ChangeNotifier {
   Map<String, String> _customCurrencySymbols = {};
   List<SubscriptionCategoryModel> _subscriptionCategories =
       SubscriptionCategoryModel.getDefaultCategories();
+  int _dataRefreshVersion = 0;
 
   bool get isDarkMode => _isDarkMode;
   bool get biometricEnabled => _isBiometricEnabled;
@@ -55,6 +56,7 @@ class SettingsProvider extends ChangeNotifier {
       List.unmodifiable(_subscriptionCategories);
   Map<String, String> get customCurrencySymbols =>
       Map.unmodifiable(_customCurrencySymbols);
+  int get dataRefreshVersion => _dataRefreshVersion;
   List<String> get availableCurrencies {
     final currencies = [...AppConstants.supportedCurrencies];
     final customCodes = _customCurrencySymbols.keys.toList();
@@ -319,6 +321,11 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> refreshSettings() async {
     _loadSettings();
+    notifyListeners();
+  }
+
+  void bumpDataRefreshVersion() {
+    _dataRefreshVersion++;
     notifyListeners();
   }
 

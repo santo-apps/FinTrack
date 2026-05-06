@@ -16,10 +16,72 @@ import '../features/investment/data/models/investment_type_model.dart';
 import '../features/goals/data/models/financial_goal_model.dart';
 import '../features/accounts/data/models/account_type_model.dart';
 import '../features/loan/data/models/loan_model.dart';
+import '../features/receivable/data/models/receivable_model.dart';
 
 enum ExportFormat { json, csv }
 
 class DataExchangeService {
+  /// Preflight import validation (read-only): analyze selected JSON against current data.
+  static Future<Map<String, dynamic>> preflightImportFile() async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        dialogTitle: 'Select backup file for integrity preflight',
+      );
+
+      if (result == null || result.files.isEmpty) {
+        return {'success': false, 'message': 'No file selected'};
+      }
+
+      final selectedPath = result.files.first.path;
+      if (selectedPath == null || selectedPath.trim().isEmpty) {
+        return {'success': false, 'message': 'Invalid file path'};
+      }
+      if (!selectedPath.toLowerCase().endsWith('.json')) {
+        return {
+          'success': false,
+          'message': 'Only JSON backup files can be validated',
+        };
+      }
+
+      final file = File(selectedPath);
+      if (!await file.exists()) {
+        return {'success': false, 'message': 'File not found'};
+      }
+
+      final jsonString = await file.readAsString();
+      if (jsonString.isEmpty) {
+        return {'success': false, 'message': 'File is empty'};
+      }
+
+      final data = jsonDecode(jsonString) as Map<String, dynamic>;
+      if (!_validateJsonStructure(data)) {
+        return {'success': false, 'message': 'Invalid backup file format'};
+      }
+
+      final currentSnapshot = getIntegritySnapshot();
+      final fileSnapshot = _snapshotFromJsonData(data);
+
+      // In replace mode, final state should match file snapshot.
+      final replaceDelta = compareSnapshots(fileSnapshot, currentSnapshot);
+
+      return {
+        'success': true,
+        'message': 'Preflight completed',
+        'selectedPath': selectedPath,
+        'currentSnapshot': currentSnapshot,
+        'fileSnapshot': fileSnapshot,
+        'replaceDelta': replaceDelta,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Preflight failed: ${e.toString()}',
+      };
+    }
+  }
+
   /// Export all data to JSON format
   static Future<String> exportToJSON() async {
     try {
@@ -33,6 +95,7 @@ class DataExchangeService {
       final investments = HiveService.getAllInvestments();
       final goals = HiveService.getAllGoals();
       final loans = HiveService.getAllLoans();
+      final receivables = HiveService.getAllReceivables();
       final accountTypes = await HiveService.getAllAccountTypes();
       final investmentTypes = await HiveService.getAllInvestmentTypes();
       final appSettings = HiveService.getAllSettings();
@@ -53,6 +116,7 @@ class DataExchangeService {
         'goals': goals.map((g) => g.toJson()).toList(),
         'accountTypes': accountTypes.map((t) => t.toJson()).toList(),
         'loans': loans.map((l) => l.toJson()).toList(),
+        'receivables': receivables.map((r) => r.toJson()).toList(),
         'appSettings': appSettings,
       };
 
@@ -75,6 +139,7 @@ class DataExchangeService {
       final investments = HiveService.getAllInvestments();
       final goals = HiveService.getAllGoals();
       final loans = HiveService.getAllLoans();
+      final receivables = HiveService.getAllReceivables();
       final accountTypes = await HiveService.getAllAccountTypes();
       final investmentTypes = await HiveService.getAllInvestmentTypes();
       final appSettings = HiveService.getAllSettings();
@@ -178,6 +243,14 @@ class DataExchangeService {
             '"${_escapeCsv(loan.id)}","${_escapeCsv(loan.lender)}","${loan.borrowedAmount}","${loan.interestRate}","${loan.tenureMonths}","${loan.monthlyEmi}","${loan.startDate.toIso8601String()}","${loan.endDate.toIso8601String()}","${loan.emiDate}","${loan.paidAmount}","${loan.createdAt.toIso8601String()}","${_escapeCsv(loan.currency)}","${_escapeCsv(loan.notes ?? '')}","${_escapeCsv(loan.accountId ?? '')}"');
       }
 
+      buffer.writeln('\n=== RECEIVABLES ===');
+      buffer.writeln(
+          'ID,Title,Amount,DueDate,Currency,IsReceived,ReceivedDate,RemindBeforeDays,Notes,CreatedAt,AccountId,IsRecurring,RecurringEndDate,RecurrenceGroupId');
+      for (var receivable in receivables) {
+        buffer.writeln(
+            '"${_escapeCsv(receivable.id)}","${_escapeCsv(receivable.title)}","${receivable.amount}","${receivable.dueDate.toIso8601String()}","${_escapeCsv(receivable.currency)}","${receivable.isReceived}","${receivable.receivedDate?.toIso8601String() ?? ''}","${receivable.remindBeforeDays}","${_escapeCsv(receivable.notes ?? '')}","${receivable.createdAt.toIso8601String()}","${_escapeCsv(receivable.accountId ?? '')}","${receivable.isRecurring}","${receivable.recurringEndDate?.toIso8601String() ?? ''}","${_escapeCsv(receivable.recurrenceGroupId ?? '')}"');
+      }
+
       buffer.writeln('\n=== APP SETTINGS ===');
       buffer.writeln('Key,Value');
       for (final entry in appSettings.entries) {
@@ -260,6 +333,8 @@ class DataExchangeService {
       }
 
       final data = jsonDecode(jsonString) as Map<String, dynamic>;
+      final beforeSnapshot = getIntegritySnapshot();
+      final importSnapshot = _snapshotFromJsonData(data);
 
       // Validate JSON structure
       if (!_validateJsonStructure(data)) {
@@ -272,7 +347,23 @@ class DataExchangeService {
         await _replaceData(data);
       }
 
-      return {'success': true, 'message': 'Data imported successfully'};
+      final afterSnapshot = getIntegritySnapshot();
+      final comparison = mergeData
+          ? {
+              'isMatch': true,
+              'mode': 'merge',
+              'mismatches': <Map<String, dynamic>>[],
+            }
+          : compareSnapshots(importSnapshot, afterSnapshot);
+
+      return {
+        'success': true,
+        'message': 'Data imported successfully',
+        'beforeSnapshot': beforeSnapshot,
+        'importSnapshot': importSnapshot,
+        'afterSnapshot': afterSnapshot,
+        'comparison': comparison,
+      };
     } catch (e) {
       return {'success': false, 'message': 'Import failed: ${e.toString()}'};
     }
@@ -299,6 +390,15 @@ class DataExchangeService {
 
       final accountsData = data['accounts'] ?? data['paymentAccounts'];
       if (accountsData != null) {
+        DateTime? parseDate(dynamic value) {
+          if (value == null) return null;
+          if (value is DateTime) return value;
+          if (value is String && value.isNotEmpty) {
+            return DateTime.tryParse(value);
+          }
+          return null;
+        }
+
         for (var accountData in accountsData) {
           final account = PaymentAccount(
             id: accountData['id'],
@@ -312,20 +412,21 @@ class DataExchangeService {
             icon: accountData['icon'],
             isDefault: accountData['isDefault'] ?? false,
             isActive: accountData['isActive'] ?? true,
-            createdAt: DateTime.parse(accountData['createdAt']),
-            lastUpdated: accountData['lastUpdated'] != null
-                ? DateTime.parse(accountData['lastUpdated'])
-                : null,
+            createdAt: parseDate(accountData['createdAt']) ?? DateTime.now(),
+            lastUpdated: parseDate(accountData['lastUpdated']),
             notes: accountData['notes'],
             creditLimit: accountData['creditLimit'] != null
                 ? (accountData['creditLimit'] as num).toDouble()
                 : null,
-            expiryDate: accountData['expiryDate'] != null
-                ? DateTime.parse(accountData['expiryDate'])
-                : null,
+            expiryDate: parseDate(accountData['expiryDate']),
             cardNetwork: accountData['cardNetwork'],
             linkedAccountId: accountData['linkedAccountId'],
-            billingCycleDay: accountData['billingCycleDay'] as int?,
+            billingCycleDay: accountData['billingCycleDay'] is num
+                ? (accountData['billingCycleDay'] as num).toInt()
+                : int.tryParse(
+                    accountData['billingCycleDay']?.toString() ?? ''),
+            dueDate: parseDate(accountData['dueDate']),
+            statementDate: parseDate(accountData['statementDate']),
           );
           await HiveService.addPaymentAccount(account);
         }
@@ -409,6 +510,14 @@ class DataExchangeService {
         }
       }
 
+      if (data['receivables'] != null) {
+        for (var receivableData in data['receivables']) {
+          final receivable =
+              Receivable.fromJson(Map<String, dynamic>.from(receivableData));
+          await HiveService.addReceivable(receivable);
+        }
+      }
+
       if (data['appSettings'] != null) {
         final appSettings =
             (data['appSettings'] as Map?)?.cast<String, dynamic>() ?? {};
@@ -450,6 +559,7 @@ class DataExchangeService {
           'goals',
           'accountTypes',
           'loans',
+          'receivables',
           'appSettings',
         ].contains(key));
 
@@ -463,5 +573,175 @@ class DataExchangeService {
       return value.replaceAll('"', '""');
     }
     return value;
+  }
+
+  static Map<String, dynamic> getIntegritySnapshot() {
+    final expenses = HiveService.getAllExpenses();
+    final categories = HiveService.getAllCategories();
+    final accounts = HiveService.getAllPaymentAccounts();
+    final budgets = HiveService.getAllBudgets();
+    final subscriptions = HiveService.getAllSubscriptions();
+    final bills = HiveService.getAllBills();
+    final debts = HiveService.getAllDebts();
+    final investments = HiveService.getAllInvestments();
+    final goals = HiveService.getAllGoals();
+    final loans = HiveService.getAllLoans();
+    final receivables = HiveService.getAllReceivables();
+    final appSettings = HiveService.getAllSettings();
+
+    return {
+      'expensesCount': expenses.length,
+      'expensesAmountTotal':
+          expenses.fold<double>(0, (sum, item) => sum + item.amount),
+      'categoriesCount': categories.length,
+      'accountsCount': accounts.length,
+      'accountsBalanceTotal':
+          accounts.fold<double>(0, (sum, item) => sum + item.balance),
+      'budgetsCount': budgets.length,
+      'subscriptionsCount': subscriptions.length,
+      'subscriptionsCostTotal':
+          subscriptions.fold<double>(0, (sum, item) => sum + item.cost),
+      'billsCount': bills.length,
+      'billsAmountTotal':
+          bills.fold<double>(0, (sum, item) => sum + item.amount),
+      'debtsCount': debts.length,
+      'investmentsCount': investments.length,
+      'goalsCount': goals.length,
+      'loansCount': loans.length,
+      'loansBorrowedTotal':
+          loans.fold<double>(0, (sum, item) => sum + item.borrowedAmount),
+      'receivablesCount': receivables.length,
+      'receivablesAmountTotal':
+          receivables.fold<double>(0, (sum, item) => sum + item.amount),
+      'receivablesPendingCount':
+          receivables.where((item) => !item.isReceived).length,
+      'receivablesReceivedCount':
+          receivables.where((item) => item.isReceived).length,
+      'settingsCount': appSettings.length,
+      'currency': appSettings['currency']?.toString(),
+      'bottomNavItems': appSettings['selectedBottomNavItems'] ??
+          appSettings['bottomNavItems'],
+    };
+  }
+
+  static Map<String, dynamic> compareSnapshots(
+    Map<String, dynamic> expected,
+    Map<String, dynamic> actual,
+  ) {
+    const numericKeys = {
+      'expensesCount',
+      'expensesAmountTotal',
+      'categoriesCount',
+      'accountsCount',
+      'accountsBalanceTotal',
+      'budgetsCount',
+      'subscriptionsCount',
+      'subscriptionsCostTotal',
+      'billsCount',
+      'billsAmountTotal',
+      'debtsCount',
+      'investmentsCount',
+      'goalsCount',
+      'loansCount',
+      'loansBorrowedTotal',
+      'receivablesCount',
+      'receivablesAmountTotal',
+      'receivablesPendingCount',
+      'receivablesReceivedCount',
+      'settingsCount',
+    };
+
+    final mismatches = <Map<String, dynamic>>[];
+
+    for (final key in numericKeys) {
+      final expectedValue = (expected[key] as num?)?.toDouble() ?? 0.0;
+      final actualValue = (actual[key] as num?)?.toDouble() ?? 0.0;
+      if ((expectedValue - actualValue).abs() > 0.0001) {
+        mismatches.add({
+          'key': key,
+          'expected': expectedValue,
+          'actual': actualValue,
+        });
+      }
+    }
+
+    if (expected['currency'] != actual['currency']) {
+      mismatches.add({
+        'key': 'currency',
+        'expected': expected['currency'],
+        'actual': actual['currency'],
+      });
+    }
+
+    final expectedNav = jsonEncode(expected['bottomNavItems']);
+    final actualNav = jsonEncode(actual['bottomNavItems']);
+    if (expectedNav != actualNav) {
+      mismatches.add({
+        'key': 'bottomNavItems',
+        'expected': expected['bottomNavItems'],
+        'actual': actual['bottomNavItems'],
+      });
+    }
+
+    return {
+      'isMatch': mismatches.isEmpty,
+      'mismatches': mismatches,
+    };
+  }
+
+  static Map<String, dynamic> _snapshotFromJsonData(Map<String, dynamic> data) {
+    double sumAmounts(List<dynamic> items, String key) {
+      return items.fold<double>(0, (sum, item) {
+        final value = (item as Map)[key];
+        return sum + ((value as num?)?.toDouble() ?? 0.0);
+      });
+    }
+
+    final expenses = (data['expenses'] as List?) ?? const [];
+    final categories = (data['categories'] as List?) ?? const [];
+    final accounts = (data['accounts'] as List?) ??
+        (data['paymentAccounts'] as List?) ??
+        const [];
+    final budgets = (data['budgets'] as List?) ?? const [];
+    final subscriptions = (data['subscriptions'] as List?) ?? const [];
+    final bills = (data['bills'] as List?) ?? const [];
+    final debts = (data['debts'] as List?) ?? const [];
+    final investments = (data['investments'] as List?) ?? const [];
+    final goals = (data['goals'] as List?) ?? const [];
+    final loans = (data['loans'] as List?) ?? const [];
+    final receivables = (data['receivables'] as List?) ?? const [];
+    final appSettings =
+        (data['appSettings'] as Map?)?.cast<String, dynamic>() ?? {};
+
+    final receivablesPendingCount = receivables.where((item) {
+      final map = item as Map;
+      return map['isReceived'] != true;
+    }).length;
+
+    return {
+      'expensesCount': expenses.length,
+      'expensesAmountTotal': sumAmounts(expenses, 'amount'),
+      'categoriesCount': categories.length,
+      'accountsCount': accounts.length,
+      'accountsBalanceTotal': sumAmounts(accounts, 'balance'),
+      'budgetsCount': budgets.length,
+      'subscriptionsCount': subscriptions.length,
+      'subscriptionsCostTotal': sumAmounts(subscriptions, 'cost'),
+      'billsCount': bills.length,
+      'billsAmountTotal': sumAmounts(bills, 'amount'),
+      'debtsCount': debts.length,
+      'investmentsCount': investments.length,
+      'goalsCount': goals.length,
+      'loansCount': loans.length,
+      'loansBorrowedTotal': sumAmounts(loans, 'borrowedAmount'),
+      'receivablesCount': receivables.length,
+      'receivablesAmountTotal': sumAmounts(receivables, 'amount'),
+      'receivablesPendingCount': receivablesPendingCount,
+      'receivablesReceivedCount': receivables.length - receivablesPendingCount,
+      'settingsCount': appSettings.length,
+      'currency': appSettings['currency']?.toString(),
+      'bottomNavItems': appSettings['selectedBottomNavItems'] ??
+          appSettings['bottomNavItems'],
+    };
   }
 }

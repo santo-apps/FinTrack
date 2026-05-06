@@ -219,7 +219,8 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                         ? []
                         : [
                             BoxShadow(
-                              color: AppTheme.primaryColor.withOpacity(0.3),
+                              color:
+                                  AppTheme.primaryColor.withValues(alpha: 0.3),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -290,7 +291,7 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                                   color: Theme.of(context).brightness ==
                                           Brightness.dark
                                       ? Theme.of(context).colorScheme.surface
-                                      : Colors.white.withOpacity(0.2),
+                                      : Colors.white.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -315,7 +316,7 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                                   color: Theme.of(context).brightness ==
                                           Brightness.dark
                                       ? Theme.of(context).colorScheme.surface
-                                      : Colors.white.withOpacity(0.2),
+                                      : Colors.white.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -1263,7 +1264,7 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
           height: 50,
           decoration: BoxDecoration(
             color: isDarkMode
-                ? Colors.white.withOpacity(0.1)
+                ? Colors.white.withValues(alpha: 0.1)
                 : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(10),
           ),
@@ -1289,7 +1290,7 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
         child: Container(
           height: 50,
           decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
+            color: AppTheme.primaryColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
@@ -1316,7 +1317,7 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
           height: 50,
           decoration: BoxDecoration(
             color: isDarkMode
-                ? Colors.white.withOpacity(0.1)
+                ? Colors.white.withValues(alpha: 0.1)
                 : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(10),
           ),
@@ -1344,7 +1345,7 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
           height: 50,
           decoration: BoxDecoration(
             color: isDarkMode
-                ? Colors.white.withOpacity(0.1)
+                ? Colors.white.withValues(alpha: 0.1)
                 : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(10),
           ),
@@ -1542,7 +1543,7 @@ class _TransactionCard extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
@@ -1572,7 +1573,7 @@ class _TransactionCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.2),
+                      color: color.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(

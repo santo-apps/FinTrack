@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:fintrack/database/hive_service.dart';
+import 'package:fintrack/features/accounts/data/models/payment_account_model.dart';
+import 'package:fintrack/features/expense/data/models/expense_model.dart';
 import 'package:fintrack/features/receivable/data/models/receivable_model.dart';
 
 class ReceivableProvider extends ChangeNotifier {
+  static const String _receivableIncomePrefix = 'receivable_income_';
   List<Receivable> _receivables = [];
 
   List<Receivable> get receivables => _receivables;
@@ -86,6 +89,13 @@ class ReceivableProvider extends ChangeNotifier {
   }
 
   Future<void> markAsReceived(Receivable receivable) async {
+    if (receivable.isReceived) {
+      return;
+    }
+
+    await _applyMappedAccountDelta(receivable, moveToReceived: true);
+    await _upsertLinkedIncomeTransaction(receivable);
+
     final updated = receivable.copyWith(
       isReceived: true,
       receivedDate: DateTime.now(),
@@ -94,6 +104,13 @@ class ReceivableProvider extends ChangeNotifier {
   }
 
   Future<void> markAsPending(Receivable receivable) async {
+    if (!receivable.isReceived) {
+      return;
+    }
+
+    await _applyMappedAccountDelta(receivable, moveToReceived: false);
+    await _deleteLinkedIncomeTransaction(receivable.id);
+
     final updated = receivable.copyWith(
       isReceived: false,
       receivedDate: null,
@@ -150,6 +167,58 @@ class ReceivableProvider extends ChangeNotifier {
 
   int getOverallReceivedCount() {
     return _receivables.where((r) => r.isReceived).length;
+  }
+
+  Future<void> _applyMappedAccountDelta(
+    Receivable receivable, {
+    required bool moveToReceived,
+  }) async {
+    final accountId = receivable.accountId?.trim();
+    if (accountId == null || accountId.isEmpty) {
+      return;
+    }
+
+    final accounts = HiveService.getAllPaymentAccounts();
+    PaymentAccount? account;
+    try {
+      account = accounts.firstWhere((a) => a.id == accountId);
+    } catch (_) {
+      return;
+    }
+
+    final isCreditCard = account.accountType.toLowerCase().contains('credit');
+    final receiveDelta = isCreditCard ? -receivable.amount : receivable.amount;
+    final delta = moveToReceived ? receiveDelta : -receiveDelta;
+
+    final updatedAccount = account.copyWith(balance: account.balance + delta);
+    await HiveService.updatePaymentAccount(updatedAccount);
+  }
+
+  Future<void> _upsertLinkedIncomeTransaction(Receivable receivable) async {
+    final accountId = receivable.accountId?.trim();
+    if (accountId == null || accountId.isEmpty) {
+      return;
+    }
+
+    final linkedExpense = Expense(
+      id: '$_receivableIncomePrefix${receivable.id}',
+      title: 'Receivable Received - ${receivable.title}',
+      amount: receivable.amount,
+      category: 'Receivables',
+      paymentMethod: 'Receivable Credit',
+      date: DateTime.now(),
+      notes: 'Received receivable: ${receivable.title}',
+      tags: ['receivable', 'receivable:${receivable.id}'],
+      currency: receivable.currency,
+      accountId: accountId,
+      transactionType: 'income',
+    );
+
+    await HiveService.addExpense(linkedExpense);
+  }
+
+  Future<void> _deleteLinkedIncomeTransaction(String receivableId) async {
+    await HiveService.deleteExpense('$_receivableIncomePrefix$receivableId');
   }
 
   List<Receivable> _buildRecurringSeries(Receivable base) {

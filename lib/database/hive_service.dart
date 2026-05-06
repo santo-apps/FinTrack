@@ -455,6 +455,7 @@ class HiveService {
       _paymentAccountBox.clear(),
       _accountTypeBox.clear(),
       _loanBox.clear(),
+      _receivableBox.clear(),
       _appSettingsBox.clear(),
     ]);
   }
@@ -480,6 +481,7 @@ class HiveService {
           _paymentAccountBox.values.map((a) => a.toJson()).toList(),
       'accountTypes': _accountTypeBox.values.map((t) => t.toJson()).toList(),
       'loans': _loanBox.values.map((l) => l.toJson()).toList(),
+      'receivables': _receivableBox.values.map((r) => r.toJson()).toList(),
       'appSettings': getAllSettings(),
       'exportDate': DateTime.now().toIso8601String(),
     };
@@ -571,11 +573,32 @@ class HiveService {
           (data['paymentAccounts'] as List?)?.cast<Map<String, dynamic>>() ??
               (data['accounts'] as List?)?.cast<Map<String, dynamic>>() ??
               [];
+      final seenAccountIds = <String>{};
+
+      DateTime? parseDate(dynamic value) {
+        if (value == null) return null;
+        if (value is String && value.isNotEmpty) {
+          return DateTime.tryParse(value);
+        }
+        return null;
+      }
+
       for (var accountData in paymentAccounts) {
+        var rawId = accountData['id']?.toString() ?? '';
+        if (rawId.trim().isEmpty) {
+          rawId = 'account_${DateTime.now().microsecondsSinceEpoch}';
+        }
+
+        // Keep references stable: skip duplicate IDs instead of renaming.
+        if (seenAccountIds.contains(rawId)) {
+          continue;
+        }
+        seenAccountIds.add(rawId);
+
         final account = PaymentAccount(
-          id: accountData['id'],
-          name: accountData['name'],
-          accountType: accountData['accountType'],
+          id: rawId,
+          name: accountData['name']?.toString() ?? 'Account',
+          accountType: accountData['accountType']?.toString() ?? 'Cash',
           accountNumber: accountData['accountNumber'],
           bankName: accountData['bankName'],
           balance: (accountData['balance'] as num?)?.toDouble() ?? 0.0,
@@ -584,20 +607,20 @@ class HiveService {
           icon: accountData['icon'],
           isDefault: accountData['isDefault'] ?? false,
           isActive: accountData['isActive'] ?? true,
-          createdAt: DateTime.parse(accountData['createdAt']),
-          lastUpdated: accountData['lastUpdated'] != null
-              ? DateTime.parse(accountData['lastUpdated'])
-              : null,
+          createdAt: parseDate(accountData['createdAt']) ?? DateTime.now(),
+          lastUpdated: parseDate(accountData['lastUpdated']),
           notes: accountData['notes'],
           creditLimit: accountData['creditLimit'] != null
               ? (accountData['creditLimit'] as num).toDouble()
               : null,
-          expiryDate: accountData['expiryDate'] != null
-              ? DateTime.parse(accountData['expiryDate'])
-              : null,
+          expiryDate: parseDate(accountData['expiryDate']),
           cardNetwork: accountData['cardNetwork'],
           linkedAccountId: accountData['linkedAccountId'],
-          billingCycleDay: accountData['billingCycleDay'] as int?,
+          billingCycleDay: accountData['billingCycleDay'] is num
+              ? (accountData['billingCycleDay'] as num).toInt()
+              : int.tryParse(accountData['billingCycleDay']?.toString() ?? ''),
+          dueDate: parseDate(accountData['dueDate']),
+          statementDate: parseDate(accountData['statementDate']),
         );
         await addPaymentAccount(account);
       }
@@ -614,6 +637,13 @@ class HiveService {
       for (var loanData in loans) {
         final loan = Loan.fromJson(loanData);
         await addLoan(loan);
+      }
+
+      final receivables =
+          (data['receivables'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      for (var receivableData in receivables) {
+        final receivable = Receivable.fromJson(receivableData);
+        await addReceivable(receivable);
       }
 
       final appSettings =
