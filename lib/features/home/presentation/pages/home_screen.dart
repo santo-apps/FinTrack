@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fintrack/features/dashboard/presentation/pages/dashboard_screen.dart';
 import 'package:fintrack/features/expense/presentation/pages/expense_list_screen.dart';
 import 'package:fintrack/features/bill/presentation/pages/bill_list_screen.dart';
@@ -13,6 +15,7 @@ import 'package:fintrack/features/settings/presentation/providers/settings_provi
 import 'package:fintrack/features/accounts/presentation/pages/account_list_screen.dart';
 import 'package:fintrack/features/accounts/presentation/pages/account_form_screen.dart';
 import 'package:fintrack/features/loan/presentation/widgets/add_edit_loan_dialog.dart';
+import 'package:fintrack/features/receivable/presentation/pages/receivable_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -75,6 +78,12 @@ class _HomeScreenState extends State<HomeScreen> {
       label: 'Goals',
       icon: Icons.flag_outlined,
       screen: GoalTrackerScreen(showAppBar: false),
+    ),
+    _NavModule(
+      id: 'receivables',
+      label: 'Receivables',
+      icon: Icons.payments_outlined,
+      screen: ReceivableListScreen(showAppBar: false),
     ),
     _NavModule(
       id: 'loans',
@@ -239,6 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
     };
 
     final configuredActions = settingsProvider.quickActionItems
+        .where((id) => id != 'receivables')
         .where((id) => actionMap.containsKey(id))
         .map((id) => actionMap[id]!)
         .toList();
@@ -317,6 +327,9 @@ class _HomeScreenState extends State<HomeScreen> {
             showAppBar: true, showBackButton: true);
       case 'goals':
         return const GoalTrackerScreen(showAppBar: true, showBackButton: true);
+      case 'receivables':
+        return const ReceivableListScreen(
+            showAppBar: true, showBackButton: true);
       case 'expenses':
         return const ExpenseListScreen(showAppBar: true, showBackButton: true);
       case 'accounts':
@@ -358,24 +371,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 top: false,
                 child: bottomModules[_currentIndex].screen,
               ),
-              bottomNavigationBar: BottomNavigationBar(
-                currentIndex: _currentIndex,
-                type: bottomModules.length > 3
-                    ? BottomNavigationBarType.fixed
-                    : BottomNavigationBarType.shifting,
-                backgroundColor: Theme.of(context).colorScheme.surface,
-                elevation: 0,
-                onTap: (index) {
-                  setState(() => _currentIndex = index);
-                },
-                items: bottomModules
-                    .map(
-                      (module) => BottomNavigationBarItem(
-                        icon: Icon(module.icon),
-                        label: module.label,
-                      ),
-                    )
-                    .toList(),
+              bottomNavigationBar: Container(
+                color: Theme.of(context).colorScheme.surface,
+                child: SafeArea(
+                  top: false,
+                  child: BottomNavigationBar(
+                    currentIndex: _currentIndex,
+                    type: bottomModules.length > 3
+                        ? BottomNavigationBarType.fixed
+                        : BottomNavigationBarType.shifting,
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                    elevation: 0,
+                    onTap: (index) {
+                      setState(() => _currentIndex = index);
+                    },
+                    items: bottomModules
+                        .map(
+                          (module) => BottomNavigationBarItem(
+                            icon: Icon(module.icon),
+                            label: module.label,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
               ),
             ),
             if (isHomeModule && _isFabExpanded)
@@ -437,8 +456,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Theme.of(context).primaryColor,
-                      Theme.of(context).primaryColor.withOpacity(0.7),
+                      const Color(0xFFFF0A67),
+                      const Color(0xFFFF4D5A),
+                      const Color(0xFFFF7A59),
                     ],
                   ),
                 ),
@@ -452,18 +472,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 60,
-                      height: 60,
+                      width: 64,
+                      height: 64,
                       decoration: BoxDecoration(
-                        color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.18),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      padding: const EdgeInsets.all(8),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(14),
                         child: Image.asset(
-                          'assets/icon/fintrack_icon.png',
-                          fit: BoxFit.contain,
+                          'assets/icons/fintrack_icon.png',
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
@@ -471,7 +496,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       'FinTrack',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -481,7 +505,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       'Personal Finance Manager',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 13,
                         fontWeight: FontWeight.w400,
                         color: Colors.white.withOpacity(0.9),
@@ -497,7 +520,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Text(
                   'Quick Navigation',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey[600],
@@ -536,7 +558,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Text(
                   'Features',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey[600],
@@ -575,7 +596,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Text(
                   'Application',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey[600],
@@ -601,32 +621,115 @@ class _HomeScreenState extends State<HomeScreen> {
               // ),
 
               // Footer Spacer
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
 
-              // Footer Section
+              // App Version Section
               Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.grey[200]!,
-                  ),
+                  border: Border.all(color: Colors.grey[200]!),
                 ),
                 child: Center(
                   child: Text(
-                    'v1.0.0',
+                    'v1.1.0',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
                       color: Colors.grey[500],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+
+              // Powered By Yaandu Section
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: 96,
+                      width: double.infinity,
+                      child: Image.asset(
+                        'assets/images/yaandu_logo.jpg',
+                        fit: BoxFit.contain,
+                        filterQuality: FilterQuality.high,
+                        errorBuilder: (context, error, stackTrace) => Text(
+                          'YAANDU',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFFFF0A67),
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Powered by Yaandu',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Follow us',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildSocialIcon(
+                          icon: FontAwesomeIcons.youtube,
+                          color: const Color(0xFFFF0000),
+                          url: 'https://www.youtube.com/@Yaandu-Corp',
+                        ),
+                        const SizedBox(width: 10),
+                        _buildSocialIcon(
+                          icon: FontAwesomeIcons.instagram,
+                          color: const Color(0xFFE1306C),
+                          url: 'https://www.instagram.com/yaandu_corp/',
+                        ),
+                        const SizedBox(width: 10),
+                        _buildSocialIcon(
+                          icon: FontAwesomeIcons.facebookF,
+                          color: const Color(0xFF1877F2),
+                          url: 'https://www.facebook.com/YaanduCorporate/',
+                        ),
+                        const SizedBox(width: 10),
+                        _buildSocialIcon(
+                          icon: FontAwesomeIcons.linkedinIn,
+                          color: const Color(0xFF0A66C2),
+                          url: 'https://www.linkedin.com/company/yaandu',
+                        ),
+                        const SizedBox(width: 10),
+                        _buildSocialIcon(
+                          icon: FontAwesomeIcons.whatsapp,
+                          color: const Color(0xFF25D366),
+                          url: 'https://wa.me/919003932755',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
             ],
           ),
         ),
@@ -676,7 +779,6 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Text(
           label,
           style: TextStyle(
-            fontFamily: 'Poppins',
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
             color:
@@ -693,6 +795,32 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: onTap,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSocialIcon({
+    required IconData icon,
+    required Color color,
+    required String url,
+  }) {
+    return GestureDetector(
+      onTap: () async {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      },
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: FaIcon(icon, color: color, size: 18),
         ),
       ),
     );
@@ -762,7 +890,6 @@ class _MiniFloatingActionButton extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
                   ),

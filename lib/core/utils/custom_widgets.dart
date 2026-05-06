@@ -19,11 +19,11 @@ double effectiveBottomInset(BuildContext context, {double minimum = 0}) {
 }
 
 double contentBottomPadding(BuildContext context, {bool hasFab = true}) {
-  // Keep a fixed visual gap above the floating button while honoring whatever
-  // bottom safe inset remains in this scaffold context.
-  // hasFab: true  => inset + 84 (56 FAB + 16 scaffold margin + 12 breathing room)
-  // hasFab: false => inset + 16
-  return effectiveBottomInset(context) + (hasFab ? 84 : 16);
+  // Keep a safer global bottom gap so list/footer content never sits under
+  // floating controls or navigation chrome across modules/devices.
+  // hasFab: true  => inset + 128
+  // hasFab: false => inset + 40
+  return effectiveBottomInset(context) + (hasFab ? 128 : 40);
 }
 
 class AdaptiveBottomFab extends StatelessWidget {
@@ -155,7 +155,6 @@ class EmptyStateWidget extends StatelessWidget {
             Text(
               title,
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppTheme.textColor,
@@ -168,7 +167,6 @@ class EmptyStateWidget extends StatelessWidget {
               child: Text(
                 description,
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   fontSize: 14,
                   color: AppTheme.textSecondaryColor,
                 ),
@@ -261,7 +259,6 @@ class ProgressIndicatorWidget extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: AppTheme.textColor,
@@ -270,7 +267,6 @@ class ProgressIndicatorWidget extends StatelessWidget {
             Text(
               percentage,
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: progressColor,
@@ -331,7 +327,6 @@ class AnimatedStatCard extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   fontSize: 12,
                   color: AppTheme.textSecondaryColor,
                   fontWeight: FontWeight.w500,
@@ -341,7 +336,6 @@ class AnimatedStatCard extends StatelessWidget {
               Text(
                 value,
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textColor,
@@ -374,7 +368,6 @@ class LoadingWidget extends StatelessWidget {
             Text(
               message!,
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 14,
                 color: AppTheme.textSecondaryColor,
               ),

@@ -40,7 +40,6 @@ class _ManageAccountTypeModelsScreenState
                     Text(
                       'No account types yet',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.textColor,
@@ -50,7 +49,6 @@ class _ManageAccountTypeModelsScreenState
                     Text(
                       'Tap + to add your first account type',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 14,
                         color: AppTheme.textSecondaryColor,
                       ),
@@ -96,14 +94,13 @@ class _ManageAccountTypeModelsScreenState
                       child: Center(
                         child: Text(
                           type.icon ?? '💳',
-                          style: TextStyle(fontFamily: 'Poppins', fontSize: 24),
+                          style: TextStyle(fontSize: 24),
                         ),
                       ),
                     ),
                     title: Text(
                       type.name,
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.textColor,
@@ -177,7 +174,7 @@ class _ManageAccountTypeModelsScreenState
           title: Text(
             isEdit ? 'Edit Account Type' : 'Add Account Type',
             style:
-                TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+                TextStyle(fontWeight: FontWeight.w600),
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -195,7 +192,6 @@ class _ManageAccountTypeModelsScreenState
                 Text(
                   'Icon',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -230,7 +226,7 @@ class _ManageAccountTypeModelsScreenState
                         child: Center(
                           child: Text(emoji,
                               style: TextStyle(
-                                  fontFamily: 'Poppins', fontSize: 24)),
+                                  fontSize: 24)),
                         ),
                       ),
                     );
@@ -240,7 +236,6 @@ class _ManageAccountTypeModelsScreenState
                 Text(
                   'Color',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -346,13 +341,11 @@ class _ManageAccountTypeModelsScreenState
       builder: (dialogContext) => AlertDialog(
         title: Text(
           'Delete Account Type',
-          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
         content: Text(
           'Are you sure you want to delete "${type.name}"?',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-          ),
+          style: TextStyle(),
         ),
         actions: [
           TextButton(

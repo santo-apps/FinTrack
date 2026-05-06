@@ -10,12 +10,15 @@ import 'package:fintrack/features/bill/presentation/providers/bill_provider.dart
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
 import 'package:fintrack/features/loan/data/models/loan_model.dart';
 import 'package:fintrack/features/loan/presentation/providers/loan_provider.dart';
+import 'package:fintrack/features/loan/presentation/widgets/add_edit_loan_dialog.dart';
 import 'package:fintrack/features/expense/data/models/expense_model.dart';
 import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
 import 'package:fintrack/features/accounts/data/models/payment_account_model.dart';
 import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
+import 'package:fintrack/features/accounts/presentation/pages/account_form_screen.dart';
 import 'package:fintrack/features/subscription/data/models/subscription_model.dart';
 import 'package:fintrack/features/subscription/presentation/providers/subscription_provider.dart';
+import 'package:fintrack/features/subscription/presentation/pages/subscription_list_screen.dart';
 
 class BillListScreen extends StatefulWidget {
   final bool showAppBar;
@@ -33,6 +36,25 @@ class BillListScreen extends StatefulWidget {
 
 class _BillListScreenState extends State<BillListScreen> {
   late DateTime _selectedMonth;
+  final GlobalKey<ScaffoldMessengerState> _messengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+
+  void _showPaymentSnackBar(
+    String message, {
+    SnackBarAction? action,
+    Color? backgroundColor,
+  }) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message, style: TextStyle()),
+        action: action,
+        duration: const Duration(seconds: 4),
+        backgroundColor: backgroundColor,
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -49,141 +71,144 @@ class _BillListScreenState extends State<BillListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: widget.showAppBar
-            ? CustomAppBar(
-                title: 'Bill Reminders',
-                showBackButton: widget.showBackButton,
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () => _showAddManualBillDialog(context),
-                    tooltip: 'Add Manual Bill',
-                  ),
-                ],
-              )
-            : null,
-        body: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              // Month Selector
-              Container(
-                color: Theme.of(context).colorScheme.surface,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
+    return ScaffoldMessenger(
+      key: _messengerKey,
+      child: DefaultTabController(
+        length: 3,
+        child: Scaffold(
+          appBar: widget.showAppBar
+              ? CustomAppBar(
+                  title: 'Bill Reminders',
+                  showBackButton: widget.showBackButton,
+                  actions: [
                     IconButton(
-                      icon: Icon(
-                        Icons.chevron_left,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                      onPressed: _previousMonth,
-                      tooltip: 'Previous Month',
+                      icon: const Icon(Icons.add),
+                      onPressed: () => _showAddManualBillDialog(context),
+                      tooltip: 'Add Manual Bill',
                     ),
-                    InkWell(
-                      onTap: _showMonthPicker,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                  ],
+                )
+              : null,
+          body: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                // Month Selector
+                Container(
+                  color: Theme.of(context).colorScheme.surface,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          Icons.chevron_left,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                        decoration: BoxDecoration(
-                          border:
-                              Border.all(color: Theme.of(context).dividerColor),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          _formatMonth(_selectedMonth),
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
+                        onPressed: _previousMonth,
+                        tooltip: 'Previous Month',
+                      ),
+                      InkWell(
+                        onTap: _showMonthPicker,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                                color: Theme.of(context).dividerColor),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _formatMonth(_selectedMonth),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.chevron_right,
-                        color: Theme.of(context).colorScheme.onSurface,
+                      IconButton(
+                        icon: Icon(
+                          Icons.chevron_right,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        onPressed: _nextMonth,
+                        tooltip: 'Next Month',
                       ),
-                      onPressed: _nextMonth,
-                      tooltip: 'Next Month',
+                    ],
+                  ),
+                ),
+                Container(
+                  color: Theme.of(context).colorScheme.surface,
+                  child: TabBar(
+                    labelColor: Theme.of(context).colorScheme.onSurface,
+                    unselectedLabelColor:
+                        Theme.of(context).colorScheme.onSurfaceVariant,
+                    indicatorColor: Theme.of(context).colorScheme.primary,
+                    indicatorWeight: 3,
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    labelStyle: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
-                ),
-              ),
-              Container(
-                color: Theme.of(context).colorScheme.surface,
-                child: TabBar(
-                  labelColor: Theme.of(context).colorScheme.onSurface,
-                  unselectedLabelColor:
-                      Theme.of(context).colorScheme.onSurfaceVariant,
-                  indicatorColor: Theme.of(context).colorScheme.primary,
-                  indicatorWeight: 3,
-                  labelPadding: const EdgeInsets.symmetric(horizontal: 12.0),
-                  labelStyle: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
+                    unselectedLabelStyle: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    tabs: const [
+                      Tab(text: 'Pending'),
+                      Tab(text: 'Overdue'),
+                      Tab(text: 'Completed'),
+                    ],
                   ),
-                  unselectedLabelStyle: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  tabs: const [
-                    Tab(text: 'Pending'),
-                    Tab(text: 'Overdue'),
-                    Tab(text: 'Completed'),
-                  ],
                 ),
-              ),
-              Expanded(
-                child: Consumer<BillProvider>(
-                  builder: (context, billProvider, _) {
-                    final overdueReminders = billProvider
-                        .getRemindersForMonth(_selectedMonth)
-                        .where((r) => r.status == BillReminderStatus.overdue)
-                        .toList();
-                    final pendingReminders = billProvider
-                        .getRemindersForMonth(_selectedMonth)
-                        .where((r) => r.status == BillReminderStatus.pending)
-                        .toList();
-                    final completedReminders = billProvider
-                        .getRemindersForMonth(_selectedMonth)
-                        .where((r) => r.status == BillReminderStatus.completed)
-                        .toList();
+                Expanded(
+                  child: Consumer<BillProvider>(
+                    builder: (context, billProvider, _) {
+                      final overdueReminders = billProvider
+                          .getRemindersForMonth(_selectedMonth)
+                          .where((r) => r.status == BillReminderStatus.overdue)
+                          .toList();
+                      final pendingReminders = billProvider
+                          .getRemindersForMonth(_selectedMonth)
+                          .where((r) =>
+                              r.status == BillReminderStatus.pending ||
+                              r.status == BillReminderStatus.partiallyPaid)
+                          .toList();
+                      final completedReminders = billProvider
+                          .getRemindersForMonth(_selectedMonth)
+                          .where(
+                              (r) => r.status == BillReminderStatus.completed)
+                          .toList();
 
-                    return TabBarView(
-                      children: [
-                        _buildRemindersList(
-                            pendingReminders, 'No pending bills'),
-                        _buildRemindersList(
-                            overdueReminders, 'No overdue bills'),
-                        _buildRemindersList(
-                            completedReminders, 'No completed bills'),
-                      ],
-                    );
-                  },
+                      return TabBarView(
+                        children: [
+                          _buildRemindersList(
+                              pendingReminders, 'No pending bills'),
+                          _buildRemindersList(
+                              overdueReminders, 'No overdue bills'),
+                          _buildRemindersList(
+                              completedReminders, 'No completed bills'),
+                        ],
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        floatingActionButton: AdaptiveBottomFab(
-          child: FloatingActionButton(
-            mini: true,
-            heroTag: 'bill_list_fab_add',
-            onPressed: () => _showAddManualBillDialog(context),
-            tooltip: 'Add Manual Bill',
-            child: const Icon(Icons.add),
+          floatingActionButton: AdaptiveBottomFab(
+            child: FloatingActionButton(
+              mini: true,
+              heroTag: 'bill_list_fab_add',
+              onPressed: () => _showAddManualBillDialog(context),
+              tooltip: 'Add Manual Bill',
+              child: const Icon(Icons.add),
+            ),
           ),
         ),
       ),
@@ -205,7 +230,6 @@ class _BillListScreenState extends State<BillListScreen> {
             const SizedBox(height: 16),
             Text(emptyMessage,
                 style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 16,
                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
@@ -269,7 +293,6 @@ class _BillListScreenState extends State<BillListScreen> {
             Text(
               'Summary',
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.onSurface,
@@ -282,7 +305,6 @@ class _BillListScreenState extends State<BillListScreen> {
                 Text(
                   'Total Amount',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurface,
@@ -291,7 +313,6 @@ class _BillListScreenState extends State<BillListScreen> {
                 Text(
                   '$currency ${grandTotal.toStringAsFixed(2)}',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.primaryColor,
@@ -357,7 +378,7 @@ class _BillListScreenState extends State<BillListScreen> {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, size: 18, color: color),
@@ -370,7 +391,6 @@ class _BillListScreenState extends State<BillListScreen> {
                 Text(
                   label,
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: Theme.of(context).colorScheme.onSurface,
@@ -379,7 +399,6 @@ class _BillListScreenState extends State<BillListScreen> {
                 Text(
                   '$count item${count > 1 ? "s" : ""}',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -390,7 +409,6 @@ class _BillListScreenState extends State<BillListScreen> {
           Text(
             '$currency ${amount.toStringAsFixed(2)}',
             style: TextStyle(
-              fontFamily: 'Poppins',
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: color,
@@ -405,6 +423,7 @@ class _BillListScreenState extends State<BillListScreen> {
     final isOverdue = reminder.status == BillReminderStatus.overdue;
     final isPending = reminder.status == BillReminderStatus.pending;
     final isPaid = reminder.status == BillReminderStatus.completed;
+    final isPartiallyPaid = reminder.status == BillReminderStatus.partiallyPaid;
     final daysUntilDue = reminder.getDaysUntilDue();
     final dueStatusText = daysUntilDue == 0
         ? 'Due today'
@@ -430,6 +449,23 @@ class _BillListScreenState extends State<BillListScreen> {
       }());
     }
 
+    // Badge color and text based on status
+    Color badgeBg;
+    Color badgeFg;
+    if (isPaid) {
+      badgeBg = Colors.green.shade100;
+      badgeFg = Colors.green.shade700;
+    } else if (isOverdue) {
+      badgeBg = Colors.red.shade100;
+      badgeFg = Colors.red.shade700;
+    } else if (isPartiallyPaid) {
+      badgeBg = Colors.amber.shade100;
+      badgeFg = Colors.amber.shade800;
+    } else {
+      badgeBg = Colors.orange.shade100;
+      badgeFg = Colors.orange.shade700;
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       color: Theme.of(context).colorScheme.surface,
@@ -450,7 +486,6 @@ class _BillListScreenState extends State<BillListScreen> {
                         Text(
                           reminder.name,
                           style: TextStyle(
-                            fontFamily: 'Poppins',
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: Theme.of(context).colorScheme.onSurface,
@@ -460,7 +495,6 @@ class _BillListScreenState extends State<BillListScreen> {
                         Text(
                           reminder.getTypeLabel(),
                           style: TextStyle(
-                            fontFamily: 'Poppins',
                             fontSize: 12,
                             color:
                                 Theme.of(context).colorScheme.onSurfaceVariant,
@@ -473,24 +507,15 @@ class _BillListScreenState extends State<BillListScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: isPaid
-                          ? Colors.green.shade100
-                          : (isOverdue
-                              ? Colors.red.shade100
-                              : Colors.orange.shade100),
+                      color: badgeBg,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       reminder.getStatusLabel(),
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: isPaid
-                            ? Colors.green.shade700
-                            : (isOverdue
-                                ? Colors.red.shade700
-                                : Colors.orange.shade700),
+                        color: badgeFg,
                       ),
                     ),
                   ),
@@ -503,7 +528,6 @@ class _BillListScreenState extends State<BillListScreen> {
                   Text(
                     '${reminder.currency} ${reminder.amount.toStringAsFixed(2)}',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.primaryColor,
@@ -515,16 +539,14 @@ class _BillListScreenState extends State<BillListScreen> {
                       Text(
                         _formatDate(reminder.dueDate),
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: 14,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      if (isPending && daysUntilDue >= 0)
+                      if ((isPending || isPartiallyPaid) && daysUntilDue >= 0)
                         Text(
                           dueStatusText,
                           style: TextStyle(
-                            fontFamily: 'Poppins',
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                             color: daysUntilDue == 0
@@ -538,16 +560,89 @@ class _BillListScreenState extends State<BillListScreen> {
                   ),
                 ],
               ),
+              // Partial payment progress
+              if (isPartiallyPaid) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.shade200),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Paid: ${reminder.currency} ${reminder.paidAmount.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.amber.shade900,
+                        ),
+                      ),
+                      Text(
+                        'Remaining: ${reminder.currency} ${(reminder.amount - reminder.paidAmount).toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               if (!isPaid) ...[
                 const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _showEditReminderDialog(reminder),
+                        icon: const Icon(Icons.edit, size: 16),
+                        label: const Text(
+                          'Edit',
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.fade,
+                          style: TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _confirmDeleteSourceReminder(reminder),
+                        icon: const Icon(Icons.delete_outline, size: 16),
+                        label: const Text(
+                          'Delete',
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.fade,
+                          style: TextStyle(fontSize: 13),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red.shade700,
+                          side: BorderSide(color: Colors.red.shade300),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () => _handleMarkAsPaid(reminder),
-                    icon: const Icon(Icons.check),
-                    label: const Text(
-                      'Mark as Paid',
-                      style: TextStyle(fontFamily: 'Poppins'),
+                    icon: const Icon(Icons.payment, size: 16),
+                    label: Text(
+                      isPartiallyPaid ? 'Pay Remaining' : 'Pay Now',
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.fade,
+                      style: const TextStyle(),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryColor,
@@ -563,10 +658,17 @@ class _BillListScreenState extends State<BillListScreen> {
                       child: OutlinedButton.icon(
                         onPressed: () =>
                             _editCompletedReminderAccount(reminder),
-                        icon: const Icon(Icons.edit, size: 18),
+                        icon: const Icon(Icons.edit, size: 16),
                         label: const Text(
-                          'Edit Account',
-                          style: TextStyle(fontFamily: 'Poppins'),
+                          'Edit Bank',
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 13.5),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 12),
                         ),
                       ),
                     ),
@@ -578,7 +680,10 @@ class _BillListScreenState extends State<BillListScreen> {
                         icon: const Icon(Icons.delete_outline, size: 18),
                         label: const Text(
                           'Delete',
-                          style: TextStyle(fontFamily: 'Poppins'),
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.fade,
+                          style: TextStyle(),
                         ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red.shade700,
@@ -622,9 +727,7 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Please add an account first',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(),
           ),
           backgroundColor: AppTheme.errorColor,
         ),
@@ -639,9 +742,7 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Account mapping is not stored for this reminder type. Use Delete to move it back to Pending and mark as paid again.',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              ),
+              style: TextStyle(),
             ),
           ),
         );
@@ -667,14 +768,13 @@ class _BillListScreenState extends State<BillListScreen> {
                 Text(
                   'Update Bank Account',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: selectedAccountId,
+                  initialValue: selectedAccountId,
                   items: accounts
                       .map(
                         (account) => DropdownMenuItem<String>(
@@ -683,9 +783,7 @@ class _BillListScreenState extends State<BillListScreen> {
                             width: 250,
                             child: Text(
                               '${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                              ),
+                              style: TextStyle(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -705,7 +803,7 @@ class _BillListScreenState extends State<BillListScreen> {
                   ),
                   hint: Text(
                     'Select account',
-                    style: TextStyle(fontFamily: 'Poppins', fontSize: 13),
+                    style: TextStyle(fontSize: 13),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -751,9 +849,7 @@ class _BillListScreenState extends State<BillListScreen> {
                               SnackBar(
                                 content: Text(
                                   'Bank account updated',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                  ),
+                                  style: TextStyle(),
                                 ),
                               ),
                             );
@@ -766,7 +862,6 @@ class _BillListScreenState extends State<BillListScreen> {
                   child: Text(
                     'Save Changes',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
@@ -788,22 +883,16 @@ class _BillListScreenState extends State<BillListScreen> {
           builder: (context) => AlertDialog(
             title: Text(
               'Delete Completed Entry?',
-              style:
-                  TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
             content: Text(
               'This will move the entry back to Pending to avoid accidental updates.',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              ),
+              style: TextStyle(),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: Text('Cancel',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                    )),
+                child: Text('Cancel', style: TextStyle()),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
@@ -813,7 +902,6 @@ class _BillListScreenState extends State<BillListScreen> {
                 child: Text(
                   'Delete',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                   ),
@@ -833,6 +921,8 @@ class _BillListScreenState extends State<BillListScreen> {
     final billProvider = context.read<BillProvider>();
     final loanProvider = context.read<LoanProvider>();
     final subscriptionProvider = context.read<SubscriptionProvider>();
+    final expenseProvider = context.read<ExpenseProvider>();
+    final paymentAccountProvider = context.read<PaymentAccountProvider>();
     final messenger = ScaffoldMessenger.of(context);
 
     try {
@@ -840,38 +930,87 @@ class _BillListScreenState extends State<BillListScreen> {
         case BillReminderType.bill:
           final bills = HiveService.getAllBills();
           final bill = bills.firstWhere((b) => b.id == reminder.sourceId);
-          final updatedBill = bill.copyWith(isPaid: false, paidDate: null);
+          final reversedAmount = await _reverseRecordedPayments(
+            candidates: HiveService.getAllExpenses().where((expense) {
+              final type = expense.transactionType ?? 'expense';
+              final inMonth = expense.date.year == reminder.dueDate.year &&
+                  expense.date.month == reminder.dueDate.month;
+              return type == 'payment' &&
+                  expense.title.contains('Bill Payment - ${bill.name}') &&
+                  inMonth;
+            }).toList(),
+            amountToReverse:
+                reminder.paidAmount > 0 ? reminder.paidAmount : bill.paidAmount,
+            expenseProvider: expenseProvider,
+            paymentAccountProvider: paymentAccountProvider,
+          );
+
+          final updatedBill = bill.copyWith(
+            isPaid: false,
+            paidDate: null,
+            paidAmount: (bill.paidAmount - reversedAmount)
+                .clamp(0.0, double.infinity)
+                .toDouble(),
+          );
           await billProvider.updateBill(updatedBill);
           break;
         case BillReminderType.loan:
           final loans = HiveService.getAllLoans();
           final loan = loans.firstWhere((l) => l.id == reminder.sourceId);
+
+          final reversedAmount = await _reverseRecordedPayments(
+            candidates: HiveService.getAllExpenses().where((expense) {
+              final type = expense.transactionType ?? 'expense';
+              final inMonth = expense.date.year == reminder.dueDate.year &&
+                  expense.date.month == reminder.dueDate.month;
+              return (type == 'payment' || type == 'transfer') &&
+                  expense.title.contains('Loan EMI Payment - ${loan.lender}') &&
+                  inMonth;
+            }).toList(),
+            amountToReverse:
+                reminder.paidAmount > 0 ? reminder.paidAmount : loan.monthlyEmi,
+            expenseProvider: expenseProvider,
+            paymentAccountProvider: paymentAccountProvider,
+          );
+
           final updatedLoan = loan.copyWith(
-            paidAmount: (loan.paidAmount - loan.monthlyEmi).clamp(
+            paidAmount: (loan.paidAmount - reversedAmount).clamp(
               0.0,
               loan.borrowedAmount,
             ),
             lastPaymentDate: null,
           );
-          await Provider.of<LoanProvider>(context, listen: false)
-              .updateLoan(updatedLoan);
-          // Refresh loan provider to ensure UI updates
           await loanProvider.updateLoan(updatedLoan);
           await loanProvider.refreshData();
           break;
         case BillReminderType.creditCard:
-          await _promptCreditCardPendingAmount(reminder);
-          return;
+          await _reopenCreditCardReminder(reminder);
+          break;
         case BillReminderType.subscription:
           final subscriptions = HiveService.getAllSubscriptions();
           final subscription = subscriptions.firstWhere(
             (s) => s.id == reminder.sourceId,
           );
-          final previousRenewalDate = _subtractBillingCycle(
-              subscription.renewalDate, subscription.billingCycle);
-          final updatedSubscription =
-              subscription.copyWith(renewalDate: previousRenewalDate);
-          await subscriptionProvider.updateSubscription(updatedSubscription);
+
+          await _reverseRecordedPayments(
+            candidates: HiveService.getAllExpenses().where((expense) {
+              final type = expense.transactionType ?? 'expense';
+              final inMonth = expense.date.year == reminder.dueDate.year &&
+                  expense.date.month == reminder.dueDate.month;
+              return (type == 'payment' ||
+                      type == 'transfer' ||
+                      type == 'expense') &&
+                  expense.title.contains(
+                      'Subscription Payment - ${subscription.name}') &&
+                  inMonth;
+            }).toList(),
+            amountToReverse: reminder.paidAmount > 0
+                ? reminder.paidAmount
+                : subscription.cost,
+            expenseProvider: expenseProvider,
+            paymentAccountProvider: paymentAccountProvider,
+          );
+
           // Refresh subscription provider to ensure UI updates
           await subscriptionProvider.refreshData();
           break;
@@ -889,9 +1028,7 @@ class _BillListScreenState extends State<BillListScreen> {
           SnackBar(
             content: Text(
               'Entry moved to pending',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              ),
+              style: TextStyle(),
             ),
           ),
         );
@@ -902,9 +1039,7 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Unable to update entry: $e',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(),
           ),
           backgroundColor: AppTheme.errorColor,
         ),
@@ -912,127 +1047,132 @@ class _BillListScreenState extends State<BillListScreen> {
     }
   }
 
-  Future<void> _promptCreditCardPendingAmount(BillReminder reminder) async {
-    final controller = TextEditingController();
+  Future<double> _reverseRecordedPayments({
+    required List<Expense> candidates,
+    required double amountToReverse,
+    required ExpenseProvider expenseProvider,
+    required PaymentAccountProvider paymentAccountProvider,
+  }) async {
+    if (amountToReverse <= 0) {
+      return 0.0;
+    }
 
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Move Credit Card to Pending',
-          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Enter the outstanding amount to reopen this credit card bill.',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: 'Outstanding amount',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                )),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final paymentAccountProvider =
-                  context.read<PaymentAccountProvider>();
-              final billProvider = context.read<BillProvider>();
-              final messenger = ScaffoldMessenger.of(context);
+    final sortedCandidates = [...candidates]
+      ..sort((a, b) => b.date.compareTo(a.date));
 
-              final entered = double.tryParse(controller.text.trim());
-              if (entered == null || entered <= 0) {
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Please enter a valid amount',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                      ),
-                    ),
-                    backgroundColor: AppTheme.errorColor,
-                  ),
-                );
-                return;
-              }
+    var remaining = amountToReverse;
+    var reversedTotal = 0.0;
+    final sourceAccountRefunds = <String, double>{};
 
-              final cards = HiveService.getAllPaymentAccounts();
-              final card = cards.firstWhere((a) => a.id == reminder.sourceId);
-              final updatedCard = card.copyWith(balance: entered);
+    for (final payment in sortedCandidates) {
+      if (remaining <= 0) break;
 
-              await paymentAccountProvider.updateAccount(updatedCard);
-              // Refresh payment account provider to ensure UI updates
-              paymentAccountProvider.refreshData();
-              await billProvider.refreshData();
+      final reversalAmount =
+          payment.amount <= remaining ? payment.amount : remaining;
 
-              if (!mounted) return;
-              if (!context.mounted) return;
-              {
-                Navigator.pop(context);
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Entry moved to pending',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                      ),
-                    ),
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-            ),
-            child: Text(
-              'Save',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+      if (payment.amount <= remaining + 0.0001) {
+        await expenseProvider.deleteExpense(payment.id);
+      } else {
+        await expenseProvider.updateExpense(
+          payment.copyWith(amount: payment.amount - reversalAmount),
+        );
+      }
+
+      if (payment.accountId != null && payment.accountId!.isNotEmpty) {
+        sourceAccountRefunds[payment.accountId!] =
+            (sourceAccountRefunds[payment.accountId!] ?? 0) + reversalAmount;
+      }
+
+      reversedTotal += reversalAmount;
+      remaining -= reversalAmount;
+    }
+
+    for (final entry in sourceAccountRefunds.entries) {
+      final sourceAccount = HiveService.getAllPaymentAccounts().firstWhere(
+        (account) => account.id == entry.key,
+        orElse: () => throw Exception('Source payment account not found'),
+      );
+
+      await paymentAccountProvider.updateAccount(
+        sourceAccount.copyWith(balance: sourceAccount.balance + entry.value),
+      );
+    }
+
+    return reversedTotal;
   }
 
-  DateTime _subtractBillingCycle(DateTime date, String cycle) {
-    switch (cycle.toLowerCase()) {
-      case 'weekly':
-        return date.subtract(const Duration(days: 7));
-      case 'monthly':
-        return DateTime(date.year, date.month - 1, date.day);
-      case 'quarterly':
-        return DateTime(date.year, date.month - 3, date.day);
-      case 'yearly':
-      case 'annual':
-        return DateTime(date.year - 1, date.month, date.day);
-      default:
-        return DateTime(date.year, date.month - 1, date.day);
+  Future<void> _reopenCreditCardReminder(BillReminder reminder) async {
+    final paymentAccountProvider = context.read<PaymentAccountProvider>();
+    final expenseProvider = context.read<ExpenseProvider>();
+    final billProvider = context.read<BillProvider>();
+
+    final creditCards = HiveService.getAllPaymentAccounts();
+    final expenses = HiveService.getAllExpenses();
+    final creditCard = creditCards.firstWhere((a) => a.id == reminder.sourceId,
+        orElse: () => throw Exception('Credit card account not found'));
+
+    final monthStart =
+        DateTime(reminder.dueDate.year, reminder.dueDate.month, 1);
+    final monthEnd = DateTime(
+        reminder.dueDate.year, reminder.dueDate.month + 1, 0, 23, 59, 59, 999);
+
+    final paymentCandidates = expenses.where((expense) {
+      final type = expense.transactionType ?? 'expense';
+      final isPaymentLike = type == 'transfer' || type == 'payment';
+      final matchesCard = expense.destinationAccountId == creditCard.id ||
+          expense.title
+              .contains('Credit Card Payment - ${reminder.accountName}');
+      final inMonth =
+          !expense.date.isBefore(monthStart) && !expense.date.isAfter(monthEnd);
+      return isPaymentLike && matchesCard && inMonth;
+    }).toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    var amountToReopen =
+        (reminder.paidAmount > 0 ? reminder.paidAmount : reminder.amount)
+            .clamp(0.0, double.infinity)
+            .toDouble();
+
+    final accountRecredits = <String, double>{};
+    var cardBalanceDelta = 0.0;
+
+    for (final payment in paymentCandidates) {
+      if (amountToReopen <= 0) break;
+
+      final removableAmount =
+          payment.amount <= amountToReopen ? payment.amount : amountToReopen;
+
+      if (payment.amount <= amountToReopen + 0.0001) {
+        await expenseProvider.deleteExpense(payment.id);
+      } else {
+        await expenseProvider.updateExpense(
+          payment.copyWith(amount: payment.amount - removableAmount),
+        );
+      }
+
+      if (payment.accountId != null && payment.accountId!.isNotEmpty) {
+        accountRecredits[payment.accountId!] =
+            (accountRecredits[payment.accountId!] ?? 0) + removableAmount;
+      }
+
+      cardBalanceDelta += removableAmount;
+      amountToReopen -= removableAmount;
     }
+
+    for (final entry in accountRecredits.entries) {
+      final account = HiveService.getAllPaymentAccounts().firstWhere(
+        (a) => a.id == entry.key,
+        orElse: () => throw Exception('Source payment account not found'),
+      );
+      await paymentAccountProvider.updateAccount(
+          account.copyWith(balance: account.balance + entry.value));
+    }
+
+    await paymentAccountProvider.updateAccount(
+      creditCard.copyWith(balance: creditCard.balance + cardBalanceDelta),
+    );
+
+    await billProvider.refreshData();
   }
 
   void _markBillPaid(BillReminder reminder) {
@@ -1043,9 +1183,7 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Please add an account first',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(),
           ),
           backgroundColor: AppTheme.errorColor,
         ),
@@ -1053,10 +1191,16 @@ class _BillListScreenState extends State<BillListScreen> {
       return;
     }
 
+    final bills = HiveService.getAllBills();
+    final bill = bills.firstWhere((b) => b.id == reminder.sourceId);
+    final remainingAmount = bill.remainingAmount();
+
     final accountTypes =
         <String>{...accounts.map((a) => a.accountType)}.toList()..sort();
     String? selectedType = accountTypes.isNotEmpty ? accountTypes.first : null;
     String? selectedAccountId;
+    final amountController =
+        TextEditingController(text: remainingAmount.toStringAsFixed(2));
 
     showModalBottomSheet(
       context: context,
@@ -1088,9 +1232,8 @@ class _BillListScreenState extends State<BillListScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Mark Bill as Paid',
+                        'Pay Bill',
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1104,24 +1247,48 @@ class _BillListScreenState extends State<BillListScreen> {
                     ],
                   ),
                   const Divider(height: 24),
+                  // Payment amount field
+                  Text(
+                    'Payment Amount:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: amountController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      hintText: 'Enter amount',
+                      helperText:
+                          'Total due: ${reminder.currency} ${reminder.amount.toStringAsFixed(2)}'
+                          '${bill.paidAmount > 0 ? ' (already paid: ${reminder.currency} ${bill.paidAmount.toStringAsFixed(2)})' : ''}',
+                      helperStyle:
+                          TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                    ),
+                    style: const TextStyle(),
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     'Select Account Type:',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: selectedType,
+                    initialValue: selectedType,
                     items: accountTypes
                         .map((type) => DropdownMenuItem(
                               value: type,
-                              child: Text(type,
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                  )),
+                              child: Text(type, style: TextStyle()),
                             ))
                         .toList(),
                     onChanged: (value) {
@@ -1141,7 +1308,6 @@ class _BillListScreenState extends State<BillListScreen> {
                   Text(
                     'Select Account:',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -1157,23 +1323,18 @@ class _BillListScreenState extends State<BillListScreen> {
                       ),
                       child: Text(
                         'No accounts found',
-                        style: TextStyle(
-                            fontFamily: 'Poppins',
-                            color: Colors.grey,
-                            fontSize: 13),
+                        style: TextStyle(color: Colors.grey, fontSize: 13),
                       ),
                     )
                   else
                     DropdownButtonFormField<String>(
-                      value: selectedAccountId,
+                      initialValue: selectedAccountId,
                       items: filteredByType
                           .map((account) => DropdownMenuItem<String>(
                                 value: account.id,
                                 child: Text(
                                   '${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                  ),
+                                  style: TextStyle(),
                                 ),
                               ))
                           .toList(),
@@ -1189,8 +1350,7 @@ class _BillListScreenState extends State<BillListScreen> {
                             horizontal: 12, vertical: 8),
                       ),
                       hint: Text('Choose account',
-                          style:
-                              TextStyle(fontFamily: 'Poppins', fontSize: 13)),
+                          style: TextStyle(fontSize: 13)),
                     ),
                   const SizedBox(height: 24),
                   Row(
@@ -1201,10 +1361,7 @@ class _BillListScreenState extends State<BillListScreen> {
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: Text('Cancel',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                              )),
+                          child: Text('Cancel', style: TextStyle()),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1214,11 +1371,37 @@ class _BillListScreenState extends State<BillListScreen> {
                           onPressed: selectedAccountId == null
                               ? null
                               : () {
+                                  final enteredAmount = double.tryParse(
+                                      amountController.text.trim());
+                                  if (enteredAmount == null ||
+                                      enteredAmount <= 0) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'Please enter a valid amount',
+                                            style: TextStyle()),
+                                        backgroundColor: AppTheme.errorColor,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  if (enteredAmount > remainingAmount) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Payment cannot exceed remaining due (${reminder.currency} ${remainingAmount.toStringAsFixed(2)})',
+                                          style: TextStyle(),
+                                        ),
+                                        backgroundColor: AppTheme.errorColor,
+                                      ),
+                                    );
+                                    return;
+                                  }
                                   Navigator.pop(context);
                                   final selectedAccount = accounts.firstWhere(
                                       (a) => a.id == selectedAccountId);
                                   _processBillPayment(
-                                      reminder, selectedAccount);
+                                      reminder, selectedAccount, enteredAmount);
                                 },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryColor,
@@ -1228,7 +1411,6 @@ class _BillListScreenState extends State<BillListScreen> {
                           child: Text(
                             'Confirm Payment',
                             style: TextStyle(
-                              fontFamily: 'Poppins',
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1250,6 +1432,7 @@ class _BillListScreenState extends State<BillListScreen> {
   Future<void> _processBillPayment(
     BillReminder reminder,
     PaymentAccount selectedAccount,
+    double paymentAmount,
   ) async {
     final billProvider = context.read<BillProvider>();
     final expenseProvider = context.read<ExpenseProvider>();
@@ -1260,12 +1443,15 @@ class _BillListScreenState extends State<BillListScreen> {
       final bills = HiveService.getAllBills();
       final bill = bills.firstWhere((b) => b.id == reminder.sourceId);
 
+      final newPaidAmount = bill.paidAmount + paymentAmount;
+      final isFullyPaid = newPaidAmount >= bill.amount;
+
       final expenseId = const Uuid().v4();
       final expense = Expense(
         id: expenseId,
         title: 'Bill Payment - ${bill.name}',
         category: 'Bills & Utilities',
-        amount: bill.amount,
+        amount: paymentAmount,
         date: DateTime.now(),
         currency: bill.currency,
         paymentMethod: 'Bank Transfer',
@@ -1275,8 +1461,9 @@ class _BillListScreenState extends State<BillListScreen> {
       );
 
       final updatedBill = bill.copyWith(
-        isPaid: true,
-        paidDate: DateTime.now(),
+        isPaid: isFullyPaid,
+        paidDate: isFullyPaid ? DateTime.now() : null,
+        paidAmount: newPaidAmount,
       );
 
       // Check if payment account is a credit card
@@ -1285,8 +1472,9 @@ class _BillListScreenState extends State<BillListScreen> {
       final updatedAccount = selectedAccount.copyWith(
         balance: isCreditCard
             ? selectedAccount.balance +
-                bill.amount // Credit card: increase debt
-            : selectedAccount.balance - bill.amount, // Other: decrease balance
+                paymentAmount // Credit card: increase debt
+            : selectedAccount.balance -
+                paymentAmount, // Other: decrease balance
       );
 
       await billProvider.updateBill(updatedBill);
@@ -1295,21 +1483,15 @@ class _BillListScreenState extends State<BillListScreen> {
       await billProvider.refreshData();
 
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'Bill marked as paid',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
-          ),
-          action: SnackBarAction(
-            label: 'Undo',
-            onPressed: () => _reverseBillPayment(
-              bill,
-              selectedAccount,
-              expenseId,
-            ),
+      _showPaymentSnackBar(
+        isFullyPaid ? 'Bill marked as paid' : 'Partial payment recorded',
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => _reverseBillPayment(
+            bill,
+            selectedAccount,
+            expenseId,
+            paymentAmount,
           ),
         ),
       );
@@ -1317,10 +1499,7 @@ class _BillListScreenState extends State<BillListScreen> {
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Error: $e',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              )),
+          content: Text('Error: $e', style: TextStyle()),
           backgroundColor: AppTheme.errorColor,
         ),
       );
@@ -1331,6 +1510,7 @@ class _BillListScreenState extends State<BillListScreen> {
     Bill bill,
     PaymentAccount paymentAccount,
     String expenseId,
+    double paymentAmount,
   ) async {
     final expenseProvider = context.read<ExpenseProvider>();
     final billProvider = context.read<BillProvider>();
@@ -1338,9 +1518,12 @@ class _BillListScreenState extends State<BillListScreen> {
     final messenger = ScaffoldMessenger.of(context);
 
     try {
+      final revertedPaidAmount =
+          (bill.paidAmount - paymentAmount).clamp(0.0, double.infinity);
       final revertedBill = bill.copyWith(
         isPaid: false,
         paidDate: null,
+        paidAmount: revertedPaidAmount,
       );
 
       // Check if payment account is a credit card
@@ -1348,8 +1531,9 @@ class _BillListScreenState extends State<BillListScreen> {
           paymentAccount.accountType.toLowerCase().contains('credit');
       final restoredAccount = paymentAccount.copyWith(
         balance: isCreditCard
-            ? paymentAccount.balance - bill.amount // Credit card: decrease debt
-            : paymentAccount.balance + bill.amount, // Other: restore balance
+            ? paymentAccount.balance -
+                paymentAmount // Credit card: decrease debt
+            : paymentAccount.balance + paymentAmount, // Other: restore balance
       );
 
       await expenseProvider.deleteExpense(expenseId);
@@ -1361,9 +1545,7 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Bill payment reverted',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(),
           ),
         ),
       );
@@ -1373,9 +1555,7 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Error reverting payment: $e',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(),
           ),
           backgroundColor: AppTheme.errorColor,
         ),
@@ -1391,9 +1571,7 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Please add an account first',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(),
           ),
           backgroundColor: AppTheme.errorColor,
         ),
@@ -1405,6 +1583,13 @@ class _BillListScreenState extends State<BillListScreen> {
         <String>{...accounts.map((a) => a.accountType)}.toList()..sort();
     String? selectedType = accountTypes.isNotEmpty ? accountTypes.first : null;
     String? selectedAccountId;
+    final remainingAmount = (reminder.amount - reminder.paidAmount)
+        .clamp(0.0, reminder.amount)
+        .toDouble();
+    final payableAmount =
+        remainingAmount > 0 ? remainingAmount : reminder.amount;
+    final amountController =
+        TextEditingController(text: payableAmount.toStringAsFixed(2));
 
     showModalBottomSheet(
       context: context,
@@ -1438,7 +1623,6 @@ class _BillListScreenState extends State<BillListScreen> {
                       Text(
                         'Record Loan EMI Payment',
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1452,24 +1636,47 @@ class _BillListScreenState extends State<BillListScreen> {
                     ],
                   ),
                   const Divider(height: 24),
+                  // Payment amount field
+                  Text(
+                    'Payment Amount:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: amountController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      hintText: 'Enter amount',
+                      helperText:
+                          'Remaining due: ${reminder.currency} ${payableAmount.toStringAsFixed(2)}',
+                      helperStyle:
+                          TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                    ),
+                    style: const TextStyle(),
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     'Select Account Type:',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: selectedType,
+                    initialValue: selectedType,
                     items: accountTypes
                         .map((type) => DropdownMenuItem(
                               value: type,
-                              child: Text(type,
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                  )),
+                              child: Text(type, style: TextStyle()),
                             ))
                         .toList(),
                     onChanged: (value) {
@@ -1489,7 +1696,6 @@ class _BillListScreenState extends State<BillListScreen> {
                   Text(
                     'Select Account:',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -1505,23 +1711,18 @@ class _BillListScreenState extends State<BillListScreen> {
                       ),
                       child: Text(
                         'No accounts found',
-                        style: TextStyle(
-                            fontFamily: 'Poppins',
-                            color: Colors.grey,
-                            fontSize: 13),
+                        style: TextStyle(color: Colors.grey, fontSize: 13),
                       ),
                     )
                   else
                     DropdownButtonFormField<String>(
-                      value: selectedAccountId,
+                      initialValue: selectedAccountId,
                       items: filteredByType
                           .map((account) => DropdownMenuItem<String>(
                                 value: account.id,
                                 child: Text(
                                   '${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                  ),
+                                  style: TextStyle(),
                                 ),
                               ))
                           .toList(),
@@ -1537,8 +1738,7 @@ class _BillListScreenState extends State<BillListScreen> {
                             horizontal: 12, vertical: 8),
                       ),
                       hint: Text('Choose account',
-                          style:
-                              TextStyle(fontFamily: 'Poppins', fontSize: 13)),
+                          style: TextStyle(fontSize: 13)),
                     ),
                   const SizedBox(height: 24),
                   Row(
@@ -1549,10 +1749,7 @@ class _BillListScreenState extends State<BillListScreen> {
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: Text('Cancel',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                              )),
+                          child: Text('Cancel', style: TextStyle()),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1562,11 +1759,37 @@ class _BillListScreenState extends State<BillListScreen> {
                           onPressed: selectedAccountId == null
                               ? null
                               : () {
+                                  final enteredAmount = double.tryParse(
+                                      amountController.text.trim());
+                                  if (enteredAmount == null ||
+                                      enteredAmount <= 0) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'Please enter a valid amount',
+                                            style: TextStyle()),
+                                        backgroundColor: AppTheme.errorColor,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  if (enteredAmount > payableAmount) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Payment cannot exceed remaining due (${reminder.currency} ${payableAmount.toStringAsFixed(2)})',
+                                          style: TextStyle(),
+                                        ),
+                                        backgroundColor: AppTheme.errorColor,
+                                      ),
+                                    );
+                                    return;
+                                  }
                                   Navigator.pop(context);
                                   final selectedAccount = accounts.firstWhere(
                                       (a) => a.id == selectedAccountId);
                                   _processLoanPayment(
-                                      reminder, selectedAccount);
+                                      reminder, selectedAccount, enteredAmount);
                                 },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryColor,
@@ -1576,7 +1799,6 @@ class _BillListScreenState extends State<BillListScreen> {
                           child: Text(
                             'Confirm Payment',
                             style: TextStyle(
-                              fontFamily: 'Poppins',
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1598,6 +1820,7 @@ class _BillListScreenState extends State<BillListScreen> {
   Future<void> _processLoanPayment(
     BillReminder reminder,
     PaymentAccount paymentAccount,
+    double paymentAmount,
   ) async {
     final loanProvider = context.read<LoanProvider>();
     final expenseProvider = context.read<ExpenseProvider>();
@@ -1614,7 +1837,7 @@ class _BillListScreenState extends State<BillListScreen> {
         id: expenseId,
         title: 'Loan EMI Payment - ${loan.lender}',
         category: 'Loan Repayment',
-        amount: loan.monthlyEmi,
+        amount: paymentAmount,
         date: DateTime.now(),
         currency: loan.currency,
         paymentMethod: 'Bank Transfer',
@@ -1629,32 +1852,27 @@ class _BillListScreenState extends State<BillListScreen> {
       final updatedPaymentAccount = paymentAccount.copyWith(
         balance: isCreditCard
             ? paymentAccount.balance +
-                loan.monthlyEmi // Credit card: increase debt
-            : paymentAccount.balance -
-                loan.monthlyEmi, // Other: decrease balance
+                paymentAmount // Credit card: increase debt
+            : paymentAccount.balance - paymentAmount, // Other: decrease balance
       );
 
-      await loanProvider.makePayment(loan.id, loan.monthlyEmi);
+      await loanProvider.makePayment(loan.id, paymentAmount);
       await expenseProvider.addExpense(expense);
       await paymentAccountProvider.updateAccount(updatedPaymentAccount);
 
       await billProvider.refreshData();
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'Loan EMI payment recorded',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
-          ),
-          action: SnackBarAction(
-            label: 'Undo',
-            onPressed: () => _reverseLoanPayment(
-              loan,
-              paymentAccount,
-              expenseId,
-            ),
+      _showPaymentSnackBar(
+        paymentAmount >= loan.monthlyEmi
+            ? 'Loan EMI payment recorded'
+            : 'Partial loan payment recorded',
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => _reverseLoanPayment(
+            loan,
+            paymentAccount,
+            expenseId,
+            paymentAmount,
           ),
         ),
       );
@@ -1662,10 +1880,7 @@ class _BillListScreenState extends State<BillListScreen> {
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Error: $e',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              )),
+          content: Text('Error: $e', style: TextStyle()),
           backgroundColor: AppTheme.errorColor,
         ),
       );
@@ -1676,6 +1891,7 @@ class _BillListScreenState extends State<BillListScreen> {
     Loan loan,
     PaymentAccount paymentAccount,
     String expenseId,
+    double paymentAmount,
   ) async {
     final expenseProvider = context.read<ExpenseProvider>();
     final loanProvider = context.read<LoanProvider>();
@@ -1690,13 +1906,13 @@ class _BillListScreenState extends State<BillListScreen> {
       final restoredPaymentAccount = paymentAccount.copyWith(
         balance: isCreditCard
             ? paymentAccount.balance -
-                loan.monthlyEmi // Credit card: decrease debt
-            : paymentAccount.balance +
-                loan.monthlyEmi, // Other: restore balance
+                paymentAmount // Credit card: decrease debt
+            : paymentAccount.balance + paymentAmount, // Other: restore balance
       );
 
       final updatedLoan = loan.copyWith(
-        paidAmount: loan.paidAmount - loan.monthlyEmi,
+        paidAmount:
+            (loan.paidAmount - paymentAmount).clamp(0.0, double.infinity),
         lastPaymentDate: null,
       );
 
@@ -1710,9 +1926,7 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Loan payment reversed',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(),
           ),
         ),
       );
@@ -1722,9 +1936,7 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Error reversing payment: $e',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(),
           ),
           backgroundColor: AppTheme.errorColor,
         ),
@@ -1740,9 +1952,7 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Please add an account first',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(),
           ),
           backgroundColor: AppTheme.errorColor,
         ),
@@ -1754,6 +1964,13 @@ class _BillListScreenState extends State<BillListScreen> {
         <String>{...accounts.map((a) => a.accountType)}.toList()..sort();
     String? selectedType = accountTypes.isNotEmpty ? accountTypes.first : null;
     String? selectedAccountId;
+    final remainingAmount = (reminder.amount - reminder.paidAmount)
+        .clamp(0.0, reminder.amount)
+        .toDouble();
+    final payableAmount =
+        remainingAmount > 0 ? remainingAmount : reminder.amount;
+    final amountController =
+        TextEditingController(text: payableAmount.toStringAsFixed(2));
 
     showModalBottomSheet(
       context: context,
@@ -1787,7 +2004,6 @@ class _BillListScreenState extends State<BillListScreen> {
                       Text(
                         'Pay Credit Card Bill',
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1810,7 +2026,6 @@ class _BillListScreenState extends State<BillListScreen> {
                     child: Text(
                       'Amount: ${reminder.currency} ${reminder.amount.toStringAsFixed(2)}',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.primaryColor,
@@ -1818,24 +2033,47 @@ class _BillListScreenState extends State<BillListScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  // Payment amount field
+                  Text(
+                    'Payment Amount:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: amountController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      hintText: 'Enter amount',
+                      helperText:
+                          'Balance due: ${reminder.currency} ${payableAmount.toStringAsFixed(2)}',
+                      helperStyle:
+                          TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                    ),
+                    style: const TextStyle(),
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     'Select Account Type:',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: selectedType,
+                    initialValue: selectedType,
                     items: accountTypes
                         .map((type) => DropdownMenuItem(
                               value: type,
-                              child: Text(type,
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                  )),
+                              child: Text(type, style: TextStyle()),
                             ))
                         .toList(),
                     onChanged: (value) {
@@ -1855,7 +2093,6 @@ class _BillListScreenState extends State<BillListScreen> {
                   Text(
                     'Select Account:',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -1871,23 +2108,18 @@ class _BillListScreenState extends State<BillListScreen> {
                       ),
                       child: Text(
                         'No accounts found',
-                        style: TextStyle(
-                            fontFamily: 'Poppins',
-                            color: Colors.grey,
-                            fontSize: 13),
+                        style: TextStyle(color: Colors.grey, fontSize: 13),
                       ),
                     )
                   else
                     DropdownButtonFormField<String>(
-                      value: selectedAccountId,
+                      initialValue: selectedAccountId,
                       items: filteredByType
                           .map((account) => DropdownMenuItem<String>(
                                 value: account.id,
                                 child: Text(
                                   '${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                  ),
+                                  style: TextStyle(),
                                 ),
                               ))
                           .toList(),
@@ -1903,8 +2135,7 @@ class _BillListScreenState extends State<BillListScreen> {
                             horizontal: 12, vertical: 8),
                       ),
                       hint: Text('Choose account',
-                          style:
-                              TextStyle(fontFamily: 'Poppins', fontSize: 13)),
+                          style: TextStyle(fontSize: 13)),
                     ),
                   const SizedBox(height: 24),
                   Row(
@@ -1915,10 +2146,7 @@ class _BillListScreenState extends State<BillListScreen> {
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: Text('Cancel',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                              )),
+                          child: Text('Cancel', style: TextStyle()),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1928,11 +2156,37 @@ class _BillListScreenState extends State<BillListScreen> {
                           onPressed: selectedAccountId == null
                               ? null
                               : () {
+                                  final enteredAmount = double.tryParse(
+                                      amountController.text.trim());
+                                  if (enteredAmount == null ||
+                                      enteredAmount <= 0) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'Please enter a valid amount',
+                                            style: TextStyle()),
+                                        backgroundColor: AppTheme.errorColor,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  if (enteredAmount > payableAmount) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Payment cannot exceed remaining due (${reminder.currency} ${payableAmount.toStringAsFixed(2)})',
+                                          style: TextStyle(),
+                                        ),
+                                        backgroundColor: AppTheme.errorColor,
+                                      ),
+                                    );
+                                    return;
+                                  }
                                   Navigator.pop(context);
                                   final selectedAccount = accounts.firstWhere(
                                       (a) => a.id == selectedAccountId);
                                   _processCreditCardPayment(
-                                      reminder, selectedAccount);
+                                      reminder, selectedAccount, enteredAmount);
                                 },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryColor,
@@ -1942,7 +2196,6 @@ class _BillListScreenState extends State<BillListScreen> {
                           child: Text(
                             'Confirm Payment',
                             style: TextStyle(
-                              fontFamily: 'Poppins',
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1964,6 +2217,7 @@ class _BillListScreenState extends State<BillListScreen> {
   Future<void> _processCreditCardPayment(
     BillReminder reminder,
     PaymentAccount paymentAccount,
+    double paymentAmount,
   ) async {
     final expenseProvider = context.read<ExpenseProvider>();
     final paymentAccountProvider = context.read<PaymentAccountProvider>();
@@ -1979,7 +2233,7 @@ class _BillListScreenState extends State<BillListScreen> {
         id: expenseId,
         title: 'Credit Card Payment - ${reminder.accountName}',
         category: 'Credit Card Payment',
-        amount: reminder.amount,
+        amount: paymentAmount,
         date: DateTime.now(),
         currency: reminder.currency,
         paymentMethod: 'Bank Transfer',
@@ -1990,11 +2244,13 @@ class _BillListScreenState extends State<BillListScreen> {
       );
 
       final updatedPaymentAccount = paymentAccount.copyWith(
-        balance: paymentAccount.balance - reminder.amount,
+        balance: paymentAccount.balance - paymentAmount,
       );
 
+      final newCreditCardBalance = (creditCardAccount.balance - paymentAmount)
+          .clamp(0.0, double.infinity);
       final updatedCreditCardAccount = creditCardAccount.copyWith(
-        balance: 0.0,
+        balance: newCreditCardBalance,
       );
 
       await expenseProvider.addExpense(expense);
@@ -2003,22 +2259,18 @@ class _BillListScreenState extends State<BillListScreen> {
 
       await billProvider.refreshData();
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'Credit card payment recorded',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
-          ),
-          action: SnackBarAction(
-            label: 'Undo',
-            onPressed: () => _reverseCreditCardPayment(
-              reminder,
-              paymentAccount,
-              creditCardAccount,
-              expenseId,
-            ),
+      _showPaymentSnackBar(
+        paymentAmount >= reminder.amount
+            ? 'Credit card payment recorded'
+            : 'Partial credit card payment recorded',
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => _reverseCreditCardPayment(
+            reminder,
+            paymentAccount,
+            creditCardAccount,
+            expenseId,
+            paymentAmount,
           ),
         ),
       );
@@ -2026,10 +2278,7 @@ class _BillListScreenState extends State<BillListScreen> {
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Error: $e',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              )),
+          content: Text('Error: $e', style: TextStyle()),
           backgroundColor: AppTheme.errorColor,
         ),
       );
@@ -2041,6 +2290,7 @@ class _BillListScreenState extends State<BillListScreen> {
     PaymentAccount paymentAccount,
     PaymentAccount creditCardAccount,
     String expenseId,
+    double paymentAmount,
   ) async {
     final expenseProvider = context.read<ExpenseProvider>();
     final paymentAccountProvider = context.read<PaymentAccountProvider>();
@@ -2049,11 +2299,12 @@ class _BillListScreenState extends State<BillListScreen> {
 
     try {
       final restoredPaymentAccount = paymentAccount.copyWith(
-        balance: paymentAccount.balance + reminder.amount,
+        balance: paymentAccount.balance + paymentAmount,
       );
 
-      final restoredCreditCardAccount =
-          creditCardAccount.copyWith(balance: reminder.amount);
+      final restoredCreditCardAccount = creditCardAccount.copyWith(
+        balance: creditCardAccount.balance + paymentAmount,
+      );
 
       await expenseProvider.deleteExpense(expenseId);
       await paymentAccountProvider.updateAccount(restoredPaymentAccount);
@@ -2065,9 +2316,7 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Credit card payment reversed',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(),
           ),
         ),
       );
@@ -2077,9 +2326,7 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Error reversing payment: $e',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(),
           ),
           backgroundColor: AppTheme.errorColor,
         ),
@@ -2095,9 +2342,7 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Please add an account first',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(),
           ),
           backgroundColor: AppTheme.errorColor,
         ),
@@ -2109,6 +2354,13 @@ class _BillListScreenState extends State<BillListScreen> {
         <String>{...accounts.map((a) => a.accountType)}.toList()..sort();
     String? selectedType = accountTypes.isNotEmpty ? accountTypes.first : null;
     String? selectedAccountId;
+    final remainingAmount = (reminder.amount - reminder.paidAmount)
+        .clamp(0.0, reminder.amount)
+        .toDouble();
+    final payableAmount =
+        remainingAmount > 0 ? remainingAmount : reminder.amount;
+    final amountController =
+        TextEditingController(text: payableAmount.toStringAsFixed(2));
 
     showModalBottomSheet(
       context: context,
@@ -2142,7 +2394,6 @@ class _BillListScreenState extends State<BillListScreen> {
                       Text(
                         'Pay Subscription',
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                         ),
@@ -2156,24 +2407,47 @@ class _BillListScreenState extends State<BillListScreen> {
                     ],
                   ),
                   const Divider(height: 24),
+                  // Payment amount field
+                  Text(
+                    'Payment Amount:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: amountController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      hintText: 'Enter amount',
+                      helperText:
+                          'Remaining due: ${reminder.currency} ${payableAmount.toStringAsFixed(2)}',
+                      helperStyle:
+                          TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                    ),
+                    style: const TextStyle(),
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     'Select Account Type:',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: selectedType,
+                    initialValue: selectedType,
                     items: accountTypes
                         .map((type) => DropdownMenuItem(
                               value: type,
-                              child: Text(type,
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                  )),
+                              child: Text(type, style: TextStyle()),
                             ))
                         .toList(),
                     onChanged: (value) {
@@ -2193,7 +2467,6 @@ class _BillListScreenState extends State<BillListScreen> {
                   Text(
                     'Select Account:',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -2209,23 +2482,18 @@ class _BillListScreenState extends State<BillListScreen> {
                       ),
                       child: Text(
                         'No accounts found',
-                        style: TextStyle(
-                            fontFamily: 'Poppins',
-                            color: Colors.grey,
-                            fontSize: 13),
+                        style: TextStyle(color: Colors.grey, fontSize: 13),
                       ),
                     )
                   else
                     DropdownButtonFormField<String>(
-                      value: selectedAccountId,
+                      initialValue: selectedAccountId,
                       items: filteredByType
                           .map((account) => DropdownMenuItem<String>(
                                 value: account.id,
                                 child: Text(
                                   '${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                  ),
+                                  style: TextStyle(),
                                 ),
                               ))
                           .toList(),
@@ -2241,8 +2509,7 @@ class _BillListScreenState extends State<BillListScreen> {
                             horizontal: 12, vertical: 8),
                       ),
                       hint: Text('Choose account',
-                          style:
-                              TextStyle(fontFamily: 'Poppins', fontSize: 13)),
+                          style: TextStyle(fontSize: 13)),
                     ),
                   const SizedBox(height: 24),
                   Row(
@@ -2253,10 +2520,7 @@ class _BillListScreenState extends State<BillListScreen> {
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: Text('Cancel',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                              )),
+                          child: Text('Cancel', style: TextStyle()),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -2266,11 +2530,37 @@ class _BillListScreenState extends State<BillListScreen> {
                           onPressed: selectedAccountId == null
                               ? null
                               : () {
+                                  final enteredAmount = double.tryParse(
+                                      amountController.text.trim());
+                                  if (enteredAmount == null ||
+                                      enteredAmount <= 0) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'Please enter a valid amount',
+                                            style: TextStyle()),
+                                        backgroundColor: AppTheme.errorColor,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  if (enteredAmount > payableAmount) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Payment cannot exceed remaining due (${reminder.currency} ${payableAmount.toStringAsFixed(2)})',
+                                          style: TextStyle(),
+                                        ),
+                                        backgroundColor: AppTheme.errorColor,
+                                      ),
+                                    );
+                                    return;
+                                  }
                                   Navigator.pop(context);
                                   final selectedAccount = accounts.firstWhere(
                                       (a) => a.id == selectedAccountId);
                                   _processSubscriptionPayment(
-                                      reminder, selectedAccount);
+                                      reminder, selectedAccount, enteredAmount);
                                 },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryColor,
@@ -2280,7 +2570,6 @@ class _BillListScreenState extends State<BillListScreen> {
                           child: Text(
                             'Confirm Payment',
                             style: TextStyle(
-                              fontFamily: 'Poppins',
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                             ),
@@ -2302,6 +2591,7 @@ class _BillListScreenState extends State<BillListScreen> {
   Future<void> _processSubscriptionPayment(
     BillReminder reminder,
     PaymentAccount selectedAccount,
+    double paymentAmount,
   ) async {
     final expenseProvider = context.read<ExpenseProvider>();
     final paymentAccountProvider = context.read<PaymentAccountProvider>();
@@ -2321,7 +2611,7 @@ class _BillListScreenState extends State<BillListScreen> {
         id: expenseId,
         title: 'Subscription Payment - ${subscription.name}',
         category: 'Subscriptions',
-        amount: subscription.cost,
+        amount: paymentAmount,
         date: DateTime.now(),
         currency: subscription.currency,
         paymentMethod: 'Bank Transfer',
@@ -2337,9 +2627,9 @@ class _BillListScreenState extends State<BillListScreen> {
       final updatedAccount = selectedAccount.copyWith(
         balance: isCreditCard
             ? selectedAccount.balance +
-                subscription.cost // Credit card: increase debt
+                paymentAmount // Credit card: increase debt
             : selectedAccount.balance -
-                subscription.cost, // Other: decrease balance
+                paymentAmount, // Other: decrease balance
       );
 
       // No need to update subscription - payment is tracked via expense record
@@ -2348,21 +2638,17 @@ class _BillListScreenState extends State<BillListScreen> {
       await billProvider.refreshData();
 
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'Subscription payment recorded',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
-          ),
-          action: SnackBarAction(
-            label: 'Undo',
-            onPressed: () => _reverseSubscriptionPayment(
-              subscription,
-              selectedAccount,
-              expenseId,
-            ),
+      _showPaymentSnackBar(
+        paymentAmount >= subscription.cost
+            ? 'Subscription payment recorded'
+            : 'Partial subscription payment recorded',
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => _reverseSubscriptionPayment(
+            subscription,
+            selectedAccount,
+            expenseId,
+            paymentAmount,
           ),
         ),
       );
@@ -2370,10 +2656,7 @@ class _BillListScreenState extends State<BillListScreen> {
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Error: $e',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-              )),
+          content: Text('Error: $e', style: TextStyle()),
           backgroundColor: AppTheme.errorColor,
         ),
       );
@@ -2384,6 +2667,7 @@ class _BillListScreenState extends State<BillListScreen> {
     Subscription subscription,
     PaymentAccount paymentAccount,
     String expenseId,
+    double paymentAmount,
   ) async {
     final expenseProvider = context.read<ExpenseProvider>();
     final paymentAccountProvider = context.read<PaymentAccountProvider>();
@@ -2398,9 +2682,8 @@ class _BillListScreenState extends State<BillListScreen> {
       final restoredAccount = paymentAccount.copyWith(
         balance: isCreditCard
             ? paymentAccount.balance -
-                subscription.cost // Credit card: decrease debt
-            : paymentAccount.balance +
-                subscription.cost, // Other: restore balance
+                paymentAmount // Credit card: decrease debt
+            : paymentAccount.balance + paymentAmount, // Other: restore balance
       );
 
       // Delete expense record - this will automatically mark period as unpaid
@@ -2413,9 +2696,7 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Subscription payment reversed',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(),
           ),
         ),
       );
@@ -2425,10 +2706,135 @@ class _BillListScreenState extends State<BillListScreen> {
         SnackBar(
           content: Text(
             'Error reversing payment: $e',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(),
           ),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    }
+  }
+
+  void _showEditReminderDialog(BillReminder reminder) {
+    switch (reminder.type) {
+      case BillReminderType.bill:
+        final bills = HiveService.getAllBills();
+        final bill = _firstWhereOrNull(bills, (b) => b.id == reminder.sourceId);
+        if (bill == null) return;
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          builder: (_) => AddEditBillScreen(bill: bill),
+        ).then((_) {
+          if (mounted) context.read<BillProvider>().refreshData();
+        });
+        break;
+      case BillReminderType.loan:
+        final loans = HiveService.getAllLoans();
+        final loan = _firstWhereOrNull(loans, (l) => l.id == reminder.sourceId);
+        if (loan == null) return;
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          builder: (_) => AddEditLoanDialog(loan: loan),
+        ).then((_) {
+          if (mounted) context.read<BillProvider>().refreshData();
+        });
+        break;
+      case BillReminderType.subscription:
+        final subs = HiveService.getAllSubscriptions();
+        final sub = _firstWhereOrNull(subs, (s) => s.id == reminder.sourceId);
+        if (sub == null) return;
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          builder: (_) => AddEditSubscriptionScreen(subscription: sub),
+        ).then((_) {
+          if (mounted) context.read<BillProvider>().refreshData();
+        });
+        break;
+      case BillReminderType.creditCard:
+        final accts = HiveService.getAllPaymentAccounts();
+        final account =
+            _firstWhereOrNull(accts, (a) => a.id == reminder.sourceId);
+        if (account == null) return;
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          builder: (_) => AccountFormScreen(account: account),
+        ).then((_) {
+          if (mounted) context.read<BillProvider>().refreshData();
+        });
+        break;
+    }
+  }
+
+  void _confirmDeleteSourceReminder(BillReminder reminder) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'Delete ${reminder.accountName ?? reminder.name}?',
+          style: const TextStyle(),
+        ),
+        content: Text(
+          'This will permanently delete this record and cannot be undone.',
+          style: const TextStyle(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle()),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _deleteSourceReminder(reminder);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteSourceReminder(BillReminder reminder) async {
+    final billProvider = context.read<BillProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      switch (reminder.type) {
+        case BillReminderType.bill:
+          await billProvider.deleteBill(reminder.sourceId);
+          break;
+        case BillReminderType.loan:
+          await context.read<LoanProvider>().deleteLoan(reminder.sourceId);
+          break;
+        case BillReminderType.subscription:
+          await context
+              .read<SubscriptionProvider>()
+              .deleteSubscription(reminder.sourceId);
+          break;
+        case BillReminderType.creditCard:
+          await context
+              .read<PaymentAccountProvider>()
+              .deleteAccount(reminder.sourceId);
+          break;
+      }
+      await billProvider.refreshData();
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Deleted successfully', style: const TextStyle()),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Error deleting: $e', style: const TextStyle()),
           backgroundColor: AppTheme.errorColor,
         ),
       );
@@ -2510,109 +2916,103 @@ class _BillListScreenState extends State<BillListScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              24,
-              24,
-              24,
-              effectiveBottomInset(context) + 24,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        reminder.name,
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-                const Divider(height: 24),
-                _buildDetailRow('Type', reminder.getTypeLabel()),
-                _buildDetailRow('Amount',
-                    '${reminder.currency} ${reminder.amount.toStringAsFixed(2)}'),
-                _buildDetailRow('Due Date', _formatDate(reminder.dueDate)),
-                _buildDetailRow('Status', reminder.getStatusLabel()),
-                if (reminder.status == BillReminderStatus.completed &&
-                    paymentType == null &&
-                    paymentAccountName == null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.orange.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.info_outline,
-                              size: 20, color: Colors.orange.shade700),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Payment details not available for this transaction',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 12,
-                                color: Colors.orange.shade900,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                if (paymentType != null)
-                  _buildDetailRow('Payment Type', paymentType),
-                if (paymentAccountName != null)
-                  _buildDetailRow('Payment Account', paymentAccountName),
-                if (reminder.notes != null)
-                  _buildDetailRow('Notes', reminder.notes!),
-                if (reminder.lender != null)
-                  _buildDetailRow('Lender', reminder.lender!),
-                if (reminder.accountName != null)
-                  _buildDetailRow('Account', reminder.accountName!),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
+      builder: (context) => SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            24,
+            24,
+            effectiveBottomInset(context) + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
                     child: Text(
-                      'Close',
+                      reminder.name,
                       style: TextStyle(
-                        fontFamily: 'Poppins',
-                        color: Colors.white,
+                        fontSize: 20,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              _buildDetailRow('Type', reminder.getTypeLabel()),
+              _buildDetailRow('Amount',
+                  '${reminder.currency} ${reminder.amount.toStringAsFixed(2)}'),
+              _buildDetailRow('Due Date', _formatDate(reminder.dueDate)),
+              _buildDetailRow('Status', reminder.getStatusLabel()),
+              if (reminder.status == BillReminderStatus.completed &&
+                  paymentType == null &&
+                  paymentAccountName == null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline,
+                            size: 20, color: Colors.orange.shade700),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Payment details not available for this transaction',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange.shade900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ],
-            ),
+              if (paymentType != null)
+                _buildDetailRow('Payment Type', paymentType),
+              if (paymentAccountName != null)
+                _buildDetailRow('Payment Account', paymentAccountName),
+              if (reminder.notes != null)
+                _buildDetailRow('Notes', reminder.notes!),
+              if (reminder.lender != null)
+                _buildDetailRow('Lender', reminder.lender!),
+              if (reminder.accountName != null)
+                _buildDetailRow('Account', reminder.accountName!),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: Text(
+                    'Close',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -2630,17 +3030,13 @@ class _BillListScreenState extends State<BillListScreen> {
             child: Text(
               '$label:',
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontWeight: FontWeight.w600,
                 color: Colors.grey.shade700,
               ),
             ),
           ),
           Expanded(
-            child: Text(value,
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                )),
+            child: Text(value, style: TextStyle()),
           ),
         ],
       ),
@@ -2783,7 +3179,6 @@ class _AddEditBillScreenState extends State<AddEditBillScreen> {
                   Text(
                     widget.bill != null ? 'Edit Bill' : 'Add Manual Bill',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                     ),
@@ -2844,7 +3239,7 @@ class _AddEditBillScreenState extends State<AddEditBillScreen> {
               CheckboxListTile(
                 title: const Text(
                   'Recurring Bill',
-                  style: TextStyle(fontFamily: 'Poppins'),
+                  style: TextStyle(),
                 ),
                 value: _isRecurring,
                 onChanged: (value) =>
@@ -2861,7 +3256,7 @@ class _AddEditBillScreenState extends State<AddEditBillScreen> {
                               value: f,
                               child: Text(
                                 f.toUpperCase(),
-                                style: TextStyle(fontFamily: 'Poppins'),
+                                style: TextStyle(),
                               ),
                             ))
                         .toList(),
@@ -2882,7 +3277,6 @@ class _AddEditBillScreenState extends State<AddEditBillScreen> {
                   child: Text(
                     widget.bill != null ? 'Update Bill' : 'Add Bill',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),

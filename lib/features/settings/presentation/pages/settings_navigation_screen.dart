@@ -234,9 +234,9 @@ class _SettingsNavigationScreenState extends State<SettingsNavigationScreen>
                                 if (value == true) {
                                   if (selected.length >= _navOptions.length) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
+                                      SnackBar(
                                         content: Text(
-                                            'You can select up to 8 items only.'),
+                                            'You can select up to ${_navOptions.length} items only.'),
                                       ),
                                     );
                                     return;

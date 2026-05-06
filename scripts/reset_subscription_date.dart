@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
-import '../lib/features/subscription/data/models/subscription_model.dart';
+import 'package:fintrack/features/subscription/data/models/subscription_model.dart';
 
 Future<void> main() async {
   print('🔧 Subscription Date Reset Tool');
@@ -53,8 +53,7 @@ Future<void> main() async {
     print('To: $marchDate');
 
     // Update subscription
-    final updatedSub = subscription.copyWith(renewalDate: marchDate);
-    await subscription.save();
+    await subscription.copyWith(renewalDate: marchDate).save();
 
     print('✅ Updated successfully!');
     print('\nYou can now test marking this subscription as paid in the app.');

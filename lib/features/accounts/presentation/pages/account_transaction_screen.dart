@@ -53,10 +53,6 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
   _TransactionSortOption _sortOption = _TransactionSortOption.date;
   bool _sortAscending = false;
 
-  String _formatCompactDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
-
   @override
   void initState() {
     super.initState();
@@ -91,7 +87,6 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                 child: Text(
                   'Account not found',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 16,
                     color: AppTheme.textSecondaryColor,
                   ),
@@ -169,7 +164,6 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                     Text(
                       'No transactions',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: isDarkMode
@@ -181,7 +175,6 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                     Text(
                       'No expenses recorded for this account',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 14,
                         color: isDarkMode
                             ? Colors.white70
@@ -238,7 +231,6 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                       Text(
                         'Account Balance',
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: 14,
                           color: Theme.of(context).brightness == Brightness.dark
                               ? Theme.of(context).colorScheme.onSurfaceVariant
@@ -254,7 +246,6 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                               context.watch<SettingsProvider>().currencySymbol,
                         ),
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: 32,
                           fontWeight: FontWeight.w700,
                           color: Theme.of(context).brightness == Brightness.dark
@@ -303,9 +294,8 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  'Statement: ${_formatCompactDate(currentAccount.statementDate!)}',
+                                  'Statement day: ${currentAccount.statementDate!.day.toString().padLeft(2, '0')} (monthly)',
                                   style: TextStyle(
-                                    fontFamily: 'Poppins',
                                     fontSize: 11,
                                     color: Theme.of(context).brightness ==
                                             Brightness.dark
@@ -329,9 +319,8 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  'Due: ${_formatCompactDate(currentAccount.dueDate!)}',
+                                  'Due day: ${currentAccount.dueDate!.day.toString().padLeft(2, '0')} (monthly)',
                                   style: TextStyle(
-                                    fontFamily: 'Poppins',
                                     fontSize: 11,
                                     color: Theme.of(context).brightness ==
                                             Brightness.dark
@@ -355,7 +344,6 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                 Text(
                   'Transactions',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -490,13 +478,12 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                 children: [
                   Text(
                     tab.$3,
-                    style: TextStyle(fontFamily: 'Poppins', fontSize: 20),
+                    style: TextStyle(fontSize: 20),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     tab.$1,
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 12,
                       fontWeight:
                           isSelected ? FontWeight.w600 : FontWeight.w500,
@@ -871,7 +858,7 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
                   16,
                   16,
                   16,
-                  effectiveBottomInset(context),
+                  effectiveBottomInset(context) + 12,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -879,7 +866,6 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
                     Text(
                       title,
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -1091,7 +1077,6 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
                 Text(
                   transactionLabel,
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -1112,7 +1097,6 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
                   child: Text(
                     'SAVE',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
@@ -1132,7 +1116,6 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
               _display,
               textAlign: TextAlign.right,
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 36,
                 fontWeight: FontWeight.w700,
                 color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -1216,7 +1199,6 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
                         child: Text(
                           '=',
                           style: TextStyle(
-                            fontFamily: 'Poppins',
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -1250,7 +1232,6 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
                 child: Text(
                   'Clear',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: isDarkMode
@@ -1261,7 +1242,7 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: effectiveBottomInset(context) + 24),
         ],
       ),
     );
@@ -1290,7 +1271,6 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
             child: Text(
               number,
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -1316,7 +1296,6 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
             child: Text(
               op,
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppTheme.primaryColor,
@@ -1345,7 +1324,6 @@ class _TransactionCalculatorState extends State<TransactionCalculator> {
             child: Text(
               '.',
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -1417,7 +1395,6 @@ class _SummaryItem extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontFamily: 'Poppins',
             fontSize: 12,
             color: Theme.of(context).brightness == Brightness.dark
                 ? Theme.of(context).colorScheme.onSurfaceVariant
@@ -1429,7 +1406,6 @@ class _SummaryItem extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
-            fontFamily: 'Poppins',
             fontSize: 15,
             fontWeight: FontWeight.w600,
             color: Theme.of(context).brightness == Brightness.dark
@@ -1585,7 +1561,6 @@ class _TransactionCard extends StatelessWidget {
                   Text(
                     expense.category,
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -1603,7 +1578,6 @@ class _TransactionCard extends StatelessWidget {
                     child: Text(
                       _getTransactionLabel(),
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 9,
                         fontWeight: FontWeight.w600,
                         color: color,
@@ -1614,7 +1588,6 @@ class _TransactionCard extends StatelessWidget {
                   Text(
                     _formatDate(expense.date),
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 11,
                       color: isDarkMode
                           ? Colors.white70
@@ -1626,7 +1599,6 @@ class _TransactionCard extends StatelessWidget {
                     Text(
                       expense.notes!,
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 10,
                         color: isDarkMode
                             ? Colors.white70
@@ -1646,7 +1618,6 @@ class _TransactionCard extends StatelessWidget {
             Text(
               '${isDebit ? '-' : '+'} ${AppUtils.formatCurrency(expense.amount.abs(), currencySymbol: currencySymbol)}',
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: color,

@@ -99,13 +99,33 @@ class Loan extends HiveObject {
     if (isCompleted) return null;
 
     final now = DateTime.now();
-    var nextDate = DateTime(now.year, now.month, emiDate);
+    final today = DateTime(now.year, now.month, now.day);
 
-    if (nextDate.isBefore(now)) {
-      nextDate = DateTime(now.year, now.month + 1, emiDate);
+    DateTime safeDayInMonth(int year, int month, int day) {
+      final firstDay = DateTime(year, month, 1);
+      final lastDay = DateTime(firstDay.year, firstDay.month + 1, 0).day;
+      final clampedDay = day.clamp(1, lastDay);
+      return DateTime(firstDay.year, firstDay.month, clampedDay);
     }
 
-    return nextDate.isAfter(endDate) ? null : nextDate;
+    var nextDate = safeDayInMonth(now.year, now.month, emiDate);
+
+    final firstEmiInStartMonth =
+        safeDayInMonth(startDate.year, startDate.month, emiDate);
+    final firstDueDate = startDate.isAfter(firstEmiInStartMonth)
+        ? safeDayInMonth(startDate.year, startDate.month + 1, emiDate)
+        : firstEmiInStartMonth;
+
+    if (nextDate.isBefore(today)) {
+      nextDate = safeDayInMonth(now.year, now.month + 1, emiDate);
+    }
+
+    if (nextDate.isBefore(firstDueDate)) {
+      nextDate = firstDueDate;
+    }
+
+    final endDay = DateTime(endDate.year, endDate.month, endDate.day);
+    return nextDate.isAfter(endDay) ? null : nextDate;
   }
 
   Loan copyWith({

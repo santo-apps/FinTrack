@@ -98,7 +98,6 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                         Text(
                           'Net Worth',
                           style: TextStyle(
-                            fontFamily: 'Poppins',
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: colorScheme.onSurfaceVariant,
@@ -117,7 +116,6 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                                     currencySymbol: currencySymbol,
                                   ),
                                   style: TextStyle(
-                                    fontFamily: 'Poppins',
                                     fontSize: 26,
                                     fontWeight: FontWeight.w800,
                                     color: isNegative
@@ -220,7 +218,6 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                       title: Text(
                         'Assets',
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
@@ -231,7 +228,6 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                           currencySymbol: currencySymbol,
                         ),
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: Colors.green.shade700,
@@ -246,7 +242,6 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                               Text(
                                 'Accounts',
                                 style: TextStyle(
-                                  fontFamily: 'Poppins',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                   color: colorScheme.onSurfaceVariant,
@@ -272,7 +267,6 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                               Text(
                                 'Investments',
                                 style: TextStyle(
-                                  fontFamily: 'Poppins',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                   color: colorScheme.onSurfaceVariant,
@@ -325,7 +319,6 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                       title: Text(
                         'Loans',
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
@@ -336,7 +329,6 @@ class _NetWorthBreakdownScreenState extends State<NetWorthBreakdownScreen> {
                           currencySymbol: currencySymbol,
                         ),
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: Colors.red.shade700,
@@ -413,7 +405,6 @@ class _MetricBox extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -434,7 +425,6 @@ class _MetricBox extends StatelessWidget {
                 child: Text(
                   value,
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: color,
@@ -445,57 +435,6 @@ class _MetricBox extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String total;
-  final Color totalColor;
-
-  const _SectionHeader({
-    required this.icon,
-    required this.title,
-    required this.total,
-    required this.totalColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon,
-              size: 18, color: Theme.of(context).colorScheme.primary),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            title,
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        Text(
-          total,
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: totalColor,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -533,7 +472,6 @@ class _DataRowItem extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -544,7 +482,6 @@ class _DataRowItem extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 11,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -556,7 +493,6 @@ class _DataRowItem extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontFamily: 'Poppins',
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: valueColor,
@@ -585,7 +521,6 @@ class _EmptySection extends StatelessWidget {
       child: Text(
         message,
         style: TextStyle(
-          fontFamily: 'Poppins',
           fontSize: 12,
           color: Colors.grey.shade700,
         ),

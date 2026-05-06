@@ -77,7 +77,7 @@ class AppTheme {
         ),
         iconTheme: const IconThemeData(color: textColor),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: surfaceColor,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -109,10 +109,12 @@ class AppTheme {
         labelStyle: const TextStyle(
           color: textSecondaryColor,
           fontSize: 14,
+          fontFamily: 'Poppins',
         ),
         hintStyle: const TextStyle(
           color: textSecondaryColor,
           fontSize: 14,
+          fontFamily: 'Poppins',
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -131,8 +133,24 @@ class AppTheme {
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          textStyle: const WidgetStatePropertyAll(
-              TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          textStyle: const WidgetStatePropertyAll(TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins')),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: ButtonStyle(
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          textStyle: const WidgetStatePropertyAll(TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins')),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -141,8 +159,10 @@ class AppTheme {
           padding: const WidgetStatePropertyAll(
             EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
-          textStyle: const WidgetStatePropertyAll(
-              TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          textStyle: const WidgetStatePropertyAll(TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins')),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -155,8 +175,10 @@ class AppTheme {
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          textStyle: const WidgetStatePropertyAll(
-              TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          textStyle: const WidgetStatePropertyAll(TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins')),
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -169,16 +191,20 @@ class AppTheme {
         selectedLabelStyle: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
+          fontFamily: 'Poppins',
         ),
         unselectedLabelStyle: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w500,
+          fontFamily: 'Poppins',
         ),
       ),
-      tabBarTheme: const TabBarTheme(
+      tabBarTheme: const TabBarThemeData(
         dividerColor: Colors.transparent,
-        labelStyle: TextStyle(fontWeight: FontWeight.w600),
-        unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w500),
+        labelStyle:
+            TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Poppins'),
+        unselectedLabelStyle:
+            TextStyle(fontWeight: FontWeight.w500, fontFamily: 'Poppins'),
       ),
     );
   }
@@ -236,7 +262,7 @@ class AppTheme {
         ),
         iconTheme: const IconThemeData(color: darkTextColor),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: darkSurfaceColor,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -264,10 +290,12 @@ class AppTheme {
         labelStyle: const TextStyle(
           color: darkTextSecondaryColor,
           fontSize: 14,
+          fontFamily: 'Poppins',
         ),
         hintStyle: const TextStyle(
           color: darkTextSecondaryColor,
           fontSize: 14,
+          fontFamily: 'Poppins',
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
@@ -286,8 +314,24 @@ class AppTheme {
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          textStyle: const WidgetStatePropertyAll(
-              TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          textStyle: const WidgetStatePropertyAll(TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins')),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: ButtonStyle(
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          textStyle: const WidgetStatePropertyAll(TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins')),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -296,8 +340,10 @@ class AppTheme {
           padding: const WidgetStatePropertyAll(
             EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
-          textStyle: const WidgetStatePropertyAll(
-              TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          textStyle: const WidgetStatePropertyAll(TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins')),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -310,8 +356,10 @@ class AppTheme {
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          textStyle: const WidgetStatePropertyAll(
-              TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          textStyle: const WidgetStatePropertyAll(TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins')),
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -324,16 +372,20 @@ class AppTheme {
         selectedLabelStyle: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
+          fontFamily: 'Poppins',
         ),
         unselectedLabelStyle: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w500,
+          fontFamily: 'Poppins',
         ),
       ),
-      tabBarTheme: const TabBarTheme(
+      tabBarTheme: const TabBarThemeData(
         dividerColor: Colors.transparent,
-        labelStyle: TextStyle(fontWeight: FontWeight.w600),
-        unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w500),
+        labelStyle:
+            TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Poppins'),
+        unselectedLabelStyle:
+            TextStyle(fontWeight: FontWeight.w500, fontFamily: 'Poppins'),
       ),
     );
   }

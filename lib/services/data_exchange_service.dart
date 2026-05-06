@@ -228,7 +228,7 @@ class DataExchangeService {
     required bool mergeData,
   }) async {
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json'],
         dialogTitle: 'Select backup file (JSON only)',

@@ -89,12 +89,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           items: settingsProvider.availableCurrencies,
                           selectedItem: settingsProvider.currency,
                           dropdownBuilder: (context, selectedItem) {
-                            return Text(selectedItem ?? 'Select currency');
+                            return Text(
+                              selectedItem ?? 'Select currency',
+                              style: const TextStyle(),
+                            );
                           },
                           dropdownDecoratorProps: const DropDownDecoratorProps(
                             baseStyle: TextStyle(),
                           ),
-                          popupProps: PopupProps.menu(
+                          popupProps: PopupProps.dialog(
                             title: const Padding(
                               padding: EdgeInsets.all(8),
                               child: Text('Select Currency'),

@@ -18,6 +18,7 @@ class BillReminder {
   final String? lender; // For loans
   final bool? isRecurring; // For bills
   final String? billingCycle; // For subscriptions
+  final double paidAmount; // Amount already paid (for partial payments)
 
   BillReminder({
     required this.id,
@@ -34,6 +35,7 @@ class BillReminder {
     this.lender,
     this.isRecurring,
     this.billingCycle,
+    this.paidAmount = 0.0,
   });
 
   bool isOverdue() {
@@ -68,6 +70,8 @@ class BillReminder {
         return 'PENDING';
       case BillReminderStatus.completed:
         return 'PAID';
+      case BillReminderStatus.partiallyPaid:
+        return 'PARTIAL';
     }
   }
 }
@@ -83,4 +87,5 @@ enum BillReminderStatus {
   overdue,
   pending,
   completed,
+  partiallyPaid,
 }

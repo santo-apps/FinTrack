@@ -31,7 +31,6 @@ class ManageSubscriptionCategoriesScreen extends StatelessWidget {
                     Text(
                       'No subscription categories yet',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.textColor,
@@ -41,7 +40,6 @@ class ManageSubscriptionCategoriesScreen extends StatelessWidget {
                     Text(
                       'Tap + to add your first category',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 14,
                         color: AppTheme.textSecondaryColor,
                       ),
@@ -85,14 +83,13 @@ class ManageSubscriptionCategoriesScreen extends StatelessWidget {
                       child: Center(
                         child: Text(
                           category.icon,
-                          style: TextStyle(fontFamily: 'Poppins', fontSize: 24),
+                          style: TextStyle(fontSize: 24),
                         ),
                       ),
                     ),
                     title: Text(
                       category.name,
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.textColor,
@@ -149,13 +146,11 @@ class ManageSubscriptionCategoriesScreen extends StatelessWidget {
       builder: (context) => AlertDialog(
         title: Text(
           'Delete Category',
-          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
         content: Text(
           'Are you sure you want to delete "$category"?',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-          ),
+          style: TextStyle(),
         ),
         actions: [
           TextButton(
@@ -237,7 +232,7 @@ class ManageSubscriptionCategoriesScreen extends StatelessWidget {
             title: Text(
               isEdit ? 'Edit Category' : 'Add Category',
               style:
-                  TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+                  TextStyle(fontWeight: FontWeight.w600),
             ),
             content: SingleChildScrollView(
               child: Column(
@@ -259,7 +254,6 @@ class ManageSubscriptionCategoriesScreen extends StatelessWidget {
                   Text(
                     'Icon',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
@@ -295,7 +289,7 @@ class ManageSubscriptionCategoriesScreen extends StatelessWidget {
                             child: Text(
                               emoji,
                               style: TextStyle(
-                                  fontFamily: 'Poppins', fontSize: 20),
+                                  fontSize: 20),
                             ),
                           ),
                         ),

@@ -98,7 +98,9 @@ class LoanProvider extends ChangeNotifier {
       final now = DateTime.now();
       final updatedLoan = loan.copyWith(
         interestPaidAmount: loan.interestPaidAmount + amount,
-        lastPaymentDate: now, // Track when payment was made
+        // Keep lastPaymentDate for principal/EMI payments only.
+        // Interest-only payments should not mark EMI as paid in reminders.
+        lastPaymentDate: loan.lastPaymentDate,
       );
 
       if (kDebugMode) {

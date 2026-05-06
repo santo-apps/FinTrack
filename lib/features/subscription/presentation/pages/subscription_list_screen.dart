@@ -24,6 +24,7 @@ class SubscriptionListScreen extends StatefulWidget {
 class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
   static const String _allCategoriesFilter = 'All';
   String _selectedCategoryFilter = _allCategoriesFilter;
+  bool _showArchived = false;
 
   @override
   void initState() {
@@ -50,15 +51,22 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
         child: Consumer2<SubscriptionProvider, SettingsProvider>(
           builder: (context, subProvider, settingsProvider, _) {
             final currencySymbol = settingsProvider.currencySymbol;
-            final subscriptions = subProvider.subscriptions;
+            final subscriptions = _showArchived
+                ? subProvider.archivedSubscriptions
+                : subProvider.activeSubscriptions;
 
             if (subscriptions.isEmpty) {
               return EmptyStateWidget(
                 icon: Icons.subscriptions,
-                title: 'No Subscriptions',
-                description: 'Track your recurring subscriptions here',
-                actionLabel: 'Add Subscription',
-                onAction: () => _showAddEditDialog(context),
+                title: _showArchived
+                    ? 'No Past Subscriptions'
+                    : 'No Subscriptions',
+                description: _showArchived
+                    ? 'Deleted subscriptions with historical records will appear here'
+                    : 'Track your recurring subscriptions here',
+                actionLabel: _showArchived ? null : 'Add Subscription',
+                onAction:
+                    _showArchived ? null : () => _showAddEditDialog(context),
               );
             }
 
@@ -78,6 +86,51 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
 
             return Column(
               children: [
+                Container(
+                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  child: Row(
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Active'),
+                        selected: !_showArchived,
+                        checkmarkColor: Colors.white,
+                        selectedColor: AppTheme.primaryColor,
+                        labelStyle: TextStyle(
+                          color: !_showArchived ? Colors.white : null,
+                          fontWeight: !_showArchived
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                        ),
+                        onSelected: (value) {
+                          if (!value) return;
+                          setState(() {
+                            _showArchived = false;
+                            _selectedCategoryFilter = _allCategoriesFilter;
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      ChoiceChip(
+                        label: const Text('Past'),
+                        selected: _showArchived,
+                        checkmarkColor: Colors.white,
+                        selectedColor: AppTheme.primaryColor,
+                        labelStyle: TextStyle(
+                          color: _showArchived ? Colors.white : null,
+                          fontWeight:
+                              _showArchived ? FontWeight.w600 : FontWeight.w400,
+                        ),
+                        onSelected: (value) {
+                          if (!value) return;
+                          setState(() {
+                            _showArchived = true;
+                            _selectedCategoryFilter = _allCategoriesFilter;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
                 Container(
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(16),
@@ -171,6 +224,7 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                             ),
+                            checkmarkColor: Colors.white,
                             labelStyle:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: isSelected
@@ -268,9 +322,18 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
                               final sub = filteredSubscriptions[index];
                               return _SubscriptionCard(
                                 subscription: sub,
-                                onEdit: () => _showAddEditDialog(context, sub),
-                                onDelete: () =>
-                                    _deleteSubscription(context, sub),
+                                onEdit: _showArchived
+                                    ? null
+                                    : () => _showAddEditDialog(context, sub),
+                                onDelete: _showArchived
+                                    ? () => _deleteSubscriptionPermanently(
+                                          context,
+                                          sub,
+                                        )
+                                    : () => _deleteSubscription(context, sub),
+                                onRestore: _showArchived
+                                    ? () => _restoreSubscription(context, sub)
+                                    : null,
                               );
                             },
                           ),
@@ -281,14 +344,16 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
           },
         ),
       ),
-      floatingActionButton: AdaptiveBottomFab(
-        child: FloatingActionButton(
-          mini: true,
-          heroTag: 'subscription_list_fab_add',
-          onPressed: () => _showAddEditDialog(context),
-          child: const Icon(Icons.add),
-        ),
-      ),
+      floatingActionButton: _showArchived
+          ? null
+          : AdaptiveBottomFab(
+              child: FloatingActionButton(
+                mini: true,
+                heroTag: 'subscription_list_fab_add',
+                onPressed: () => _showAddEditDialog(context),
+                child: const Icon(Icons.add),
+              ),
+            ),
     );
   }
 
@@ -306,9 +371,9 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Subscription'),
-        content:
-            const Text('Are you sure you want to delete this subscription?'),
+        title: const Text('Remove From Active Subscriptions'),
+        content: const Text(
+            'This subscription will stop appearing in upcoming reminders, but past records will be preserved in Past view.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -320,7 +385,45 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
                   .deleteSubscription(subscription.id);
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Subscription deleted')),
+                const SnackBar(content: Text('Subscription moved to Past')),
+              );
+            },
+            child: const Text('Move', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _restoreSubscription(BuildContext context, Subscription subscription) {
+    Provider.of<SubscriptionProvider>(context, listen: false)
+        .restoreSubscription(subscription.id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Subscription restored to Active')),
+    );
+  }
+
+  void _deleteSubscriptionPermanently(
+      BuildContext context, Subscription subscription) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Permanently'),
+        content: const Text(
+            'This will permanently remove this archived subscription record.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Provider.of<SubscriptionProvider>(context, listen: false)
+                  .deleteSubscriptionPermanently(subscription.id);
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('Subscription deleted permanently')),
               );
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
@@ -388,13 +491,15 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
 
 class _SubscriptionCard extends StatelessWidget {
   final Subscription subscription;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  final VoidCallback? onRestore;
 
   const _SubscriptionCard({
     required this.subscription,
-    required this.onEdit,
-    required this.onDelete,
+    this.onEdit,
+    this.onDelete,
+    this.onRestore,
   });
 
   @override
@@ -437,18 +542,39 @@ class _SubscriptionCard extends StatelessWidget {
             ),
           ],
         ),
-        trailing: PopupMenuButton(
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              onTap: onEdit,
-              child: const Text('Edit'),
-            ),
-            PopupMenuItem(
-              onTap: onDelete,
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        ),
+        trailing: (onEdit != null || onDelete != null || onRestore != null)
+            ? PopupMenuButton(
+                itemBuilder: (context) {
+                  final items = <PopupMenuEntry>[];
+                  if (onEdit != null) {
+                    items.add(
+                      PopupMenuItem(
+                        onTap: onEdit,
+                        child: const Text('Edit'),
+                      ),
+                    );
+                  }
+                  if (onRestore != null) {
+                    items.add(
+                      PopupMenuItem(
+                        onTap: onRestore,
+                        child: const Text('Restore'),
+                      ),
+                    );
+                  }
+                  if (onDelete != null) {
+                    items.add(
+                      PopupMenuItem(
+                        onTap: onDelete,
+                        child: const Text('Delete',
+                            style: TextStyle(color: Colors.red)),
+                      ),
+                    );
+                  }
+                  return items;
+                },
+              )
+            : null,
         onTap: () => _showDetails(context),
       ),
     );
@@ -597,7 +723,8 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
         child: Container(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom +
-                effectiveBottomInset(context),
+                effectiveBottomInset(context) +
+                16,
             left: 16,
             right: 16,
             top: 24,
@@ -614,7 +741,6 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
                         ? 'Edit Subscription'
                         : 'Add Subscription',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                     ),
@@ -678,7 +804,7 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 decoration: InputDecoration(
                   labelText: 'Category',
                   border: OutlineInputBorder(

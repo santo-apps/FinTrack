@@ -40,7 +40,7 @@ class PaymentAccountPicker extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'No payment accounts available. Please add one first.',
-                    style: TextStyle(fontFamily: 'Poppins', 
+                    style: TextStyle(
                       fontSize: 13,
                       color: AppTheme.errorColor,
                     ),
@@ -57,7 +57,7 @@ class PaymentAccountPicker extends StatelessWidget {
             if (label != null) ...[
               Text(
                 label!,
-                style: TextStyle(fontFamily: 'Poppins', 
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textColor,
@@ -85,7 +85,7 @@ class PaymentAccountPicker extends StatelessWidget {
                           children: [
                             Text(
                               selectedAccount?.name ?? 'Select Payment Account',
-                              style: TextStyle(fontFamily: 'Poppins', 
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: selectedAccount != null
@@ -97,7 +97,7 @@ class PaymentAccountPicker extends StatelessWidget {
                               const SizedBox(height: 2),
                               Text(
                                 selectedAccount!.typeLabel,
-                                style: TextStyle(fontFamily: 'Poppins', 
+                                style: TextStyle(
                                   fontSize: 12,
                                   color: AppTheme.textSecondaryColor,
                                 ),
@@ -187,7 +187,7 @@ class PaymentAccountPicker extends StatelessWidget {
             ),
             Text(
               'Select Payment Account',
-              style: TextStyle(fontFamily: 'Poppins', 
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.textColor,
@@ -241,7 +241,7 @@ class PaymentAccountPicker extends StatelessWidget {
                           Expanded(
                             child: Text(
                               account.name,
-                              style: TextStyle(fontFamily: 'Poppins', 
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: AppTheme.textColor,
@@ -260,7 +260,7 @@ class PaymentAccountPicker extends StatelessWidget {
                               ),
                               child: Text(
                                 'Default',
-                                style: TextStyle(fontFamily: 'Poppins', 
+                                style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
                                   color: AppTheme.successColor,
@@ -274,7 +274,7 @@ class PaymentAccountPicker extends StatelessWidget {
                             (account.bankName != null
                                 ? ' • ${account.bankName}'
                                 : ''),
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 12,
                           color: AppTheme.textSecondaryColor,
                         ),

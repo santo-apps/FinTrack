@@ -20,6 +20,8 @@ import 'package:fintrack/features/loan/presentation/providers/loan_provider.dart
 import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
 import 'package:fintrack/features/goals/presentation/providers/goal_provider.dart';
 import 'package:fintrack/features/bill/presentation/providers/bill_provider.dart';
+import 'package:fintrack/features/receivable/presentation/providers/receivable_provider.dart';
+import 'package:fintrack/features/receivable/presentation/pages/receivable_list_screen.dart';
 
 /// DashboardScreen: Premium financial control center
 /// Clean, calm, structured – manual discipline MVP
@@ -39,6 +41,8 @@ class DashboardScreen extends StatelessWidget {
             Provider.of<PaymentAccountProvider>(context, listen: false),
         goalProvider: Provider.of<GoalProvider>(context, listen: false),
         billProvider: Provider.of<BillProvider>(context, listen: false),
+        receivableProvider:
+            Provider.of<ReceivableProvider>(context, listen: false),
       ),
       child: const _DashboardScreenContent(),
     );
@@ -132,6 +136,15 @@ class _DashboardScreenContentState extends State<_DashboardScreenContent>
                     if (viewModel.pendingBillReminderCount > 0) ...[
                       _AlertsStrip(
                           pendingBillCount: viewModel.pendingBillReminderCount),
+                      const SizedBox(height: 16),
+                    ],
+
+                    if (viewModel.pendingReceivableCount > 0) ...[
+                      _ReceivableSummaryCard(
+                        pendingCount: viewModel.pendingReceivableCount,
+                        pendingTotal: viewModel.pendingReceivableTotal,
+                        currencySymbol: settings.currencySymbol,
+                      ),
                       const SizedBox(height: 16),
                     ],
 
@@ -276,7 +289,7 @@ class _SnapshotCard extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 'Assets',
-                                style: TextStyle(fontFamily: 'Poppins', 
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.grey.shade700,
@@ -297,7 +310,7 @@ class _SnapshotCard extends StatelessWidget {
                             child: Text(
                               AppUtils.formatCurrency(assets,
                                   currencySymbol: currencySymbol),
-                              style: TextStyle(fontFamily: 'Poppins', 
+                              style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 color: const Color(0xFF047857),
@@ -355,7 +368,7 @@ class _SnapshotCard extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 'Loans',
-                                style: TextStyle(fontFamily: 'Poppins', 
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.grey.shade700,
@@ -376,7 +389,7 @@ class _SnapshotCard extends StatelessWidget {
                             child: Text(
                               AppUtils.formatCurrency(loans,
                                   currencySymbol: currencySymbol),
-                              style: TextStyle(fontFamily: 'Poppins', 
+                              style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 color: const Color(0xFFB45309),
@@ -445,7 +458,7 @@ class _SnapshotCard extends StatelessWidget {
                         const SizedBox(width: 6),
                         Text(
                           'Net Worth',
-                          style: TextStyle(fontFamily: 'Poppins', 
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: Colors.grey.shade700,
@@ -475,7 +488,7 @@ class _SnapshotCard extends StatelessWidget {
                         child: Text(
                           AppUtils.formatCurrency(netWorth,
                               currencySymbol: currencySymbol),
-                          style: TextStyle(fontFamily: 'Poppins', 
+                          style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
                             color: isNegative
@@ -538,7 +551,7 @@ class _CompactMetric extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(fontFamily: 'Poppins', 
+          style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w500,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -549,7 +562,7 @@ class _CompactMetric extends StatelessWidget {
           fit: BoxFit.scaleDown,
           child: Text(
             value,
-            style: TextStyle(fontFamily: 'Poppins', 
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: color,
@@ -609,7 +622,7 @@ class _InvestmentSummaryCard extends StatelessWidget {
                 children: [
                   Text(
                     'Investment Portfolio',
-                    style: TextStyle(fontFamily: 'Poppins', 
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
@@ -625,7 +638,7 @@ class _InvestmentSummaryCard extends StatelessWidget {
                     ),
                     child: Text(
                       '${isPositive ? '+' : ''}${gainLossPercent.toStringAsFixed(1)}%',
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: isPositive
@@ -645,7 +658,7 @@ class _InvestmentSummaryCard extends StatelessWidget {
                     children: [
                       Text(
                         'Current Value',
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 10,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -654,7 +667,7 @@ class _InvestmentSummaryCard extends StatelessWidget {
                       Text(
                         AppUtils.formatCurrency(portfolioValue,
                             currencySymbol: currencySymbol),
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
@@ -671,7 +684,7 @@ class _InvestmentSummaryCard extends StatelessWidget {
                     children: [
                       Text(
                         'Gain / Loss',
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 10,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -680,7 +693,7 @@ class _InvestmentSummaryCard extends StatelessWidget {
                       Text(
                         AppUtils.formatCurrency(gainLoss,
                             currencySymbol: currencySymbol),
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: isPositive
@@ -723,7 +736,7 @@ class _WelcomeBackBanner extends StatelessWidget {
           Expanded(
             child: Text(
               'Welcome back! Let\'s get your finances back on track.',
-              style: TextStyle(fontFamily: 'Poppins', 
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: Colors.blue.shade900,
@@ -775,7 +788,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   'No Budget Set',
-                  style: TextStyle(fontFamily: 'Poppins', 
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -784,7 +797,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                 Text(
                   'Create a budget to track your spending',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontFamily: 'Poppins', 
+                  style: TextStyle(
                     fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -864,7 +877,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                       'Monthly Budget',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                       ),
@@ -886,7 +899,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           statusLabel,
-                          style: TextStyle(fontFamily: 'Poppins', 
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: usageColor,
@@ -904,7 +917,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                 children: [
                   Text(
                     'Spent',
-                    style: TextStyle(fontFamily: 'Poppins', 
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       color: Colors.grey.shade700,
@@ -917,7 +930,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.right,
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: usageColor,
@@ -931,7 +944,8 @@ class _BudgetOverviewCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: LinearProgressIndicator(
                   value: budgetUsagePercent.clamp(0.0, 1.0),
-                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.surfaceContainerHighest,
                   valueColor: AlwaysStoppedAnimation(usageColor),
                   minHeight: 10,
                 ),
@@ -946,7 +960,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                     children: [
                       Text(
                         'You spent',
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 10,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -954,7 +968,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                       Text(
                         AppUtils.formatCurrency(spentAmount,
                             currencySymbol: currencySymbol),
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
@@ -971,7 +985,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                     children: [
                       Text(
                         isExceeded ? 'Overspent by' : 'You have left',
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 10,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -979,7 +993,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                       Text(
                         AppUtils.formatCurrency(remainingBudget.abs(),
                             currencySymbol: currencySymbol),
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: isExceeded
@@ -997,7 +1011,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   '⚠️ Categories Over Limit',
-                  style: TextStyle(fontFamily: 'Poppins', 
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: Colors.red.shade700,
@@ -1010,7 +1024,7 @@ class _BudgetOverviewCard extends StatelessWidget {
                     return Chip(
                       label: Text(
                         cat,
-                        style: TextStyle(fontFamily: 'Poppins', fontSize: 10),
+                        style: TextStyle(fontSize: 10),
                       ),
                       backgroundColor: Colors.red.shade50,
                       side: BorderSide(color: Colors.red.shade200),
@@ -1065,7 +1079,7 @@ class _TopCategoriesCard extends StatelessWidget {
             children: [
               Text(
                 'Top Spending',
-                style: TextStyle(fontFamily: 'Poppins', 
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1085,7 +1099,7 @@ class _TopCategoriesCard extends StatelessWidget {
                               cat.category,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontFamily: 'Poppins', 
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1095,7 +1109,7 @@ class _TopCategoriesCard extends StatelessWidget {
                           Text(
                             AppUtils.formatCurrency(cat.amount,
                                 currencySymbol: currencySymbol),
-                            style: TextStyle(fontFamily: 'Poppins', 
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: AppTheme.primaryColor,
@@ -1108,8 +1122,9 @@ class _TopCategoriesCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           value: cat.percentage,
-                          backgroundColor:
-                              Theme.of(context).colorScheme.surfaceVariant,
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                           valueColor: AlwaysStoppedAnimation(
                             cat.percentage > 1.0
                                 ? Colors.red
@@ -1145,8 +1160,8 @@ class _StreakCard extends StatelessWidget {
     if (days == 0) return 'Start your tracking streak today!';
     if (days <= 2) return 'Great start! Keep tracking.';
     if (days <= 6) return 'Streak building! Keep it up.';
-    if (days < 30) return '${days} days strong! You\'re on fire 🔥';
-    return '${days} days! You\'re a tracking master 🏆';
+    if (days < 30) return '$days days strong! You\'re on fire 🔥';
+    return '$days days! You\'re a tracking master 🏆';
   }
 
   @override
@@ -1181,7 +1196,7 @@ class _StreakCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   '$streak',
-                  style: TextStyle(fontFamily: 'Poppins', 
+                  style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: Theme.of(context).brightness == Brightness.dark
@@ -1198,7 +1213,7 @@ class _StreakCard extends StatelessWidget {
                 children: [
                   Text(
                     'Tracking Streak',
-                    style: TextStyle(fontFamily: 'Poppins', 
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1207,7 +1222,7 @@ class _StreakCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     _getStreakMessage(streak),
-                    style: TextStyle(fontFamily: 'Poppins', 
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1267,7 +1282,7 @@ class _AlertsStrip extends StatelessWidget {
                   children: [
                     Text(
                       'Pending Bills',
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey.shade800,
@@ -1276,7 +1291,7 @@ class _AlertsStrip extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       '$pendingBillCount reminder${pendingBillCount != 1 ? 's' : ''} pending',
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: Colors.red.shade600,
@@ -1288,6 +1303,84 @@ class _AlertsStrip extends StatelessWidget {
               Icon(
                 Icons.arrow_forward_ios,
                 color: Colors.red.shade400,
+                size: 18,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReceivableSummaryCard extends StatelessWidget {
+  final int pendingCount;
+  final double pendingTotal;
+  final String currencySymbol;
+
+  const _ReceivableSummaryCard({
+    required this.pendingCount,
+    required this.pendingTotal,
+    required this.currencySymbol,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const ReceivableListScreen(
+            showAppBar: true,
+            showBackButton: true,
+          ),
+        ),
+      ),
+      borderRadius: BorderRadius.circular(12),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.green.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.green.withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.payments_outlined,
+                color: Colors.green,
+                size: 32,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pending Receivables',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$pendingCount item${pendingCount != 1 ? 's' : ''} • $currencySymbol ${pendingTotal.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.green.shade500,
                 size: 18,
               ),
             ],
@@ -1332,7 +1425,7 @@ class _GoalsSection extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text(
                       'No Goals Set',
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1341,7 +1434,7 @@ class _GoalsSection extends StatelessWidget {
                     Text(
                       'Set financial goals to track progress',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
                         fontSize: 12,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -1397,7 +1490,7 @@ class _GoalsSection extends StatelessWidget {
                     children: [
                       Text(
                         'Financial Goals',
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                         ),
@@ -1411,7 +1504,7 @@ class _GoalsSection extends StatelessWidget {
                   const SizedBox(height: 10),
                   Text(
                     '${activeGoals.length} active goal${activeGoals.length == 1 ? '' : 's'}',
-                    style: TextStyle(fontFamily: 'Poppins', 
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1420,7 +1513,7 @@ class _GoalsSection extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     '${AppUtils.formatCurrency(totalSaved, currencySymbol: settingsProvider.currencySymbol)} saved of ${AppUtils.formatCurrency(totalTarget, currencySymbol: settingsProvider.currencySymbol)}',
-                    style: TextStyle(fontFamily: 'Poppins', 
+                    style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -1428,7 +1521,7 @@ class _GoalsSection extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     '$completedGoalsCount completed goal${completedGoalsCount == 1 ? '' : 's'}',
-                    style: TextStyle(fontFamily: 'Poppins', 
+                    style: TextStyle(
                       fontSize: 11,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -1440,7 +1533,7 @@ class _GoalsSection extends StatelessWidget {
                       value: (progressPercent / 100).clamp(0.0, 1.0),
                       minHeight: 8,
                       backgroundColor:
-                          Theme.of(context).colorScheme.surfaceVariant,
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       valueColor:
                           AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
                     ),
@@ -1448,7 +1541,7 @@ class _GoalsSection extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     '${progressPercent.toStringAsFixed(1)}% complete',
-                    style: TextStyle(fontFamily: 'Poppins', 
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.primaryColor,

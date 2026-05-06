@@ -9,6 +9,7 @@ import 'package:fintrack/features/goals/presentation/providers/goal_provider.dar
 import 'package:fintrack/features/bill/presentation/providers/bill_provider.dart';
 import 'package:fintrack/features/bill/data/models/bill_model.dart';
 import 'package:fintrack/features/bill/data/models/bill_reminder_model.dart';
+import 'package:fintrack/features/receivable/presentation/providers/receivable_provider.dart';
 
 /// HomeViewModel: Single source of truth for Home screen data
 /// All financial computations happen here, NOT in the UI
@@ -21,6 +22,7 @@ class HomeViewModel extends ChangeNotifier {
   final PaymentAccountProvider _accountProvider;
   final GoalProvider _goalProvider;
   final BillProvider _billProvider;
+  final ReceivableProvider _receivableProvider;
 
   // Cached computed values
   double _assets = 0;
@@ -47,6 +49,8 @@ class HomeViewModel extends ChangeNotifier {
   double _investmentCost = 0;
   double _investmentGainLoss = 0;
   double _investmentGainLossPercent = 0;
+  double _pendingReceivableTotal = 0;
+  int _pendingReceivableCount = 0;
   bool _isDisposed = false;
 
   HomeViewModel({
@@ -57,13 +61,15 @@ class HomeViewModel extends ChangeNotifier {
     required PaymentAccountProvider accountProvider,
     required GoalProvider goalProvider,
     required BillProvider billProvider,
+    required ReceivableProvider receivableProvider,
   })  : _expenseProvider = expenseProvider,
         _budgetProvider = budgetProvider,
         _investmentProvider = investmentProvider,
         _loanProvider = loanProvider,
         _accountProvider = accountProvider,
         _goalProvider = goalProvider,
-        _billProvider = billProvider {
+        _billProvider = billProvider,
+        _receivableProvider = receivableProvider {
     _listenToProviders();
     _computeAll();
   }
@@ -96,6 +102,8 @@ class HomeViewModel extends ChangeNotifier {
   double get investmentCost => _investmentCost;
   double get investmentGainLoss => _investmentGainLoss;
   double get investmentGainLossPercent => _investmentGainLossPercent;
+  double get pendingReceivableTotal => _pendingReceivableTotal;
+  int get pendingReceivableCount => _pendingReceivableCount;
   int get pendingBillReminderCount => _billProvider
       .getRemindersForMonth(DateTime.now())
       .where((r) => r.status == BillReminderStatus.pending)
@@ -109,6 +117,7 @@ class HomeViewModel extends ChangeNotifier {
     _accountProvider.addListener(_computeAll);
     _goalProvider.addListener(_computeAll);
     _billProvider.addListener(_computeAll);
+    _receivableProvider.addListener(_computeAll);
   }
 
   bool _isSystemSubscriptionPayment(dynamic expense) {
@@ -132,6 +141,7 @@ class HomeViewModel extends ChangeNotifier {
     _computeBills();
     _computeInvestments();
     _computeBudget();
+    _computeReceivables();
     _computeTopCategories();
     _computeStreak();
     _computeAlerts();
@@ -245,6 +255,14 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
+  void _computeReceivables() {
+    final now = DateTime.now();
+    final pending = _receivableProvider.getPendingForMonth(now);
+    _pendingReceivableCount = pending.length;
+    _pendingReceivableTotal =
+        pending.fold<double>(0, (sum, item) => sum + item.amount);
+  }
+
   void _computeTopCategories() {
     final now = DateTime.now();
     final monthExpenses = HiveService.getAllExpenses().where((e) {
@@ -271,7 +289,7 @@ class HomeViewModel extends ChangeNotifier {
       final limit = budget?.categoryLimits[e.key] ?? 0;
       final percent = (totalMonthSpend > 0
           ? (e.value / totalMonthSpend).clamp(0.0, 1.0)
-          : 0.0) as double;
+          : 0.0);
 
       return CategorySpending(
         category: e.key,
@@ -494,6 +512,7 @@ class HomeViewModel extends ChangeNotifier {
     _accountProvider.removeListener(_computeAll);
     _goalProvider.removeListener(_computeAll);
     _billProvider.removeListener(_computeAll);
+    _receivableProvider.removeListener(_computeAll);
     super.dispose();
   }
 }

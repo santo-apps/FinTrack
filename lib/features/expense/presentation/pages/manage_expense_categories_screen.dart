@@ -42,7 +42,6 @@ class _ManageExpenseCategoriesScreenState
                     Text(
                       'No Categories',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.textColor,
@@ -78,14 +77,13 @@ class _ManageExpenseCategoriesScreenState
                       child: Center(
                         child: Text(
                           category.icon,
-                          style: TextStyle(fontFamily: 'Poppins', fontSize: 24),
+                          style: TextStyle(fontSize: 24),
                         ),
                       ),
                     ),
                     title: Text(
                       category.name,
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -204,7 +202,7 @@ class _ManageExpenseCategoriesScreenState
                         const SizedBox(width: 12),
                         Text(
                           'Tap to change color',
-                          style: TextStyle(fontFamily: 'Poppins', fontSize: 14),
+                          style: TextStyle(fontSize: 14),
                         ),
                       ],
                     ),

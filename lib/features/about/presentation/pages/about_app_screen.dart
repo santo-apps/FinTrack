@@ -19,7 +19,6 @@ class AboutAppScreen extends StatelessWidget {
                 title: Text(
                   'About FinTrack',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 24,
                     fontWeight: FontWeight.w600,
                   ),
@@ -70,7 +69,6 @@ class AboutAppScreen extends StatelessWidget {
                     Text(
                       'FinTrack',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
                         color: Theme.of(context).primaryColor,
@@ -78,9 +76,8 @@ class AboutAppScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'v1.0.0',
+                      'v1.1.0',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
                         color: Colors.grey[600],
@@ -102,7 +99,6 @@ class AboutAppScreen extends StatelessWidget {
                       child: Text(
                         'Your personal finance companion designed to help you manage money, track investments, and achieve financial goals with ease and confidence.',
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
                           height: 1.6,
@@ -116,7 +112,6 @@ class AboutAppScreen extends StatelessWidget {
                     Text(
                       'Features',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
                         color: Theme.of(context).colorScheme.onSurface,
@@ -133,7 +128,6 @@ class AboutAppScreen extends StatelessWidget {
                     Text(
                       'About This App',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
                         color: Theme.of(context).colorScheme.onSurface,
@@ -178,7 +172,6 @@ class AboutAppScreen extends StatelessWidget {
                           Text(
                             'Support & Feedback',
                             style: TextStyle(
-                              fontFamily: 'Poppins',
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: Theme.of(context).colorScheme.onSurface,
@@ -188,7 +181,6 @@ class AboutAppScreen extends StatelessWidget {
                           Text(
                             'We\'d love to hear from you! If you have suggestions or encounter any issues, please reach out to us.',
                             style: TextStyle(
-                              fontFamily: 'Poppins',
                               fontSize: 14,
                               fontWeight: FontWeight.w400,
                               height: 1.5,
@@ -205,7 +197,6 @@ class AboutAppScreen extends StatelessWidget {
                       child: Text(
                         '© 2025 FinTrack. All rights reserved.',
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: 12,
                           fontWeight: FontWeight.w400,
                           color: Colors.grey[500],
@@ -347,7 +338,6 @@ class AboutAppScreen extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurface,
@@ -357,7 +347,6 @@ class AboutAppScreen extends StatelessWidget {
                 Text(
                   description,
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
                     height: 1.4,
@@ -404,7 +393,6 @@ class AboutAppScreen extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurface,
@@ -414,7 +402,6 @@ class AboutAppScreen extends StatelessWidget {
                 Text(
                   description,
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
                     height: 1.4,

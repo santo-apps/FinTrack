@@ -13,6 +13,7 @@ import 'package:fintrack/features/settings/presentation/providers/settings_provi
 import 'package:fintrack/features/subscription/data/models/subscription_model.dart';
 import 'package:fintrack/features/subscription/presentation/providers/subscription_provider.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
+import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -475,6 +476,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -520,10 +522,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     TextButton.icon(
                       onPressed: _skipAll,
                       icon: const Icon(Icons.close, size: 18),
-                      label: const Text('Skip'),
+                      label: const Text(
+                        'Skip',
+                        style: TextStyle(),
+                      ),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 6),
+                        textStyle: const TextStyle(),
                       ),
                     ),
                   ],
@@ -542,12 +548,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         items: settings.availableCurrencies,
                         selectedItem: _selectedCurrency,
                         dropdownBuilder: (context, selectedItem) {
-                          return Text(selectedItem ?? 'Select currency');
+                          return Text(
+                            selectedItem ?? 'Select currency',
+                            style: const TextStyle(),
+                          );
                         },
                         dropdownDecoratorProps: const DropDownDecoratorProps(
                           baseStyle: TextStyle(),
                         ),
-                        popupProps: PopupProps.menu(
+                        popupProps: PopupProps.dialog(
                           title: const Padding(
                             padding: EdgeInsets.all(8),
                             child: Text('Select Currency'),
@@ -560,7 +569,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               contentPadding: EdgeInsets.all(8),
                             ),
                           ),
-                          fit: FlexFit.loose,
                         ),
                         onChanged: (value) {
                           if (value == null) return;
@@ -583,7 +591,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           ),
                           const SizedBox(height: 12),
                           DropdownButtonFormField<String>(
-                            value: _accountType.isEmpty ? null : _accountType,
+                            initialValue:
+                                _accountType.isEmpty ? null : _accountType,
                             decoration: InputDecoration(
                               labelText: 'Account type',
                               hintText: 'Select account type',
@@ -654,7 +663,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Column(
                         children: [
                           DropdownButtonFormField<String>(
-                            value: _budgetCategory,
+                            initialValue: _budgetCategory,
                             decoration: const InputDecoration(
                               labelText: 'Budget category',
                               border: OutlineInputBorder(),
@@ -751,13 +760,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             selectedItem: _investmentType,
                             dropdownBuilder: (context, selectedItem) {
                               return Text(
-                                  selectedItem ?? 'Select investment type');
+                                selectedItem ?? 'Select investment type',
+                                style: const TextStyle(),
+                              );
                             },
                             dropdownDecoratorProps:
                                 const DropDownDecoratorProps(
                               baseStyle: TextStyle(),
                             ),
-                            popupProps: PopupProps.menu(
+                            popupProps: PopupProps.dialog(
                               title: const Padding(
                                 padding: EdgeInsets.all(8),
                                 child: Text('Select Investment Type'),
@@ -770,7 +781,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   contentPadding: EdgeInsets.all(8),
                                 ),
                               ),
-                              fit: FlexFit.loose,
                             ),
                             onChanged: (value) {
                               if (value == null) return;
@@ -859,7 +869,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           ),
                           const SizedBox(height: 12),
                           DropdownButtonFormField<String>(
-                            value: _subscriptionCycle,
+                            initialValue: _subscriptionCycle,
                             decoration: const InputDecoration(
                               labelText: 'Billing cycle',
                               border: OutlineInputBorder(),
@@ -895,7 +905,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  16,
+                  16,
+                  16 + effectiveBottomInset(context),
+                ),
                 child: Row(
                   children: [
                     TextButton(
@@ -903,12 +918,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 20, vertical: 12),
+                        textStyle: const TextStyle(),
                       ),
                       child: Text(
                         _currentStep == _stepTitles.length - 1
                             ? 'Skip'
                             : 'Skip this step',
-                        style: const TextStyle(fontSize: 15),
+                        style: const TextStyle(
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1236,7 +1254,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           'Account',
                           _accountNameController.text.isNotEmpty &&
                                   _accountType.isNotEmpty
-                              ? '${_accountNameController.text} • ${_accountType}'
+                              ? '${_accountNameController.text} • $_accountType'
                               : 'Skipped',
                           Icons.account_balance_wallet,
                         ),
@@ -1252,7 +1270,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         _buildReviewItem(
                           'Monthly Budget',
                           _budgetAmountController.text.isNotEmpty
-                              ? '${_budgetCategory} • ${_selectedCurrency} ${_budgetAmountController.text}'
+                              ? '$_budgetCategory • $_selectedCurrency ${_budgetAmountController.text}'
                               : 'Skipped',
                           Icons.pie_chart,
                         ),
@@ -1260,7 +1278,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         _buildReviewItem(
                           'Investment',
                           _investmentNameController.text.isNotEmpty
-                              ? '${_investmentNameController.text} • ${_investmentType}'
+                              ? '${_investmentNameController.text} • $_investmentType'
                               : 'Skipped',
                           Icons.trending_up,
                         ),
@@ -1268,7 +1286,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         _buildReviewItem(
                           'Loan',
                           _loanLenderController.text.isNotEmpty
-                              ? '${_loanLenderController.text} • EMI: ${_selectedCurrency} ${loanEmi.toStringAsFixed(2)}'
+                              ? '${_loanLenderController.text} • EMI: $_selectedCurrency ${loanEmi.toStringAsFixed(2)}'
                               : 'Skipped',
                           Icons.request_quote,
                         ),
@@ -1276,7 +1294,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         _buildReviewItem(
                           'Subscription',
                           _subscriptionNameController.text.isNotEmpty
-                              ? '${_subscriptionNameController.text} • ${_subscriptionCycle}'
+                              ? '${_subscriptionNameController.text} • $_subscriptionCycle'
                               : 'Skipped',
                           Icons.subscriptions,
                         ),

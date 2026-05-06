@@ -6,6 +6,10 @@ class SubscriptionProvider extends ChangeNotifier {
   List<Subscription> _subscriptions = [];
 
   List<Subscription> get subscriptions => _subscriptions;
+  List<Subscription> get activeSubscriptions =>
+      _subscriptions.where((s) => !s.isArchived).toList();
+  List<Subscription> get archivedSubscriptions =>
+      _subscriptions.where((s) => s.isArchived).toList();
 
   SubscriptionProvider() {
     _loadSubscriptions();
@@ -45,6 +49,42 @@ class SubscriptionProvider extends ChangeNotifier {
 
   Future<void> deleteSubscription(String id) async {
     try {
+      final index = _subscriptions.indexWhere((s) => s.id == id);
+      if (index == -1) return;
+
+      final archivedSubscription = _subscriptions[index].copyWith(
+        isArchived: true,
+        archivedAt: DateTime.now(),
+      );
+
+      await HiveService.updateSubscription(archivedSubscription);
+      _subscriptions[index] = archivedSubscription;
+      notifyListeners();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> restoreSubscription(String id) async {
+    try {
+      final index = _subscriptions.indexWhere((s) => s.id == id);
+      if (index == -1) return;
+
+      final restored = _subscriptions[index].copyWith(
+        isArchived: false,
+        archivedAt: null,
+      );
+
+      await HiveService.updateSubscription(restored);
+      _subscriptions[index] = restored;
+      notifyListeners();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> deleteSubscriptionPermanently(String id) async {
+    try {
       await HiveService.deleteSubscription(id);
       _subscriptions.removeWhere((s) => s.id == id);
       notifyListeners();
@@ -54,7 +94,7 @@ class SubscriptionProvider extends ChangeNotifier {
   }
 
   double getMonthlySubscriptionTotal() {
-    return _subscriptions.fold<double>(
+    return activeSubscriptions.fold<double>(
       0,
       (sum, sub) => sum + sub.getMonthlyAmount(),
     );
@@ -62,7 +102,7 @@ class SubscriptionProvider extends ChangeNotifier {
 
   List<Subscription> getUpcomingRenewals() {
     final now = DateTime.now();
-    final upcoming = _subscriptions
+    final upcoming = activeSubscriptions
         .where((s) => s.renewalDate.isAfter(now))
         .toList()
       ..sort((a, b) => a.renewalDate.compareTo(b.renewalDate));
@@ -71,7 +111,9 @@ class SubscriptionProvider extends ChangeNotifier {
 
   List<Subscription> getOverdueSubscriptions() {
     final now = DateTime.now();
-    return _subscriptions.where((s) => s.renewalDate.isBefore(now)).toList();
+    return activeSubscriptions
+        .where((s) => s.renewalDate.isBefore(now))
+        .toList();
   }
 
   Future<void> refreshData() async {

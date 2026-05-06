@@ -115,7 +115,6 @@ class _AuthScreenState extends State<AuthScreen> {
                 Text(
                   'Secure Access',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
                   ),
@@ -124,7 +123,6 @@ class _AuthScreenState extends State<AuthScreen> {
                 Text(
                   'Secure Your Financial Data',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 14,
                     color: Colors.grey[600],
                   ),
@@ -149,7 +147,6 @@ class _AuthScreenState extends State<AuthScreen> {
                           maxLength: 6,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontFamily: 'Poppins',
                             fontSize: 24,
                             letterSpacing: 8,
                             fontWeight: FontWeight.w600,
@@ -157,7 +154,6 @@ class _AuthScreenState extends State<AuthScreen> {
                           decoration: InputDecoration(
                             hintText: '••••••',
                             hintStyle: TextStyle(
-                              fontFamily: 'Poppins',
                               fontSize: 24,
                               color: Colors.grey[400],
                             ),
@@ -184,7 +180,6 @@ class _AuthScreenState extends State<AuthScreen> {
                             child: Text(
                               _errorMessage!,
                               style: TextStyle(
-                                fontFamily: 'Poppins',
                                 fontSize: 12,
                                 color: Colors.red[700],
                                 fontWeight: FontWeight.w500,
@@ -213,7 +208,6 @@ class _AuthScreenState extends State<AuthScreen> {
                                 : Text(
                                     'Unlock',
                                     style: TextStyle(
-                                      fontFamily: 'Poppins',
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                     ),

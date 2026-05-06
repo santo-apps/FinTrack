@@ -527,7 +527,8 @@ class _AddEditInvestmentScreenState extends State<AddEditInvestmentScreen> {
         child: Container(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom +
-                effectiveBottomInset(context),
+                effectiveBottomInset(context) +
+                16,
             left: 16,
             right: 16,
             top: 24,
@@ -544,7 +545,6 @@ class _AddEditInvestmentScreenState extends State<AddEditInvestmentScreen> {
                         ? 'Edit Investment'
                         : 'Add Investment',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                     ),

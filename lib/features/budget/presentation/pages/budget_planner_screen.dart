@@ -128,7 +128,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                           children: [
                             Text(
                               'Category Budgets',
-                              style: TextStyle(fontFamily: 'Poppins', 
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -164,7 +164,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                           const SizedBox(height: 12),
                           Text(
                             'No budgets set for this month',
-                            style: TextStyle(fontFamily: 'Poppins', 
+                            style: TextStyle(
                               fontSize: 14,
                               color: AppTheme.textSecondaryColor,
                             ),
@@ -281,7 +281,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
             },
             child: Text(
               _getMonthYearString(_selectedMonth),
-              style: TextStyle(fontFamily: 'Poppins', 
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -368,7 +368,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                 children: [
                   Text(
                     'Summary',
-                    style: TextStyle(fontFamily: 'Poppins', 
+                    style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Theme.of(context).colorScheme.onSurface
@@ -400,7 +400,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                           children: [
                             Text(
                               'Total Budget',
-                              style: TextStyle(fontFamily: 'Poppins', 
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: Theme.of(context).brightness ==
                                         Brightness.dark
@@ -414,7 +414,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                             Text(
                               AppUtils.formatCurrency(totalBudget,
                                   currencySymbol: currencySymbol),
-                              style: TextStyle(fontFamily: 'Poppins', 
+                              style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w700,
                                 color: Theme.of(context).brightness ==
@@ -434,7 +434,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                       children: [
                                         Text(
                                           'Spent',
-                                          style: TextStyle(fontFamily: 'Poppins', 
+                                          style: TextStyle(
                                             fontSize: 11,
                                             color: Theme.of(context)
                                                         .brightness ==
@@ -448,7 +448,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                         Text(
                                           AppUtils.formatCurrency(totalSpent,
                                               currencySymbol: currencySymbol),
-                                          style: TextStyle(fontFamily: 'Poppins', 
+                                          style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
                                             color:
@@ -470,7 +470,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                       children: [
                                         Text(
                                           'Remaining',
-                                          style: TextStyle(fontFamily: 'Poppins', 
+                                          style: TextStyle(
                                             fontSize: 11,
                                             color: Theme.of(context)
                                                         .brightness ==
@@ -484,7 +484,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                         Text(
                                           AppUtils.formatCurrency(remaining,
                                               currencySymbol: currencySymbol),
-                                          style: TextStyle(fontFamily: 'Poppins', 
+                                          style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
                                             color: remaining >= 0
@@ -547,7 +547,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                 const SizedBox(height: 6),
                 Text(
                   '${(percentage * 100).toStringAsFixed(1)}% of budget used',
-                  style: TextStyle(fontFamily: 'Poppins', 
+                  style: TextStyle(
                     fontSize: 11,
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Theme.of(context).colorScheme.onSurfaceVariant
@@ -679,7 +679,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                     child: Center(
                       child: Text(
                         icon,
-                        style: TextStyle(fontFamily: 'Poppins', fontSize: 20),
+                        style: TextStyle(fontSize: 20),
                       ),
                     ),
                   ),
@@ -690,7 +690,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                       children: [
                         Text(
                           category,
-                          style: TextStyle(fontFamily: 'Poppins', 
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -700,7 +700,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                         const SizedBox(height: 2),
                         Text(
                           '${categoryExpenses.length} expense${categoryExpenses.length != 1 ? 's' : ''}',
-                          style: TextStyle(fontFamily: 'Poppins', 
+                          style: TextStyle(
                             fontSize: 12,
                             color:
                                 Theme.of(context).colorScheme.onSurfaceVariant,
@@ -715,7 +715,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                       Text(
                         AppUtils.formatCurrency(spentAmount,
                             currencySymbol: currencySymbol),
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: isOverBudget
@@ -725,7 +725,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                       ),
                       Text(
                         'of ${AppUtils.formatCurrency(budgetAmount, currencySymbol: currencySymbol)}',
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 12,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -777,7 +777,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                 children: [
                   Text(
                     '${(percentage * 100).toStringAsFixed(1)}% used',
-                    style: TextStyle(fontFamily: 'Poppins', 
+                    style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -792,7 +792,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                       ),
                       child: Text(
                         'Over by ${AppUtils.formatCurrency(spentAmount - budgetAmount, currencySymbol: currencySymbol)}',
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.errorColor,
@@ -918,7 +918,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                         const SizedBox(width: 12),
                         Text(
                           'Tap to change color',
-                          style: TextStyle(fontFamily: 'Poppins', fontSize: 14),
+                          style: TextStyle(fontSize: 14),
                         ),
                       ],
                     ),
@@ -1047,7 +1047,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                     const SizedBox(height: 16),
                     Text(
                       'Add Category Budget',
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
                       ),
@@ -1061,7 +1061,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                 .map((cat) => cat.name as String)
                                 .toList(),
                             selectedItem: selectedCategory,
-                            popupProps: PopupProps.menu(
+                            popupProps: PopupProps.dialog(
                               showSearchBox: true,
                               itemBuilder: (context, item, isSelected) {
                                 final cat = categoryMap[item];
@@ -1069,9 +1069,12 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                   leading: cat == null
                                       ? null
                                       : Text(cat.icon,
-                                          style: TextStyle(fontFamily: 'Poppins', 
+                                          style: TextStyle(
                                               fontSize: 20)),
-                                  title: Text(item),
+                                  title: Text(
+                                    item,
+                                    style: const TextStyle(),
+                                  ),
                                 );
                               },
                             ),
@@ -1090,7 +1093,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                               return Row(
                                 children: [
                                   Text(cat.icon,
-                                      style: TextStyle(fontFamily: 'Poppins', fontSize: 18)),
+                                      style: TextStyle(
+                                          fontSize: 18)),
                                   const SizedBox(width: 8),
                                   Text(cat.name),
                                 ],
@@ -1157,8 +1161,9 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                             Expanded(
                               child: Text(
                                 errorMsg!,
-                                style: TextStyle(fontFamily: 'Poppins', 
-                                    fontSize: 12, color: Colors.red),
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.red),
                               ),
                             ),
                           ],
@@ -1169,7 +1174,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                       const SizedBox(height: 16),
                       Text(
                         'Recurrence',
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1181,7 +1186,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                             title: const Text('One-Time'),
                             subtitle: Text(
                               'Budget for ${_getMonthYearString(_selectedMonth)} only',
-                              style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
+                              style: TextStyle(
+                                  fontSize: 12),
                             ),
                             value: 'oneTime',
                             groupValue: recurrenceType,
@@ -1198,7 +1204,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                             title: const Text('Monthly Recurring'),
                             subtitle: Text(
                               'Repeat every month from now onwards',
-                              style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
+                              style: TextStyle(
+                                  fontSize: 12),
                             ),
                             value: 'monthly',
                             groupValue: recurrenceType,
@@ -1221,7 +1228,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                 endDate == null
                                     ? 'No end date'
                                     : 'Until ${endDate!.year}-${endDate!.month.toString().padLeft(2, "0")}',
-                                style: TextStyle(fontFamily: 'Poppins', fontSize: 13),
+                                style: TextStyle(
+                                    fontSize: 13),
                               ),
                             ),
                             TextButton(
@@ -1346,7 +1354,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
       builder: (context) => AlertDialog(
         title: Text(
           'Edit Budget: $category',
-          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
         content: TextField(
           controller: amountController,
@@ -1418,11 +1426,11 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
       builder: (context) => AlertDialog(
         title: Text(
           'Delete Budget',
-          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
         content: Text(
           'Are you sure you want to delete the budget for $category?',
-          style: TextStyle(fontFamily: 'Poppins', ),
+          style: TextStyle(),
         ),
         actions: [
           TextButton(
@@ -1492,7 +1500,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
       builder: (context) => AlertDialog(
         title: Text(
           'Delete Budget',
-          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1500,7 +1508,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
           children: [
             Text(
               'Delete budget for ${_getMonthYearString(_selectedMonth)}?',
-              style: TextStyle(fontFamily: 'Poppins', ),
+              style: TextStyle(),
             ),
             if (budget.recurrenceType == 'monthly' &&
                 budget.baselineId != null) ...[
@@ -1516,7 +1524,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                   children: [
                     Text(
                       'This is a recurring budget. Choose:',
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -1524,12 +1532,12 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                     const SizedBox(height: 8),
                     Text(
                       '• This month only: Delete just ${_getMonthYearString(_selectedMonth)}',
-                      style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
+                      style: TextStyle(fontSize: 12),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '• All future: Delete this and all future recurring instances',
-                      style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
+                      style: TextStyle(fontSize: 12),
                     ),
                   ],
                 ),
@@ -1654,7 +1662,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                         ),
                         child: Center(
                           child: Text(icon,
-                              style: TextStyle(fontFamily: 'Poppins', fontSize: 24)),
+                              style: TextStyle(
+                                  fontSize: 24)),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1664,14 +1673,14 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                           children: [
                             Text(
                               category,
-                              style: TextStyle(fontFamily: 'Poppins', 
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                             Text(
                               '${expenses.length} expense${expenses.length != 1 ? 's' : ''}',
-                              style: TextStyle(fontFamily: 'Poppins', 
+                              style: TextStyle(
                                 fontSize: 14,
                                 color: AppTheme.textSecondaryColor,
                               ),
@@ -1689,7 +1698,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                   ? Center(
                       child: Text(
                         'No expenses in this category',
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 14,
                           color: AppTheme.textSecondaryColor,
                         ),
@@ -1723,7 +1732,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                   children: [
                                     Text(
                                       expense.title,
-                                      style: TextStyle(fontFamily: 'Poppins', 
+                                      style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -1731,7 +1740,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                     const SizedBox(height: 4),
                                     Text(
                                       AppUtils.formatDateShort(expense.date),
-                                      style: TextStyle(fontFamily: 'Poppins', 
+                                      style: TextStyle(
                                         fontSize: 12,
                                         color: AppTheme.textSecondaryColor,
                                       ),
@@ -1742,7 +1751,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                               Text(
                                 AppUtils.formatCurrency(expense.amount,
                                     currencySymbol: currencySymbol),
-                                style: TextStyle(fontFamily: 'Poppins', 
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                   color: AppTheme.errorColor,

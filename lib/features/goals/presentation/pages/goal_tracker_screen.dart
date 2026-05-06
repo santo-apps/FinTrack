@@ -399,7 +399,8 @@ class _GoalCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: progress / 100,
                 minHeight: 8,
-                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                backgroundColor:
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
                 valueColor: AlwaysStoppedAnimation<Color>(
                   Theme.of(context).colorScheme.primary,
                 ),
@@ -522,7 +523,8 @@ class _AddEditGoalScreenState extends State<AddEditGoalScreen> {
         child: Container(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom +
-                effectiveBottomInset(context),
+                effectiveBottomInset(context) +
+                16,
             left: 16,
             right: 16,
             top: 24,
@@ -537,7 +539,6 @@ class _AddEditGoalScreenState extends State<AddEditGoalScreen> {
                   Text(
                     widget.goal != null ? 'Edit Goal' : 'Create Goal',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                     ),

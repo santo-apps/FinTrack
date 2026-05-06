@@ -39,6 +39,9 @@ class Bill extends HiveObject {
   @HiveField(10)
   DateTime? paidDate;
 
+  @HiveField(11)
+  double paidAmount;
+
   Bill({
     required this.id,
     required this.name,
@@ -51,6 +54,7 @@ class Bill extends HiveObject {
     this.currency = 'USD',
     this.notes,
     this.paidDate,
+    this.paidAmount = 0.0,
   });
 
   Bill copyWith({
@@ -65,6 +69,7 @@ class Bill extends HiveObject {
     String? currency,
     Object? notes = _unset,
     Object? paidDate = _unset,
+    double? paidAmount,
   }) {
     return Bill(
       id: id ?? this.id,
@@ -80,7 +85,16 @@ class Bill extends HiveObject {
       currency: currency ?? this.currency,
       notes: notes == _unset ? this.notes : notes as String?,
       paidDate: paidDate == _unset ? this.paidDate : paidDate as DateTime?,
+      paidAmount: paidAmount ?? this.paidAmount,
     );
+  }
+
+  bool isPartiallyPaid() {
+    return !isPaid && paidAmount > 0 && paidAmount < amount;
+  }
+
+  double remainingAmount() {
+    return (amount - paidAmount).clamp(0.0, double.infinity);
   }
 
   bool isOverdue() {
@@ -109,6 +123,7 @@ class Bill extends HiveObject {
         'currency': currency,
         'notes': notes,
         'paidDate': paidDate?.toIso8601String(),
+        'paidAmount': paidAmount,
       };
 
   static Bill fromJson(Map<String, dynamic> json) {
@@ -126,6 +141,7 @@ class Bill extends HiveObject {
       paidDate: json['paidDate'] != null
           ? DateTime.parse(json['paidDate'] as String)
           : null,
+      paidAmount: (json['paidAmount'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

@@ -11,7 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 /// Notification service for local notifications
 ///
 /// **Android Requirements (API 31+):**
-/// - SCHEDULE_EXACT_ALARM or USE_EXACT_ALARM permission in AndroidManifest.xml
+/// - SCHEDULE_EXACT_ALARM permission in AndroidManifest.xml
 /// - User must grant "Alarms & reminders" permission in device settings
 /// - If permission denied, will throw PlatformException with 'exact_alarms_not_permitted'
 class NotificationService {

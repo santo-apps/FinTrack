@@ -13,6 +13,7 @@ import '../../features/goals/data/models/financial_goal_model.dart';
 import '../../features/accounts/data/models/payment_account_model.dart';
 import '../../features/accounts/data/models/account_type_model.dart';
 import '../../features/loan/data/models/loan_model.dart';
+import '../../features/receivable/data/models/receivable_model.dart';
 
 class HiveService {
   static const String _encryptionKey =
@@ -30,6 +31,7 @@ class HiveService {
   static late Box<PaymentAccount> _paymentAccountBox;
   static late Box<AccountTypeModel> _accountTypeBox;
   static late Box<Loan> _loanBox;
+  static late Box<Receivable> _receivableBox;
   static late Box<dynamic> _appSettingsBox;
 
   static bool _isInitialized = false;
@@ -53,6 +55,7 @@ class HiveService {
     Hive.registerAdapter(AccountTypeModelAdapter());
     Hive.registerAdapter(PaymentAccountAdapter());
     Hive.registerAdapter(LoanAdapter());
+    Hive.registerAdapter(ReceivableAdapter());
 
     // Open boxes
     _expenseBox = await Hive.openBox<Expense>('expenses');
@@ -74,6 +77,8 @@ class HiveService {
       await Hive.deleteBoxFromDisk('loans');
       _loanBox = await Hive.openBox<Loan>('loans');
     }
+
+    _receivableBox = await Hive.openBox<Receivable>('receivables');
 
     // Migration: Handle old PaymentAccount data with AccountType enum
     try {
@@ -400,6 +405,23 @@ class HiveService {
 
   static List<Loan> getAllLoans() {
     return _loanBox.values.toList();
+  }
+
+  // Receivable operations
+  static Future<void> addReceivable(Receivable receivable) async {
+    await _receivableBox.put(receivable.id, receivable);
+  }
+
+  static Future<void> updateReceivable(Receivable receivable) async {
+    await _receivableBox.put(receivable.id, receivable);
+  }
+
+  static Future<void> deleteReceivable(String id) async {
+    await _receivableBox.delete(id);
+  }
+
+  static List<Receivable> getAllReceivables() {
+    return _receivableBox.values.toList();
   }
 
   static List<Loan> getActiveLoans() {

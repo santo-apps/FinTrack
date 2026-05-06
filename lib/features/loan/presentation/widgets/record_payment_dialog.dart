@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
+import 'package:fintrack/features/expense/data/models/expense_model.dart';
+import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
+import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
 import 'package:fintrack/features/loan/data/models/loan_model.dart';
 import 'package:fintrack/features/loan/presentation/providers/loan_provider.dart';
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
@@ -20,6 +23,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   String _paymentType = 'emi'; // 'emi', 'full', or 'interest'
+  String? _selectedSourceAccountId;
 
   @override
   void initState() {
@@ -38,6 +42,20 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
     if (!_formKey.currentState!.validate()) return;
 
     final amount = double.parse(_amountController.text);
+    final accountProvider = context.read<PaymentAccountProvider>();
+    final sourceAccount = _selectedSourceAccountId == null
+        ? null
+        : accountProvider.getAccountById(_selectedSourceAccountId!);
+
+    if (sourceAccount == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a source account'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -74,35 +92,79 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
       }
     }
 
-    // Call appropriate payment method based on payment type
-    if (_paymentType == 'interest') {
-      context.read<LoanProvider>().makeInterestPayment(widget.loan.id, amount);
-    } else {
-      context.read<LoanProvider>().makePayment(widget.loan.id, amount);
-    }
+    Future.microtask(() async {
+      // Call appropriate payment method based on payment type
+      if (_paymentType == 'interest') {
+        await context
+            .read<LoanProvider>()
+            .makeInterestPayment(widget.loan.id, amount);
+      } else {
+        await context.read<LoanProvider>().makePayment(widget.loan.id, amount);
+      }
 
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _paymentType == 'interest'
-              ? 'Interest payment of ${AppUtils.formatCurrency(amount, currencySymbol: context.read<SettingsProvider>().currencySymbol)} recorded'
-              : 'Payment of ${AppUtils.formatCurrency(amount, currencySymbol: context.read<SettingsProvider>().currencySymbol)} recorded',
+      // Persist a linked payment transaction for traceability and bill status.
+      final paymentExpense = Expense(
+        id: AppUtils.generateId(),
+        title: _paymentType == 'interest'
+            ? 'Loan Interest Payment - ${widget.loan.lender}'
+            : 'Loan EMI Payment - ${widget.loan.lender}',
+        amount: amount,
+        category: 'Loan Payment',
+        paymentMethod: sourceAccount.accountType,
+        date: DateTime.now(),
+        accountId: sourceAccount.id,
+        transactionType: 'payment',
+        notes: _paymentType == 'interest'
+            ? 'Interest-only payment'
+            : 'Loan repayment',
+      );
+      await context.read<ExpenseProvider>().addExpense(paymentExpense);
+
+      // Reflect debit in selected source account.
+      final isCredit =
+          sourceAccount.accountType.toLowerCase().contains('credit');
+      final sourceDelta = isCredit ? amount : -amount;
+      await accountProvider.adjustAccountBalance(sourceAccount.id, sourceDelta);
+
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _paymentType == 'interest'
+                ? 'Interest payment of ${AppUtils.formatCurrency(amount, currencySymbol: context.read<SettingsProvider>().currencySymbol)} recorded'
+                : 'Payment of ${AppUtils.formatCurrency(amount, currencySymbol: context.read<SettingsProvider>().currencySymbol)} recorded',
+          ),
+          backgroundColor: AppTheme.successColor,
         ),
-        backgroundColor: AppTheme.successColor,
-      ),
-    );
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final currencySymbol = context.watch<SettingsProvider>().currencySymbol;
     final remainingAmount = widget.loan.pendingAmount;
+    final sourceAccounts = context
+        .watch<PaymentAccountProvider>()
+        .activeAccounts
+        .where((a) => !a.accountType.toLowerCase().contains('loan'))
+        .toList();
+
+    if (_selectedSourceAccountId == null && sourceAccounts.isNotEmpty) {
+      _selectedSourceAccountId = sourceAccounts.first.id;
+    }
+
+    final selectedSourceAccount = _selectedSourceAccountId == null
+        ? null
+        : context
+            .read<PaymentAccountProvider>()
+            .getAccountById(_selectedSourceAccountId!);
 
     return AlertDialog(
       title: Text(
         'Record Payment',
-        style: TextStyle(fontFamily: 'Poppins', 
+        style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w700,
         ),
@@ -126,7 +188,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                   children: [
                     Text(
                       widget.loan.lender,
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.textColor,
@@ -138,7 +200,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                       children: [
                         Text(
                           'Remaining',
-                          style: TextStyle(fontFamily: 'Poppins', 
+                          style: TextStyle(
                             fontSize: 11,
                             color: AppTheme.textSecondaryColor,
                           ),
@@ -148,7 +210,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                             remainingAmount,
                             currencySymbol: currencySymbol,
                           ),
-                          style: TextStyle(fontFamily: 'Poppins', 
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.errorColor,
@@ -162,7 +224,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                       children: [
                         Text(
                           'EMI Amount',
-                          style: TextStyle(fontFamily: 'Poppins', 
+                          style: TextStyle(
                             fontSize: 11,
                             color: AppTheme.textSecondaryColor,
                           ),
@@ -172,7 +234,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                             widget.loan.monthlyEmi,
                             currencySymbol: currencySymbol,
                           ),
-                          style: TextStyle(fontFamily: 'Poppins', 
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.successColor,
@@ -321,6 +383,60 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                   // Don't auto-change payment type on manual input
                 },
               ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedSourceAccountId,
+                decoration: const InputDecoration(
+                  labelText: 'Source Account',
+                  helperText: 'Select account used for this payment',
+                ),
+                items: sourceAccounts
+                    .map(
+                      (account) => DropdownMenuItem<String>(
+                        value: account.id,
+                        child: Row(
+                          children: [
+                            if (account.icon != null)
+                              Text(
+                                '${account.icon} ',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                ),
+                              ),
+                            Expanded(
+                              child: Text(
+                                account.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedSourceAccountId = value;
+                  });
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select source account';
+                  }
+                  return null;
+                },
+              ),
+              if (selectedSourceAccount != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Balance: ${AppUtils.formatCurrency(selectedSourceAccount.balance, currencySymbol: currencySymbol)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

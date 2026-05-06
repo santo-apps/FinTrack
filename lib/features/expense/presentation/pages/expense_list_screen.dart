@@ -11,6 +11,7 @@ import 'package:fintrack/features/expense/presentation/pages/manage_expense_cate
 import 'package:fintrack/features/accounts/data/models/payment_account_model.dart';
 import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
 import 'package:fintrack/features/accounts/presentation/providers/account_type_provider.dart';
+import 'package:fintrack/features/accounts/presentation/pages/account_form_screen.dart';
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
 
 enum SortOption { date, amount, category }
@@ -146,12 +147,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                           controller: _tabController,
                           labelColor: _tabPrimaryTextColor(context),
                           unselectedLabelColor: _tabSecondaryTextColor(context),
-                          labelStyle: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.w600),
-                          unselectedLabelStyle: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.w500),
+                          labelStyle: TextStyle(fontWeight: FontWeight.w600),
+                          unselectedLabelStyle:
+                              TextStyle(fontWeight: FontWeight.w500),
                           tabs: const [
                             Tab(text: 'Overview'),
                             Tab(text: 'Categories'),
@@ -228,7 +226,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
               title,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: _tabPrimaryTextColor(context),
@@ -239,7 +236,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
               subtitle,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 14,
                 color: _tabSecondaryTextColor(context),
               ),
@@ -299,7 +295,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
             child: Text(
               'Showing top 5 of ${overviewExpenses.length} expenses',
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 11,
                 color: _tabSecondaryTextColor(context),
               ),
@@ -414,14 +409,13 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                 child: Center(
                   child: Text(
                     categoryIcon,
-                    style: TextStyle(fontFamily: 'Poppins', fontSize: 18),
+                    style: TextStyle(fontSize: 18),
                   ),
                 ),
               ),
               title: Text(
                 category,
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: _tabPrimaryTextColor(context),
@@ -435,7 +429,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                         currencySymbol:
                             context.read<SettingsProvider>().currencySymbol),
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: _tabPrimaryTextColor(context),
@@ -499,7 +492,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                 child: TextField(
                   controller: _timelineSearchController,
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Colors.white
                         : AppTheme.textColor,
@@ -512,7 +504,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                   decoration: InputDecoration(
                     hintText: 'Search timeline',
                     hintStyle: TextStyle(
-                      fontFamily: 'Poppins',
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white
                           : AppTheme.textSecondaryColor,
@@ -568,7 +559,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                         ? 'Amount'
                         : 'Category',
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: _tabSecondaryTextColor(context),
@@ -606,7 +596,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                               child: Text(
                                 category,
                                 style: TextStyle(
-                                  fontFamily: 'Poppins',
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: _tabSecondaryTextColor(context),
@@ -658,7 +647,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                                   child: Text(
                                     AppUtils.formatDate(date),
                                     style: TextStyle(
-                                      fontFamily: 'Poppins',
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                       color: _tabSecondaryTextColor(context),
@@ -808,7 +796,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                                   Text(
                                     '${entry.key} (${_formatPercentLabel(entry.value, totalAmount)})',
                                     style: TextStyle(
-                                      fontFamily: 'Poppins',
                                       fontSize: isSelected ? 11 : 10,
                                       fontWeight: isSelected
                                           ? FontWeight.w700
@@ -822,7 +809,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                                     AppUtils.formatCurrency(entry.value,
                                         currencySymbol: currencySymbol),
                                     style: TextStyle(
-                                      fontFamily: 'Poppins',
                                       fontSize: isSelected ? 10 : 9,
                                       fontWeight: isSelected
                                           ? FontWeight.w600
@@ -851,7 +837,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
     return Text(
       title,
       style: TextStyle(
-        fontFamily: 'Poppins',
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: _tabPrimaryTextColor(context),
@@ -890,7 +875,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                   child: Text(
                     label,
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: _tabPrimaryTextColor(context),
@@ -904,7 +888,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                     Text(
                       '${percentage.toStringAsFixed(1)}%',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: color,
@@ -915,7 +898,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                       AppUtils.formatCurrency(amount,
                           currencySymbol: currencySymbol),
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: _tabSecondaryTextColor(context),
@@ -1079,7 +1061,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
 
   bool _isAccountBreakdownTransaction(Expense expense) {
     final transactionType = expense.transactionType ?? 'expense';
-    return transactionType != 'income' && transactionType != 'transfer';
+    return transactionType != 'income';
   }
 
   String _getExpenseAccountName(Expense expense) {
@@ -1149,7 +1131,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
         showTitle: true,
         title: _formatPercentLabel(entry.value, totalAmount),
         titleStyle: TextStyle(
-          fontFamily: 'Poppins',
           color: Colors.white,
           fontWeight: FontWeight.bold,
           fontSize: fontSize,
@@ -1222,7 +1203,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                     ? 'Custom Period'
                     : _getMonthYearString(_selectedMonth),
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   fontSize: 12,
                   color: Theme.of(context).brightness == Brightness.dark
                       ? Theme.of(context).colorScheme.onSurfaceVariant
@@ -1278,8 +1258,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                                   size: 18, color: AppTheme.primaryColor),
                               const SizedBox(width: 12),
                               Text('Select Month',
-                                  style: TextStyle(
-                                      fontFamily: 'Poppins', fontSize: 13)),
+                                  style: TextStyle(fontSize: 13)),
                             ],
                           ),
                         ),
@@ -1291,8 +1270,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                                   size: 18, color: AppTheme.primaryColor),
                               const SizedBox(width: 12),
                               Text('Select Date Range',
-                                  style: TextStyle(
-                                      fontFamily: 'Poppins', fontSize: 13)),
+                                  style: TextStyle(fontSize: 13)),
                             ],
                           ),
                         ),
@@ -1352,8 +1330,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                               size: 18, color: AppTheme.primaryColor),
                           const SizedBox(width: 12),
                           Text('Switch to Month View',
-                              style: TextStyle(
-                                  fontFamily: 'Poppins', fontSize: 13)),
+                              style: TextStyle(fontSize: 13)),
                         ],
                       ),
                     ),
@@ -1365,8 +1342,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                               size: 18, color: AppTheme.primaryColor),
                           const SizedBox(width: 12),
                           Text('Change Date Range',
-                              style: TextStyle(
-                                  fontFamily: 'Poppins', fontSize: 13)),
+                              style: TextStyle(fontSize: 13)),
                         ],
                       ),
                     ),
@@ -1381,7 +1357,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
               AppUtils.formatCurrency(totalAmount,
                   currencySymbol: currencySymbol),
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
                 color: Theme.of(context).brightness == Brightness.dark
@@ -1400,7 +1375,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                 Text(
                   '${AppUtils.formatDateShort(_customDateRange!.start)} - ${AppUtils.formatDateShort(_customDateRange!.end)}',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 11,
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Theme.of(context).colorScheme.onSurfaceVariant
@@ -1437,7 +1411,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                         Text(
                           'Clear',
                           style: TextStyle(
-                            fontFamily: 'Poppins',
                             fontSize: 11,
                             color:
                                 Theme.of(context).brightness == Brightness.dark
@@ -1496,7 +1469,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
               title: Text(
                 'Select Month',
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   fontWeight: FontWeight.w600,
                   fontSize: 18,
                 ),
@@ -1521,7 +1493,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                         Text(
                           '$selectedYear',
                           style: TextStyle(
-                            fontFamily: 'Poppins',
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1582,7 +1553,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                               child: Text(
                                 _getMonthShort(month),
                                 style: TextStyle(
-                                  fontFamily: 'Poppins',
                                   fontSize: 13,
                                   fontWeight: isSelected
                                       ? FontWeight.w600
@@ -1609,9 +1579,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                   },
                   child: Text(
                     'Cancel',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                    ),
+                    style: TextStyle(),
                   ),
                 ),
                 ElevatedButton(
@@ -1626,8 +1594,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                   ),
                   child: Text(
                     'Select',
-                    style: TextStyle(
-                        fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -1730,7 +1697,6 @@ class _AccountTransactionsPageState extends State<_AccountTransactionsPage> {
               child: Text(
                 'No transactions found for this account in the selected period.',
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   fontSize: 14,
                   color: Theme.of(context).brightness == Brightness.dark
                       ? Colors.white
@@ -1745,7 +1711,6 @@ class _AccountTransactionsPageState extends State<_AccountTransactionsPage> {
                 Text(
                   'Transactions',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).brightness == Brightness.dark
@@ -1815,7 +1780,7 @@ class ExpenseCard extends StatelessWidget {
     final cardPadding = dense ? 10.0 : 12.0;
     final iconSize = dense ? 42.0 : 48.0;
     final iconFontSize = dense ? 20.0 : 24.0;
-    final titleFontSize = dense ? 14.0 : 15.0;
+    final titleFontSize = dense ? 13.0 : 14.0;
     final amountFontSize = dense ? 15.0 : 16.0;
     final metadataFontSize = dense ? 10.0 : 11.0;
     final subMetaFontSize = dense ? 9.0 : 10.0;
@@ -1859,8 +1824,7 @@ class ExpenseCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   categoryIcon,
-                  style:
-                      TextStyle(fontFamily: 'Poppins', fontSize: iconFontSize),
+                  style: TextStyle(fontSize: iconFontSize),
                 ),
               ),
             ),
@@ -1872,12 +1836,11 @@ class ExpenseCard extends StatelessWidget {
                   Text(
                     expense.title,
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: titleFontSize,
                       fontWeight: FontWeight.w600,
                       color: primaryTextColor,
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: titleToAmountSpacing),
@@ -1885,7 +1848,6 @@ class ExpenseCard extends StatelessWidget {
                     AppUtils.formatCurrency(expense.amount,
                         currencySymbol: currencySymbol),
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: amountFontSize,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.errorColor,
@@ -1904,7 +1866,6 @@ class ExpenseCard extends StatelessWidget {
                         child: Text(
                           expense.category,
                           style: TextStyle(
-                            fontFamily: 'Poppins',
                             fontSize: metadataFontSize,
                             color: secondaryTextColor,
                           ),
@@ -1919,7 +1880,7 @@ class ExpenseCard extends StatelessWidget {
                     Row(
                       children: [
                         Icon(
-                          Icons.payment,
+                          Icons.payments_outlined,
                           size: 12,
                           color: secondaryTextColor,
                         ),
@@ -1928,7 +1889,6 @@ class ExpenseCard extends StatelessWidget {
                           child: Text(
                             expense.paymentMethod,
                             style: TextStyle(
-                              fontFamily: 'Poppins',
                               fontSize: metadataFontSize,
                               color: secondaryTextColor,
                             ),
@@ -1951,7 +1911,6 @@ class ExpenseCard extends StatelessWidget {
                       Text(
                         AppUtils.formatDateShort(expense.date),
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: subMetaFontSize,
                           color: secondaryTextColor,
                         ),
@@ -1968,7 +1927,6 @@ class ExpenseCard extends StatelessWidget {
                           child: Text(
                             accountData.name,
                             style: TextStyle(
-                              fontFamily: 'Poppins',
                               fontSize: subMetaFontSize,
                               color: secondaryTextColor,
                             ),
@@ -2285,7 +2243,6 @@ class ExpenseDetailScreen extends StatelessWidget {
                       AppUtils.formatCurrency(expense.amount,
                           currencySymbol: currencySymbol),
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 36,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -2302,7 +2259,6 @@ class ExpenseDetailScreen extends StatelessWidget {
                       child: Text(
                         expense.category,
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           color: Colors.white,
@@ -2403,7 +2359,6 @@ class ExpenseDetailScreen extends StatelessWidget {
                             Text(
                               'Tags',
                               style: TextStyle(
-                                fontFamily: 'Poppins',
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: isDarkMode
@@ -2435,7 +2390,6 @@ class ExpenseDetailScreen extends StatelessWidget {
                                     child: Text(
                                       tag,
                                       style: TextStyle(
-                                        fontFamily: 'Poppins',
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
                                         color: AppTheme.primaryColor,
@@ -2507,7 +2461,6 @@ class _ModernDetailCard extends StatelessWidget {
                   Text(
                     label,
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       color: isDarkMode
@@ -2519,7 +2472,6 @@ class _ModernDetailCard extends StatelessWidget {
                   Text(
                     value,
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: isDarkMode ? Colors.white : AppTheme.textColor,
@@ -2690,23 +2642,22 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
           tooltip: 'Close',
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.category),
-            tooltip: 'Manage Categories',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ManageExpenseCategoriesScreen(),
-                ),
-              );
-            },
+        actions: const [],
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _saveExpense,
+            child: Text(_getSubmitLabel()),
           ),
-        ],
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding:
+            EdgeInsets.fromLTRB(16, 16, 16, 16 + effectiveBottomInset(context)),
         child: Column(
           children: [
             TextField(
@@ -2740,7 +2691,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                     const SizedBox(width: 8),
                     Text(
                       AppUtils.formatDate(selectedDate),
-                      style: TextStyle(fontFamily: 'Poppins', fontSize: 14),
+                      style: TextStyle(fontSize: 14),
                     ),
                   ],
                 ),
@@ -2751,7 +2702,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
             if (selectedTransactionType != 'income' &&
                 selectedTransactionType != 'transfer')
               DropdownButtonFormField<String>(
-                value: categories.any((c) => c.name == selectedCategory)
+                initialValue: categories.any((c) => c.name == selectedCategory)
                     ? selectedCategory
                     : (categories.isNotEmpty ? categories.first.name : null),
                 decoration: InputDecoration(
@@ -2782,8 +2733,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                               child: Row(
                                 children: [
                                   Text(category.icon,
-                                      style: TextStyle(
-                                          fontFamily: 'Poppins', fontSize: 18)),
+                                      style: TextStyle(fontSize: 18)),
                                   const SizedBox(width: 8),
                                   Text(category.name),
                                 ],
@@ -2817,7 +2767,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                   return Column(
                     children: [
                       DropdownButtonFormField<String>(
-                        value: validatedAccountType,
+                        initialValue: validatedAccountType,
                         decoration: const InputDecoration(
                           labelText: 'Account Type',
                           helperText: 'Select the type of payment account',
@@ -2828,8 +2778,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                             child: Row(
                               children: [
                                 Text(type.icon ?? '📌',
-                                    style: TextStyle(
-                                        fontFamily: 'Poppins', fontSize: 18)),
+                                    style: TextStyle(fontSize: 18)),
                                 const SizedBox(width: 8),
                                 Text(type.name),
                               ],
@@ -2871,7 +2820,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 DropdownButtonFormField<String>(
-                                  value: validatedAccountId,
+                                  initialValue: validatedAccountId,
                                   decoration: InputDecoration(
                                     labelText: 'Specific Account',
                                     helperText: 'Choose which account to use',
@@ -2887,9 +2836,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                                         children: [
                                           if (account.icon != null)
                                             Text('${account.icon} ',
-                                                style: TextStyle(
-                                                    fontFamily: 'Poppins',
-                                                    fontSize: 18)),
+                                                style: TextStyle(fontSize: 18)),
                                           Flexible(
                                             child: Text(
                                               account.name,
@@ -2975,6 +2922,36 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                                       ],
                                     ),
                                   ),
+                                if (!hasFilteredAccounts)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton.icon(
+                                        icon: const Icon(Icons.add, size: 18),
+                                        label: const Text('Add Account'),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                          side: BorderSide(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const AccountFormScreen(),
+                                            ),
+                                          ).then((_) => setState(() {}));
+                                        },
+                                      ),
+                                    ),
+                                  ),
                               ],
                             );
                           },
@@ -3016,9 +2993,10 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                   return Column(
                     children: [
                       DropdownButtonFormField<String>(
-                        value: availableTypes.contains(selectedTransactionType)
-                            ? selectedTransactionType
-                            : availableTypes.first,
+                        initialValue:
+                            availableTypes.contains(selectedTransactionType)
+                                ? selectedTransactionType
+                                : availableTypes.first,
                         decoration: const InputDecoration(
                           labelText: 'Transaction Type',
                           helperText: 'Select transaction type',
@@ -3065,7 +3043,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                           selectedTransactionType == 'payment') ...[
                         const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
-                          value: selectedDestinationAccountId,
+                          initialValue: selectedDestinationAccountId,
                           decoration: InputDecoration(
                             labelText: selectedTransactionType == 'transfer'
                                 ? 'Transfer To'
@@ -3091,9 +3069,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                                 children: [
                                   if (account.icon != null)
                                     Text('${account.icon} ',
-                                        style: TextStyle(
-                                            fontFamily: 'Poppins',
-                                            fontSize: 18)),
+                                        style: TextStyle(fontSize: 18)),
                                   Flexible(
                                     child: Text(
                                       account.name,
@@ -3124,7 +3100,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                       if (selectedTransactionType == 'transfer' ||
                           selectedTransactionType == 'payment') ...[
                         DropdownButtonFormField<String>(
-                          value: selectedDestinationAccountId,
+                          initialValue: selectedDestinationAccountId,
                           decoration: InputDecoration(
                             labelText: selectedTransactionType == 'transfer'
                                 ? 'Transfer To'
@@ -3150,9 +3126,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                                 children: [
                                   if (account.icon != null)
                                     Text('${account.icon} ',
-                                        style: TextStyle(
-                                            fontFamily: 'Poppins',
-                                            fontSize: 18)),
+                                        style: TextStyle(fontSize: 18)),
                                   Flexible(
                                     child: Text(
                                       account.name,
@@ -3183,14 +3157,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                 hintText: 'Add any notes',
               ),
             ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _saveExpense,
-                child: Text(_getSubmitLabel()),
-              ),
-            ),
+            const SizedBox(height: 16),
           ],
         ),
       ),

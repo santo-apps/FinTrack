@@ -34,6 +34,12 @@ class Subscription extends HiveObject {
   @HiveField(9)
   String? category;
 
+  @HiveField(10)
+  bool isArchived;
+
+  @HiveField(11)
+  DateTime? archivedAt;
+
   Subscription({
     required this.id,
     required this.name,
@@ -45,6 +51,8 @@ class Subscription extends HiveObject {
     this.currency = 'USD',
     this.notes,
     this.category,
+    this.isArchived = false,
+    this.archivedAt,
   });
 
   Subscription copyWith({
@@ -58,6 +66,8 @@ class Subscription extends HiveObject {
     String? currency,
     String? notes,
     String? category,
+    bool? isArchived,
+    DateTime? archivedAt,
   }) {
     return Subscription(
       id: id ?? this.id,
@@ -70,6 +80,8 @@ class Subscription extends HiveObject {
       currency: currency ?? this.currency,
       notes: notes ?? this.notes,
       category: category ?? this.category,
+      isArchived: isArchived ?? this.isArchived,
+      archivedAt: archivedAt ?? this.archivedAt,
     );
   }
 
@@ -100,6 +112,8 @@ class Subscription extends HiveObject {
         'currency': currency,
         'notes': notes,
         'category': category,
+        'isArchived': isArchived,
+        'archivedAt': archivedAt?.toIso8601String(),
       };
 
   static Subscription fromJson(Map<String, dynamic> json) {
@@ -114,6 +128,10 @@ class Subscription extends HiveObject {
       currency: json['currency'] as String? ?? 'USD',
       notes: json['notes'] as String?,
       category: json['category'] as String?,
+      isArchived: json['isArchived'] as bool? ?? false,
+      archivedAt: json['archivedAt'] != null
+          ? DateTime.parse(json['archivedAt'] as String)
+          : null,
     );
   }
 }

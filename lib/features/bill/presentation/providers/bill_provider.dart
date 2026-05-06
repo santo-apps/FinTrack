@@ -122,12 +122,12 @@ class BillProvider extends ChangeNotifier {
       ..addAll(subscriptionReminders);
 
     if (kDebugMode) {
-      print('🗓️ Month: ${selectedMonth.year}-${selectedMonth.month}');
-      print('📝 Bills: ${billReminders.length} reminders');
-      print('💳 Credit Cards: ${cardReminders.length} reminders');
-      print('🏦 Loans: ${loanReminders.length} reminders');
-      print('📱 Subscriptions: ${subscriptionReminders.length} reminders');
-      print('📊 Total reminders: ${allReminders.length}');
+      debugPrint('🗓️ Month: ${selectedMonth.year}-${selectedMonth.month}');
+      debugPrint('📝 Bills: ${billReminders.length} reminders');
+      debugPrint('💳 Credit Cards: ${cardReminders.length} reminders');
+      debugPrint('🏦 Loans: ${loanReminders.length} reminders');
+      debugPrint('📱 Subscriptions: ${subscriptionReminders.length} reminders');
+      debugPrint('📊 Total reminders: ${allReminders.length}');
     }
 
     allReminders.sort((a, b) {
@@ -153,7 +153,9 @@ class BillProvider extends ChangeNotifier {
   List<BillReminder> getPendingReminders() {
     final reminders = getRemindersForMonth(_selectedMonth);
     return reminders
-        .where((r) => r.status == BillReminderStatus.pending)
+        .where((r) =>
+            r.status == BillReminderStatus.pending ||
+            r.status == BillReminderStatus.partiallyPaid)
         .toList();
   }
 
@@ -181,13 +183,18 @@ class BillProvider extends ChangeNotifier {
       }
 
       final effectiveDate = dueDate ?? bill.paidDate!;
-      final status = bill.isPaid
-          ? BillReminderStatus.completed
-          : (DateTime(effectiveDate.year, effectiveDate.month,
-                      effectiveDate.day)
-                  .isBefore(today)
-              ? BillReminderStatus.overdue
-              : BillReminderStatus.pending);
+      final BillReminderStatus status;
+      if (bill.isPaid) {
+        status = BillReminderStatus.completed;
+      } else if (bill.isPartiallyPaid()) {
+        status = BillReminderStatus.partiallyPaid;
+      } else if (DateTime(
+              effectiveDate.year, effectiveDate.month, effectiveDate.day)
+          .isBefore(today)) {
+        status = BillReminderStatus.overdue;
+      } else {
+        status = BillReminderStatus.pending;
+      }
 
       reminders.add(
         BillReminder(
@@ -202,6 +209,7 @@ class BillProvider extends ChangeNotifier {
           notes: bill.notes,
           paidDate: bill.paidDate,
           isRecurring: bill.isRecurring,
+          paidAmount: bill.paidAmount,
         ),
       );
     }
@@ -217,9 +225,9 @@ class BillProvider extends ChangeNotifier {
     final startOfToday = DateTime(now.year, now.month, now.day);
 
     if (kDebugMode) {
-      print('💳 Total accounts: ${accounts.length}');
+      debugPrint('💳 Total accounts: ${accounts.length}');
       for (var acc in accounts) {
-        print(
+        debugPrint(
             '  Account: ${acc.name}, type: ${acc.accountType}, active: ${acc.isActive}, balance: ${acc.balance}');
       }
     }
@@ -230,7 +238,7 @@ class BillProvider extends ChangeNotifier {
       final isActive = account.isActive;
 
       if (kDebugMode) {
-        print(
+        debugPrint(
             '  Checking: ${account.name} - isCreditCard: $isCreditCard, active: $isActive');
       }
 
@@ -238,7 +246,7 @@ class BillProvider extends ChangeNotifier {
     });
 
     if (kDebugMode) {
-      print('💳 Filtered credit cards: ${creditCards.length}');
+      debugPrint('💳 Filtered credit cards: ${creditCards.length}');
     }
 
     final List<BillReminder> reminders = [];
@@ -248,10 +256,34 @@ class BillProvider extends ChangeNotifier {
         continue;
       }
 
-      final previousCycleDueDate =
-          _calculateCardDueDate(monthDueDate, card.billingCycleDay, -1);
-      final cycleStart = previousCycleDueDate.add(const Duration(days: 1));
+      final statementDay =
+          card.statementDate?.day ?? card.billingCycleDay ?? 15;
+      final cycleEnd = _resolveCycleEndForDueDate(monthDueDate, statementDay);
+      final previousCycleEnd =
+          _safeDayInMonth(cycleEnd.year, cycleEnd.month - 1, statementDay);
+      final cycleStart = previousCycleEnd.add(const Duration(days: 1));
 
+      final statementCharges = expenses.where((e) {
+        final type = e.transactionType ?? 'expense';
+        final isCharge = type == 'expense' &&
+            e.accountId == card.id &&
+            !e.title.contains('Credit Card Payment - ${card.name}');
+        final isRefund = type == 'income' && e.accountId == card.id;
+        if (!(isCharge || isRefund)) {
+          return false;
+        }
+        return _isWithinInclusiveRange(e.date, cycleStart, cycleEnd);
+      }).toList();
+
+      final billedAmount = statementCharges.fold<double>(0, (sum, e) {
+        final type = e.transactionType ?? 'expense';
+        if (type == 'income') {
+          return sum - e.amount;
+        }
+        return sum + e.amount;
+      }).clamp(0.0, double.infinity);
+
+      final paymentWindowStart = cycleEnd.add(const Duration(days: 1));
       final cardPayments = expenses.where((e) {
         final type = e.transactionType ?? 'expense';
         final isPaymentLike = type == 'transfer' || type == 'payment';
@@ -259,21 +291,25 @@ class BillProvider extends ChangeNotifier {
             e.title.contains('Credit Card Payment - ${card.name}');
         return isPaymentLike &&
             cardMatch &&
-            _isWithinInclusiveRange(e.date, cycleStart, monthDueDate);
+            _isWithinInclusiveRange(e.date, paymentWindowStart, monthDueDate);
       }).toList()
         ..sort((a, b) => a.date.compareTo(b.date));
 
-      final hasPayment = cardPayments.isNotEmpty;
+      final paidAmount =
+          cardPayments.fold<double>(0, (sum, payment) => sum + payment.amount);
+      final hasPayment = paidAmount > 0.0;
       final paidDate = hasPayment ? cardPayments.last.date : null;
 
       if (kDebugMode) {
-        print(
+        debugPrint(
             '  ${card.name} due: $monthDueDate, balance: ${card.balance}, hasPayment: $hasPayment');
       }
 
       BillReminderStatus status;
-      if (hasPayment || card.balance <= 0) {
+      if (billedAmount <= 0.0 || paidAmount >= billedAmount) {
         status = BillReminderStatus.completed;
+      } else if (paidAmount > 0.0) {
+        status = BillReminderStatus.partiallyPaid;
       } else if (DateTime(
               monthDueDate.year, monthDueDate.month, monthDueDate.day)
           .isBefore(startOfToday)) {
@@ -282,9 +318,7 @@ class BillProvider extends ChangeNotifier {
         status = BillReminderStatus.pending;
       }
 
-      final reminderAmount = card.balance > 0
-          ? card.balance
-          : (hasPayment ? cardPayments.last.amount : 0.0);
+      final reminderAmount = billedAmount;
 
       reminders.add(BillReminder(
         id: 'card_${card.id}_${month.year}_${month.month}',
@@ -296,6 +330,7 @@ class BillProvider extends ChangeNotifier {
         type: BillReminderType.creditCard,
         status: status,
         paidDate: paidDate,
+        paidAmount: paidAmount,
         accountName: card.name,
         notes: card.dueDate == null && card.billingCycleDay == null
             ? 'Credit card bill payment (set due date for accurate reminder)'
@@ -306,6 +341,17 @@ class BillProvider extends ChangeNotifier {
     }
 
     return reminders;
+  }
+
+  DateTime _resolveCycleEndForDueDate(DateTime dueDate, int statementDay) {
+    final statementThisMonth =
+        _safeDayInMonth(dueDate.year, dueDate.month, statementDay);
+
+    if (statementThisMonth.isBefore(dueDate)) {
+      return statementThisMonth;
+    }
+
+    return _safeDayInMonth(dueDate.year, dueDate.month - 1, statementDay);
   }
 
   // Convert Loans to BillReminders
@@ -321,11 +367,21 @@ class BillProvider extends ChangeNotifier {
         continue;
       }
 
+      final firstEmiThisMonth = _safeDayInMonth(
+          loan.startDate.year, loan.startDate.month, loan.emiDate);
+      final firstDueDate = loan.startDate.isAfter(firstEmiThisMonth)
+          ? _safeDayInMonth(
+              loan.startDate.year, loan.startDate.month + 1, loan.emiDate)
+          : firstEmiThisMonth;
+
       final outstandingAmount =
           (loan.borrowedAmount - loan.paidAmount).clamp(0.0, double.infinity);
       final hasOutstanding = outstandingAmount > 0.01;
 
       final emiDueDate = _safeDayInMonth(month.year, month.month, loan.emiDate);
+      if (emiDueDate.isBefore(firstDueDate)) {
+        continue;
+      }
       final lastPaymentInMonth = loan.lastPaymentDate != null &&
           _isSameMonth(loan.lastPaymentDate!, month);
       final paymentFromExpenses = expenses.where((e) {
@@ -355,11 +411,11 @@ class BillProvider extends ChangeNotifier {
       BillReminderStatus status;
 
       if (kDebugMode) {
-        print('🏦 Loan: ${loan.lender} (${loan.id})');
-        print('  EMI Day: ${loan.emiDate}');
-        print('  EMI Due In Month: $emiDueDate');
-        print('  Last Payment Date: ${loan.lastPaymentDate}');
-        print('  Payment Found In Month: $isPaidForMonth');
+        debugPrint('🏦 Loan: ${loan.lender} (${loan.id})');
+        debugPrint('  EMI Day: ${loan.emiDate}');
+        debugPrint('  EMI Due In Month: $emiDueDate');
+        debugPrint('  Last Payment Date: ${loan.lastPaymentDate}');
+        debugPrint('  Payment Found In Month: $isPaidForMonth');
       }
 
       if (isPaidForMonth) {
@@ -402,7 +458,7 @@ class BillProvider extends ChangeNotifier {
     final startOfToday = DateTime(now.year, now.month, now.day);
 
     if (kDebugMode) {
-      print('📱 Total subscriptions: ${subscriptions.length}');
+      debugPrint('📱 Total subscriptions: ${subscriptions.length}');
     }
 
     final List<BillReminder> reminders = [];
@@ -410,6 +466,13 @@ class BillProvider extends ChangeNotifier {
     for (final subscription in subscriptions) {
       final dueDate = _resolveSubscriptionDueDateForMonth(subscription, month);
       if (dueDate == null) {
+        continue;
+      }
+
+      if (subscription.isArchived &&
+          subscription.archivedAt != null &&
+          dueDate.isAfter(subscription.archivedAt!)) {
+        // Keep historical reminders visible, but suppress future dues after archive.
         continue;
       }
 
@@ -431,21 +494,37 @@ class BillProvider extends ChangeNotifier {
       }).toList()
         ..sort((a, b) => a.date.compareTo(b.date));
 
-      final currentPeriodPaid = periodPayments.isNotEmpty;
-      final paidDate = currentPeriodPaid ? periodPayments.last.date : null;
+      // Only treat already-executed payments as paid. Planned/future entries
+      // should not move reminders to Completed.
+      final executedPayments = periodPayments
+          .where((expense) => !expense.date.isAfter(now))
+          .toList()
+        ..sort((a, b) => a.date.compareTo(b.date));
 
+      final currentPeriodPaid = executedPayments.isNotEmpty;
+      final paidDate = currentPeriodPaid ? executedPayments.last.date : null;
+      final paidAmount = executedPayments.fold<double>(
+        0,
+        (sum, payment) => sum + payment.amount,
+      );
+
+      final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
       BillReminderStatus status;
-      if (currentPeriodPaid) {
+      // Keep future dues pending even if an early payment record exists.
+      // This avoids showing upcoming renewals as Completed ahead of due date.
+      if (dueDay.isAfter(startOfToday)) {
+        status = BillReminderStatus.pending;
+      } else if (currentPeriodPaid) {
         status = BillReminderStatus.completed;
-      } else if (DateTime(dueDate.year, dueDate.month, dueDate.day)
-          .isBefore(startOfToday)) {
+      } else if (dueDay.isBefore(startOfToday)) {
         status = BillReminderStatus.overdue;
       } else {
         status = BillReminderStatus.pending;
       }
 
       if (kDebugMode) {
-        print('  Creating reminder for ${subscription.name}: status=$status, '
+        debugPrint(
+            '  Creating reminder for ${subscription.name}: status=$status, '
             'currentPeriodPaid=$currentPeriodPaid, dueDate=$dueDate, '
             'periodStart=$periodStart, expenseCount=${periodPayments.length}');
       }
@@ -461,6 +540,7 @@ class BillProvider extends ChangeNotifier {
           type: BillReminderType.subscription,
           status: status,
           paidDate: paidDate,
+          paidAmount: paidAmount,
           notes: subscription.notes,
           billingCycle: subscription.billingCycle,
         ),
@@ -468,24 +548,6 @@ class BillProvider extends ChangeNotifier {
     }
 
     return reminders;
-  }
-
-  DateTime _calculateCardDueDate(
-    DateTime anchor,
-    int? billingCycleDay,
-    int monthOffset,
-  ) {
-    final targetMonth = DateTime(anchor.year, anchor.month + monthOffset, 1);
-
-    if (billingCycleDay == null) {
-      return DateTime(targetMonth.year, targetMonth.month, 5);
-    }
-
-    return _safeDayInMonth(
-      targetMonth.year,
-      targetMonth.month,
-      billingCycleDay,
-    );
   }
 
   DateTime _addBillingCycle(DateTime date, String billingCycle) {

@@ -42,7 +42,7 @@ class SettingsAboutScreen extends StatelessWidget {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(24),
                       child: Image.asset(
-                        'assets/icon/fintrack_icon.png',
+                        'assets/icons/fintrack_icon.png',
                         width: 100,
                         height: 100,
                         fit: BoxFit.cover,

@@ -21,12 +21,13 @@ if (localPropertiesFile.exists()) {
 
 android {
     namespace = "com.yaandu.fintrack"
-    compileSdk = 35
-    ndkVersion = "27.0.12077973"
+    compileSdk = 36
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        coreLibraryDesugaringEnabled true
     }
 
     kotlinOptions {
@@ -38,11 +39,17 @@ android {
         applicationId = "com.yaandu.fintrack"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 23
+        minSdkVersion = flutter.minSdkVersion
         targetSdk = 35
-        versionCode = 2
+        versionCode = 5
         versionName = flutter.versionName
         multiDexEnabled = true
+        
+        // 16 KB alignment support for Android 15 devices
+        // Enabled through:
+        // - Android Gradle Plugin (via Flutter)
+        // - NDK 27.0.12077973 (supports 16 KB alignment)
+        // - targetSdk = 35 (Android 15)
     }
     signingConfigs {
         release {

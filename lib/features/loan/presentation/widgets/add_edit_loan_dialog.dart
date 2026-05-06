@@ -159,7 +159,8 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom +
-            effectiveBottomInset(context),
+            effectiveBottomInset(context) +
+            16,
       ),
       child: SingleChildScrollView(
         child: Padding(
@@ -176,7 +177,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                   children: [
                     Text(
                       widget.loan == null ? 'Add Loan' : 'Edit Loan',
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: AppTheme.textColor,
@@ -331,7 +332,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                     ),
                     child: Text(
                       DateFormat('MMM dd, yyyy').format(_startDate),
-                      style: TextStyle(fontFamily: 'Poppins', fontSize: 16),
+                      style: TextStyle(fontSize: 16),
                     ),
                   ),
                 ),
@@ -436,7 +437,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                             children: [
                               Text(
                                 'Total Repayment',
-                                style: TextStyle(fontFamily: 'Poppins', 
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                   color:
@@ -447,7 +448,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                                 totalRepayment != null
                                     ? '$currencySymbol${totalRepayment.toStringAsFixed(2)}'
                                     : '---',
-                                style: TextStyle(fontFamily: 'Poppins', 
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
                                   color: AppTheme.primaryColor,
@@ -462,7 +463,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                               children: [
                                 Text(
                                   'Total Interest',
-                                  style: TextStyle(fontFamily: 'Poppins', 
+                                  style: TextStyle(
                                     fontSize: 12,
                                     color: Theme.of(context)
                                         .colorScheme
@@ -471,7 +472,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                                 ),
                                 Text(
                                   '$currencySymbol${totalInterest.toStringAsFixed(2)}',
-                                  style: TextStyle(fontFamily: 'Poppins', 
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.red,
@@ -487,7 +488,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                               children: [
                                 Text(
                                   'End Date',
-                                  style: TextStyle(fontFamily: 'Poppins', 
+                                  style: TextStyle(
                                     fontSize: 12,
                                     color: Theme.of(context)
                                         .colorScheme
@@ -496,7 +497,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                                 ),
                                 Text(
                                   DateFormat('MMM dd, yyyy').format(_endDate!),
-                                  style: TextStyle(fontFamily: 'Poppins', 
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                     color:
@@ -538,7 +539,7 @@ class _AddEditLoanDialogState extends State<AddEditLoanDialog> {
                     ),
                     child: Text(
                       widget.loan == null ? 'Add Loan' : 'Update Loan',
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),

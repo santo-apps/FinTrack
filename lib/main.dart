@@ -16,6 +16,7 @@ import 'features/settings/presentation/providers/settings_provider.dart';
 import 'features/accounts/presentation/providers/payment_account_provider.dart';
 import 'features/accounts/presentation/providers/account_type_provider.dart';
 import 'features/loan/presentation/providers/loan_provider.dart';
+import 'features/receivable/presentation/providers/receivable_provider.dart';
 import 'features/home/presentation/pages/home_screen.dart';
 import 'features/auth/presentation/pages/auth_screen.dart';
 import 'features/onboarding/presentation/pages/onboarding_screen.dart';
@@ -110,6 +111,7 @@ class FinTrack extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PaymentAccountProvider()),
         ChangeNotifierProvider(create: (_) => AccountTypeProvider()),
         ChangeNotifierProvider(create: (_) => LoanProvider()),
+        ChangeNotifierProvider(create: (_) => ReceivableProvider()),
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settingsProvider, _) {
@@ -127,17 +129,20 @@ class FinTrack extends StatelessWidget {
 
               final theme = Theme.of(context);
               final isDark = theme.brightness == Brightness.dark;
+              final navSurfaceColor =
+                  theme.bottomNavigationBarTheme.backgroundColor ??
+                      theme.colorScheme.surface;
+              final opaqueNavColor = navSurfaceColor.withAlpha(0xFF);
               final overlayStyle = SystemUiOverlayStyle(
                 statusBarColor: theme.colorScheme.surface,
                 statusBarIconBrightness:
                     isDark ? Brightness.light : Brightness.dark,
                 statusBarBrightness:
                     isDark ? Brightness.dark : Brightness.light,
-                systemNavigationBarColor: isDark ? Colors.black : Colors.white,
+                systemNavigationBarColor: opaqueNavColor,
                 systemNavigationBarIconBrightness:
                     isDark ? Brightness.light : Brightness.dark,
-                systemNavigationBarDividerColor:
-                    isDark ? Colors.black : Colors.white,
+                systemNavigationBarDividerColor: opaqueNavColor,
                 systemStatusBarContrastEnforced: false,
                 systemNavigationBarContrastEnforced: false,
               );

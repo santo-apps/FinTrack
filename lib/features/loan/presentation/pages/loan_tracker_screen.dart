@@ -95,7 +95,7 @@ class _LoanTrackerScreenState extends State<LoanTrackerScreen> {
                     children: [
                       Text(
                         'Outstanding Loan Amount',
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           color: Colors.white70,
@@ -107,7 +107,7 @@ class _LoanTrackerScreenState extends State<LoanTrackerScreen> {
                           totalOutstanding,
                           currencySymbol: currencySymbol,
                         ),
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
@@ -167,7 +167,7 @@ class _LoanTrackerScreenState extends State<LoanTrackerScreen> {
                                 ),
                               ),
                               textStyle: WidgetStatePropertyAll(
-                                TextStyle(fontFamily: 'Poppins', 
+                                TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -222,7 +222,7 @@ class _LoanTrackerScreenState extends State<LoanTrackerScreen> {
                                   _showCompletedLoans
                                       ? 'No completed loans'
                                       : 'No active loans',
-                                  style: TextStyle(fontFamily: 'Poppins', 
+                                  style: TextStyle(
                                     fontSize: 16,
                                     color: Colors.grey,
                                   ),
@@ -346,7 +346,7 @@ class _SummaryItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(fontFamily: 'Poppins', 
+          style: TextStyle(
             fontSize: 11,
             color: Colors.white70,
             fontWeight: FontWeight.w500,
@@ -355,7 +355,7 @@ class _SummaryItem extends StatelessWidget {
         const SizedBox(height: 3),
         Text(
           value,
-          style: TextStyle(fontFamily: 'Poppins', 
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
             color: Colors.white,
@@ -435,7 +435,7 @@ class _LoanCardState extends State<_LoanCard> {
                           children: [
                             Text(
                               loan.lender,
-                              style: TextStyle(fontFamily: 'Poppins', 
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Theme.of(context).colorScheme.onSurface,
@@ -445,7 +445,7 @@ class _LoanCardState extends State<_LoanCard> {
                             ),
                             Text(
                               '${loan.interestRate.toStringAsFixed(2)}% interest',
-                              style: TextStyle(fontFamily: 'Poppins', 
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: Theme.of(context)
                                     .colorScheme
@@ -556,7 +556,7 @@ class _LoanCardState extends State<_LoanCard> {
                   children: [
                     Text(
                       'Monthly EMI',
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -567,7 +567,7 @@ class _LoanCardState extends State<_LoanCard> {
                         loan.monthlyEmi,
                         currencySymbol: currencySymbol,
                       ),
-                      style: TextStyle(fontFamily: 'Poppins', 
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppTheme.successColor,
@@ -654,14 +654,14 @@ class _LoanCardState extends State<_LoanCard> {
                     children: [
                       Text(
                         'Repayment Progress',
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 10,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       Text(
                         '${(progress * 100).toStringAsFixed(1)}%',
-                        style: TextStyle(fontFamily: 'Poppins', 
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.primaryColor,
@@ -745,7 +745,7 @@ class _DetailItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(fontFamily: 'Poppins', 
+          style: TextStyle(
             fontSize: 11,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w500,
@@ -754,7 +754,7 @@ class _DetailItem extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           value,
-          style: TextStyle(fontFamily: 'Poppins', 
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: valueColor ?? Theme.of(context).colorScheme.onSurface,
