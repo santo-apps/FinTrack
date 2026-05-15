@@ -44,6 +44,7 @@ class PaymentAccountProvider extends ChangeNotifier {
       }
 
       await HiveService.addPaymentAccount(account);
+      await HiveService.saveSetting('onboarding_step_account_completed', true);
       _accounts.add(account);
       notifyListeners();
     } catch (e) {

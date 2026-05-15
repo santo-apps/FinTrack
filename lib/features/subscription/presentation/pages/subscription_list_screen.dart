@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
+import 'package:fintrack/core/utils/dropdown_search_utils.dart';
 import 'package:fintrack/features/settings/presentation/pages/manage_subscription_categories_screen.dart';
 import 'package:fintrack/features/subscription/data/models/subscription_model.dart';
 import 'package:fintrack/features/subscription/presentation/providers/subscription_provider.dart';
@@ -779,13 +781,25 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  DropdownButton<String>(
-                    value: _selectedBillingCycle,
-                    items: const ['weekly', 'monthly', 'quarterly', 'yearly']
-                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                        .toList(),
-                    onChanged: (value) => setState(
-                        () => _selectedBillingCycle = value ?? 'monthly'),
+                  SizedBox(
+                    width: 150,
+                    child: DropdownSearch<String>(
+                      selectedItem: _selectedBillingCycle,
+                      items: const ['weekly', 'monthly', 'quarterly', 'yearly'],
+                      dropdownDecoratorProps: DropDownDecoratorProps(
+                        dropdownSearchDecoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                        context: context,
+                        searchHint: 'Search cycle...',
+                      ),
+                      onChanged: (value) => setState(
+                          () => _selectedBillingCycle = value ?? 'monthly'),
+                    ),
                   ),
                 ],
               ),
@@ -803,22 +817,21 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedCategory,
-                decoration: InputDecoration(
-                  labelText: 'Category',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+              DropdownSearch<String>(
+                selectedItem: _selectedCategory,
+                items: categories,
+                dropdownDecoratorProps: DropDownDecoratorProps(
+                  dropdownSearchDecoration: InputDecoration(
+                    labelText: 'Category',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
-                items: categories
-                    .map(
-                      (category) => DropdownMenuItem<String>(
-                        value: category,
-                        child: Text(category),
-                      ),
-                    )
-                    .toList(),
+                popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                  context: context,
+                  searchHint: 'Search category...',
+                ),
                 onChanged: (value) {
                   if (value != null) {
                     setState(() => _selectedCategory = value);

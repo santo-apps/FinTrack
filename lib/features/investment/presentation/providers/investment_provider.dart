@@ -34,6 +34,8 @@ class InvestmentProvider extends ChangeNotifier {
   Future<void> addInvestment(Investment investment) async {
     try {
       await HiveService.addInvestment(investment);
+      await HiveService.saveSetting(
+          'onboarding_step_investment_completed', true);
       _investments.add(investment);
       notifyListeners();
     } catch (e) {

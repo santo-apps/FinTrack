@@ -27,6 +27,8 @@ class SubscriptionProvider extends ChangeNotifier {
   Future<void> addSubscription(Subscription subscription) async {
     try {
       await HiveService.addSubscription(subscription);
+      await HiveService.saveSetting(
+          'onboarding_step_subscription_completed', true);
       _subscriptions.add(subscription);
       notifyListeners();
     } catch (e) {

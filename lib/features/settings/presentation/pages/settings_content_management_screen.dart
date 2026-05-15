@@ -4,6 +4,7 @@ import 'package:fintrack/features/expense/presentation/pages/manage_expense_cate
 import 'package:fintrack/features/investment/presentation/pages/manage_investment_types_screen.dart';
 import 'package:fintrack/features/accounts/presentation/pages/manage_account_types_screen.dart';
 import 'package:fintrack/features/settings/presentation/pages/manage_subscription_categories_screen.dart';
+import 'package:fintrack/features/settings/presentation/pages/manage_goal_categories_screen.dart';
 
 class SettingsContentManagementScreen extends StatelessWidget {
   const SettingsContentManagementScreen({super.key});
@@ -116,6 +117,22 @@ class SettingsContentManagementScreen extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) =>
                         const ManageSubscriptionCategoriesScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildContentCard(
+              context,
+              icon: Icons.flag,
+              iconColor: const Color(0xFF2E7D32),
+              title: 'Manage Goal Categories',
+              description: 'Add, edit, or delete financial goal categories',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ManageGoalCategoriesScreen(),
                   ),
                 );
               },

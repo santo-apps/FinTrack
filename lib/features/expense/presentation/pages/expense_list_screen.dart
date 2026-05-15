@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
+import 'package:fintrack/core/utils/dropdown_search_utils.dart';
 import 'package:fintrack/features/expense/data/models/expense_model.dart';
 import 'package:fintrack/features/expense/data/models/expense_category_model.dart';
 import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
@@ -13,6 +15,7 @@ import 'package:fintrack/features/accounts/presentation/providers/payment_accoun
 import 'package:fintrack/features/accounts/presentation/providers/account_type_provider.dart';
 import 'package:fintrack/features/accounts/presentation/pages/account_form_screen.dart';
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
+import 'package:fintrack/features/expense/presentation/widgets/transaction_calculator_sheet.dart';
 
 enum SortOption { date, amount, category }
 
@@ -321,6 +324,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
             amount: accountAmount,
             percentage: percentage,
             color: _getBreakdownColor(entry.key),
+            metadataLabel: _getAccountTypeForAccountName(accountName),
+            metadataIcon:
+                _accountTypeIcon(_getAccountTypeForAccountName(accountName)),
             onTap: () {
               final accountExpenses = accountBreakdownExpenses
                   .where((expense) =>
@@ -369,7 +375,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
         final categoryColor = categoryData != null
             ? _hexToColor(categoryData.color)
             : AppTheme.primaryColor;
-        final categoryIcon = categoryData?.icon ?? '📌';
+        final categoryIcon =
+            _resolveCategoryDisplayIcon(category, categoryData);
         final isExpanded = _expandedCategories.contains(category);
 
         return Card(
@@ -386,7 +393,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
               dividerColor: Colors.transparent,
             ),
             child: ExpansionTile(
-              key: PageStorageKey<String>('expense-category-$category'),
               initiallyExpanded: isExpanded,
               onExpansionChanged: (expanded) {
                 setState(() {
@@ -849,6 +855,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
     required double amount,
     required double percentage,
     required Color color,
+    String? metadataLabel,
+    IconData? metadataIcon,
     VoidCallback? onTap,
   }) {
     final currencySymbol = context.read<SettingsProvider>().currencySymbol;
@@ -857,7 +865,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: Theme.of(context).brightness == Brightness.dark
               ? Theme.of(context).colorScheme.surface
@@ -870,15 +878,42 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: _tabPrimaryTextColor(context),
-                    ),
+                  child: Row(
+                    children: [
+                      if (metadataLabel != null && metadataLabel.isNotEmpty)
+                        Tooltip(
+                          message: metadataLabel,
+                          child: Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.14),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Icon(
+                              metadataIcon ?? Icons.account_balance_wallet,
+                              size: 12,
+                              color: color,
+                            ),
+                          ),
+                        ),
+                      if (metadataLabel != null && metadataLabel.isNotEmpty)
+                        const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: _tabPrimaryTextColor(context),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Row(
@@ -907,7 +942,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
@@ -1064,6 +1099,17 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
     return transactionType != 'income';
   }
 
+  String _resolveCategoryDisplayIcon(
+    String category,
+    ExpenseCategory? categoryData,
+  ) {
+    final normalized = category.toLowerCase();
+    if (normalized.contains('transfer')) return '↔️';
+    if (normalized.contains('payment')) return '💳';
+    if (normalized == 'others' || normalized.contains('other')) return '🧩';
+    return categoryData?.icon ?? '🧾';
+  }
+
   String _getExpenseAccountName(Expense expense) {
     final accountProvider = context.read<PaymentAccountProvider>();
 
@@ -1073,6 +1119,26 @@ class _ExpenseListScreenState extends State<ExpenseListScreen>
     }
 
     return 'Unassigned Account';
+  }
+
+  String _getAccountTypeForAccountName(String accountName) {
+    final accountProvider = context.read<PaymentAccountProvider>();
+    final accounts = accountProvider.accounts;
+    for (final account in accounts) {
+      if (account.name == accountName) {
+        return account.accountType;
+      }
+    }
+    return 'Unknown';
+  }
+
+  IconData _accountTypeIcon(String accountType) {
+    final type = accountType.toLowerCase();
+    if (type.contains('credit')) return Icons.credit_card;
+    if (type.contains('bank')) return Icons.account_balance;
+    if (type.contains('cash')) return Icons.payments_outlined;
+    if (type.contains('wallet')) return Icons.account_balance_wallet;
+    return Icons.wallet;
   }
 
   Color _getBreakdownColor(int index) {
@@ -1706,7 +1772,12 @@ class _AccountTransactionsPageState extends State<_AccountTransactionsPage> {
               ),
             )
           : ListView(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.fromLTRB(
+                12,
+                12,
+                12,
+                contentBottomPadding(context, hasFab: false),
+              ),
               children: [
                 Text(
                   'Transactions',
@@ -1774,7 +1845,7 @@ class ExpenseCard extends StatelessWidget {
     final categoryColor = categoryData != null
         ? _hexToColor(categoryData.color)
         : AppTheme.primaryColor;
-    final categoryIcon = categoryData?.icon ?? '📌';
+    final categoryIcon = _resolveExpenseIcon(expense, categoryData);
     final accountData = _getAccountData(context);
     final cardMargin = dense ? 8.0 : 12.0;
     final cardPadding = dense ? 10.0 : 12.0;
@@ -2115,6 +2186,25 @@ class ExpenseCard extends StatelessWidget {
         // Destination account not found, skip
       }
     }
+  }
+
+  String _resolveExpenseIcon(Expense expense, ExpenseCategory? categoryData) {
+    final transactionType = expense.transactionType ?? 'expense';
+    final category = expense.category.toLowerCase();
+
+    if (transactionType == 'transfer' || category.contains('transfer')) {
+      return '↔️';
+    }
+
+    if (transactionType == 'payment' || category.contains('payment')) {
+      return '💳';
+    }
+
+    if (category == 'others' || category.contains('other')) {
+      return '🧩';
+    }
+
+    return categoryData?.icon ?? '🧾';
   }
 }
 
@@ -2520,6 +2610,25 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
       'expense'; // 'expense', 'income', 'transfer', 'payment'
   String? selectedDestinationAccountId;
 
+  DropDownDecoratorProps _dropdownDecoration({
+    required String labelText,
+    String? helperText,
+  }) {
+    return DropDownDecoratorProps(
+      dropdownSearchDecoration: InputDecoration(
+        labelText: labelText,
+        helperText: helperText,
+      ),
+    );
+  }
+
+  PopupProps<T> _popupProps<T>({required String searchHint}) {
+    return DropdownSearchUi.adaptiveMenuPopup<T>(
+      context: context,
+      searchHint: searchHint,
+    );
+  }
+
   List<PaymentAccount> _uniqueAccountsById(Iterable<PaymentAccount> accounts) {
     final seen = <String>{};
     final unique = <PaymentAccount>[];
@@ -2538,6 +2647,25 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
       }
     }
     return categories.isNotEmpty ? categories.first.name : 'Income';
+  }
+
+  String _formatAccountAmountLabel(
+    PaymentAccount account,
+    String currencySymbol,
+  ) {
+    final amount = AppUtils.formatCurrency(
+      account.balance,
+      currencySymbol: currencySymbol,
+    );
+    final isCredit = account.accountType.toLowerCase().contains('credit');
+    return isCredit ? 'Outstanding: $amount' : 'Balance: $amount';
+  }
+
+  String _buildAccountOptionLabel(
+    PaymentAccount account,
+    String currencySymbol,
+  ) {
+    return '${account.name} (${_formatAccountAmountLabel(account, currencySymbol)})';
   }
 
   @override
@@ -2672,20 +2800,25 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
         child: Column(
           children: [
             TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                hintText: 'Enter expense title',
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
               controller: amountController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 labelText: 'Amount',
                 hintText: 'Enter amount',
                 prefixText: '$currencySymbol ',
+                suffixIcon: IconButton(
+                  tooltip: 'Calculator',
+                  icon: const Icon(Icons.calculate_outlined),
+                  onPressed: _showAmountCalculator,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: 'Title',
+                hintText: 'Enter expense title',
               ),
             ),
             const SizedBox(height: 16),
@@ -2712,50 +2845,53 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
             // Internal transfers should not be categorized as expenses.
             if (selectedTransactionType != 'income' &&
                 selectedTransactionType != 'transfer')
-              DropdownButtonFormField<String>(
-                initialValue: categories.any((c) => c.name == selectedCategory)
-                    ? selectedCategory
-                    : (categories.isNotEmpty ? categories.first.name : null),
-                decoration: InputDecoration(
-                  labelText: 'Category',
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.settings, size: 20),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const ManageExpenseCategoriesScreen(),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownSearch<String>(
+                      selectedItem:
+                          categories.any((c) => c.name == selectedCategory)
+                              ? selectedCategory
+                              : (categories.isNotEmpty
+                                  ? categories.first.name
+                                  : null),
+                      items: categories.isEmpty
+                          ? const ['Others']
+                          : categories
+                              .map((category) => category.name)
+                              .toList(),
+                      dropdownDecoratorProps: const DropDownDecoratorProps(
+                        dropdownSearchDecoration: InputDecoration(
+                          labelText: 'Category',
                         ),
-                      );
-                    },
+                      ),
+                      popupProps: _popupProps<String>(
+                        searchHint: 'Search category...',
+                      ),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => selectedCategory = value);
+                        }
+                      },
+                    ),
                   ),
-                ),
-                items: categories.isEmpty
-                    ? [
-                        const DropdownMenuItem(
-                          value: 'Others',
-                          child: Text('Others'),
-                        )
-                      ]
-                    : categories
-                        .map((category) => DropdownMenuItem(
-                              value: category.name,
-                              child: Row(
-                                children: [
-                                  Text(category.icon,
-                                      style: TextStyle(fontSize: 18)),
-                                  const SizedBox(width: 8),
-                                  Text(category.name),
-                                ],
-                              ),
-                            ))
-                        .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => selectedCategory = value);
-                  }
-                },
+                  const SizedBox(width: 8),
+                  Tooltip(
+                    message: 'Manage categories',
+                    child: IconButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const ManageExpenseCategoriesScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.settings),
+                    ),
+                  ),
+                ],
               ),
             if (selectedTransactionType != 'income' &&
                 selectedTransactionType != 'transfer')
@@ -2777,30 +2913,21 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
 
                   return Column(
                     children: [
-                      DropdownButtonFormField<String>(
-                        initialValue: validatedAccountType,
-                        decoration: const InputDecoration(
+                      DropdownSearch<String>(
+                        selectedItem: validatedAccountType,
+                        items: validAccountTypeNames,
+                        dropdownDecoratorProps: _dropdownDecoration(
                           labelText: 'Account Type',
                           helperText: 'Select the type of payment account',
                         ),
-                        items: accountTypes.map((type) {
-                          return DropdownMenuItem(
-                            value: type.name,
-                            child: Row(
-                              children: [
-                                Text(type.icon ?? '📌',
-                                    style: TextStyle(fontSize: 18)),
-                                const SizedBox(width: 8),
-                                Text(type.name),
-                              ],
-                            ),
-                          );
-                        }).toList(),
+                        popupProps: _popupProps<String>(
+                          searchHint: 'Search account type...',
+                        ),
                         onChanged: (value) {
                           setState(() {
                             selectedAccountType = value;
                             selectedPaymentMethod = value ?? '';
-                            selectedAccountId = null; // Reset account selection
+                            selectedAccountId = null;
                             selectedTransactionType = 'expense';
                             selectedDestinationAccountId = null;
                           });
@@ -2831,43 +2958,58 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                DropdownButtonFormField<String>(
-                                  initialValue: validatedAccountId,
-                                  decoration: InputDecoration(
+                                DropdownSearch<String>(
+                                  selectedItem: validatedAccountId,
+                                  items: filteredAccounts
+                                      .map((account) => account.id)
+                                      .toList(),
+                                  itemAsString: (accountId) {
+                                    final account = filteredAccounts.firstWhere(
+                                      (entry) => entry.id == accountId,
+                                      orElse: () => filteredAccounts.first,
+                                    );
+                                    return _buildAccountOptionLabel(
+                                      account,
+                                      currencySymbol,
+                                    );
+                                  },
+                                  dropdownBuilder: (context, selectedItem) {
+                                    if (!hasFilteredAccounts) {
+                                      return Text(
+                                        'No accounts available',
+                                        style: TextStyle(
+                                          color: Theme.of(context).hintColor,
+                                        ),
+                                      );
+                                    }
+                                    if (selectedItem == null) {
+                                      return Text(
+                                        'Select account',
+                                        style: TextStyle(
+                                          color: Theme.of(context).hintColor,
+                                        ),
+                                      );
+                                    }
+                                    final account = filteredAccounts.firstWhere(
+                                      (entry) => entry.id == selectedItem,
+                                      orElse: () => filteredAccounts.first,
+                                    );
+                                    return Text(
+                                      _buildAccountOptionLabel(
+                                        account,
+                                        currencySymbol,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    );
+                                  },
+                                  dropdownDecoratorProps: _dropdownDecoration(
                                     labelText: 'Specific Account',
                                     helperText: 'Choose which account to use',
                                   ),
-                                  hint: hasFilteredAccounts
-                                      ? null
-                                      : const Text('No accounts available'),
-                                  items: filteredAccounts.map((account) {
-                                    return DropdownMenuItem(
-                                      value: account.id,
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          if (account.icon != null)
-                                            Text('${account.icon} ',
-                                                style: TextStyle(fontSize: 18)),
-                                          Flexible(
-                                            child: Text(
-                                              account.name,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                          if (account.balance != 0)
-                                            Text(
-                                              ' (${AppUtils.formatCurrency(account.balance, currencySymbol: context.read<SettingsProvider>().currencySymbol)})',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color:
-                                                    AppTheme.textSecondaryColor,
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    );
-                                  }).toList(),
+                                  popupProps: _popupProps<String>(
+                                    searchHint: 'Search account...',
+                                  ),
                                   onChanged: hasFilteredAccounts
                                       ? (value) {
                                           setState(() {
@@ -3005,27 +3147,28 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
 
                   return Column(
                     children: [
-                      DropdownButtonFormField<String>(
-                        initialValue:
+                      DropdownSearch<String>(
+                        selectedItem:
                             availableTypes.contains(selectedTransactionType)
                                 ? selectedTransactionType
                                 : availableTypes.first,
-                        decoration: const InputDecoration(
+                        items: availableTypes,
+                        itemAsString: (type) {
+                          final labels = {
+                            'expense': 'Expense',
+                            'income': isCreditCard ? 'Refund' : 'Income',
+                            'transfer': 'Transfer',
+                            'payment': 'Payment',
+                          };
+                          return labels[type] ?? type;
+                        },
+                        dropdownDecoratorProps: _dropdownDecoration(
                           labelText: 'Transaction Type',
                           helperText: 'Select transaction type',
                         ),
-                        items: availableTypes.map((type) {
-                          final labels = {
-                            'expense': '💸 Expense',
-                            'income': isCreditCard ? '💰 Refund' : '💰 Income',
-                            'transfer': '↔️ Transfer',
-                            'payment': '💳 Payment',
-                          };
-                          return DropdownMenuItem(
-                            value: type,
-                            child: Text(labels[type] ?? type),
-                          );
-                        }).toList(),
+                        popupProps: _popupProps<String>(
+                          searchHint: 'Search transaction type...',
+                        ),
                         onChanged: (value) {
                           if (value != null) {
                             setState(() {
@@ -3055,14 +3198,35 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                       if (selectedTransactionType == 'transfer' ||
                           selectedTransactionType == 'payment') ...[
                         const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          initialValue:
+                        DropdownSearch<String>(
+                          selectedItem:
                               _uniqueAccountsById(accountProvider.accounts).any(
                                       (a) =>
                                           a.id == selectedDestinationAccountId)
                                   ? selectedDestinationAccountId
                                   : null,
-                          decoration: InputDecoration(
+                          items: _uniqueAccountsById(accountProvider.accounts)
+                              .where((account) {
+                                if (!account.isActive ||
+                                    account.id == selectedAccountId) {
+                                  return false;
+                                }
+                                return account.accountType
+                                    .toLowerCase()
+                                    .contains('bank');
+                              })
+                              .map((account) => account.id)
+                              .toList(),
+                          itemAsString: (accountId) {
+                            final account = _uniqueAccountsById(
+                                    accountProvider.accounts)
+                                .firstWhere((entry) => entry.id == accountId);
+                            return _buildAccountOptionLabel(
+                              account,
+                              currencySymbol,
+                            );
+                          },
+                          dropdownDecoratorProps: _dropdownDecoration(
                             labelText: selectedTransactionType == 'transfer'
                                 ? 'Transfer To'
                                 : 'Payment From',
@@ -3070,35 +3234,9 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                                 ? 'Select destination account'
                                 : 'Select bank account to pay from',
                           ),
-                          items: _uniqueAccountsById(accountProvider.accounts)
-                              .where((account) {
-                            if (!account.isActive ||
-                                account.id == selectedAccountId) {
-                              return false;
-                            }
-                            // For both transfer and payment, show only bank accounts
-                            return account.accountType
-                                .toLowerCase()
-                                .contains('bank');
-                          }).map((account) {
-                            return DropdownMenuItem(
-                              value: account.id,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (account.icon != null)
-                                    Text('${account.icon} ',
-                                        style: TextStyle(fontSize: 18)),
-                                  Flexible(
-                                    child: Text(
-                                      account.name,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
+                          popupProps: _popupProps<String>(
+                            searchHint: 'Search account...',
+                          ),
                           onChanged: (value) {
                             setState(() {
                               selectedDestinationAccountId = value;
@@ -3118,14 +3256,35 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                     children: [
                       if (selectedTransactionType == 'transfer' ||
                           selectedTransactionType == 'payment') ...[
-                        DropdownButtonFormField<String>(
-                          initialValue:
+                        DropdownSearch<String>(
+                          selectedItem:
                               _uniqueAccountsById(accountProvider.accounts).any(
                                       (a) =>
                                           a.id == selectedDestinationAccountId)
                                   ? selectedDestinationAccountId
                                   : null,
-                          decoration: InputDecoration(
+                          items: _uniqueAccountsById(accountProvider.accounts)
+                              .where((account) {
+                                if (!account.isActive ||
+                                    account.id == selectedAccountId) {
+                                  return false;
+                                }
+                                return account.accountType
+                                    .toLowerCase()
+                                    .contains('bank');
+                              })
+                              .map((account) => account.id)
+                              .toList(),
+                          itemAsString: (accountId) {
+                            final account = _uniqueAccountsById(
+                                    accountProvider.accounts)
+                                .firstWhere((entry) => entry.id == accountId);
+                            return _buildAccountOptionLabel(
+                              account,
+                              currencySymbol,
+                            );
+                          },
+                          dropdownDecoratorProps: _dropdownDecoration(
                             labelText: selectedTransactionType == 'transfer'
                                 ? 'Transfer To'
                                 : 'Payment From',
@@ -3133,35 +3292,9 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                                 ? 'Select destination account'
                                 : 'Select bank account to pay from',
                           ),
-                          items: _uniqueAccountsById(accountProvider.accounts)
-                              .where((account) {
-                            if (!account.isActive ||
-                                account.id == selectedAccountId) {
-                              return false;
-                            }
-                            // For both transfer and payment, show only bank accounts
-                            return account.accountType
-                                .toLowerCase()
-                                .contains('bank');
-                          }).map((account) {
-                            return DropdownMenuItem(
-                              value: account.id,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (account.icon != null)
-                                    Text('${account.icon} ',
-                                        style: TextStyle(fontSize: 18)),
-                                  Flexible(
-                                    child: Text(
-                                      account.name,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
+                          popupProps: _popupProps<String>(
+                            searchHint: 'Search account...',
+                          ),
                           onChanged: (value) {
                             setState(() {
                               selectedDestinationAccountId = value;
@@ -3283,17 +3416,26 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
   Future<void> _saveExpense() async {
     final title = titleController.text.trim();
     final amount = double.tryParse(amountController.text) ?? 0;
+    final messenger = ScaffoldMessenger.of(context);
 
     if (title.isEmpty || amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all required fields')),
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all required fields'),
+          duration: Duration(seconds: 3),
+        ),
       );
       return;
     }
 
     if (selectedAccountId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select an account')),
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Please select an account'),
+          duration: Duration(seconds: 3),
+        ),
       );
       return;
     }
@@ -3302,8 +3444,12 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
     if ((selectedTransactionType == 'transfer' ||
             selectedTransactionType == 'payment') &&
         selectedDestinationAccountId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a destination account')),
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Please select a destination account'),
+          duration: Duration(seconds: 3),
+        ),
       );
       return;
     }
@@ -3370,5 +3516,42 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
         selectedDate = picked;
       });
     }
+  }
+
+  Future<void> _showAmountCalculator() async {
+    final parsedInitialAmount = double.tryParse(amountController.text.trim());
+    final sourceAccount = selectedAccountId == null
+        ? null
+        : context
+            .read<PaymentAccountProvider>()
+            .getAccountById(selectedAccountId!);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    await showModalBottomSheet(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      backgroundColor:
+          isDarkMode ? Theme.of(context).colorScheme.surface : null,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => TransactionCalculatorSheet(
+        sourceAccount: sourceAccount,
+        transactionType: selectedTransactionType,
+        initialAmount: parsedInitialAmount,
+        title: 'Calculator',
+        actionLabel: 'USE AMOUNT',
+        onSubmit: (amount, selectedAccountFromCalculator) {
+          if (!mounted) return;
+          setState(() {
+            amountController.text = amount.toStringAsFixed(2);
+            if (selectedAccountFromCalculator != null) {
+              selectedDestinationAccountId = selectedAccountFromCalculator;
+            }
+          });
+        },
+      ),
+    );
   }
 }

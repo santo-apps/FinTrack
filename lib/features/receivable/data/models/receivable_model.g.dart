@@ -16,13 +16,15 @@ class ReceivableAdapter extends TypeAdapter<Receivable> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
+    final amount = fields[2] as double;
+    final isReceived = fields[5] as bool;
     return Receivable(
       id: fields[0] as String,
       title: fields[1] as String,
-      amount: fields[2] as double,
+      amount: amount,
       dueDate: fields[3] as DateTime,
       currency: fields[4] as String,
-      isReceived: fields[5] as bool,
+      isReceived: isReceived,
       receivedDate: fields[6] as DateTime?,
       remindBeforeDays: fields[7] as int,
       notes: fields[8] as String?,
@@ -31,13 +33,14 @@ class ReceivableAdapter extends TypeAdapter<Receivable> {
       isRecurring: fields[11] as bool? ?? false,
       recurringEndDate: fields[12] as DateTime?,
       recurrenceGroupId: fields[13] as String?,
+      receivedAmount: (fields[14] as double?) ?? (isReceived ? amount : 0),
     );
   }
 
   @override
   void write(BinaryWriter writer, Receivable obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -65,7 +68,9 @@ class ReceivableAdapter extends TypeAdapter<Receivable> {
       ..writeByte(12)
       ..write(obj.recurringEndDate)
       ..writeByte(13)
-      ..write(obj.recurrenceGroupId);
+      ..write(obj.recurrenceGroupId)
+      ..writeByte(14)
+      ..write(obj.receivedAmount);
   }
 
   @override

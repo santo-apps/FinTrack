@@ -14,6 +14,7 @@ import 'package:fintrack/features/subscription/data/models/subscription_model.da
 import 'package:fintrack/features/subscription/presentation/providers/subscription_provider.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
+import 'package:fintrack/core/utils/dropdown_search_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -29,6 +30,16 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   final Uuid _uuid = const Uuid();
+
+  static const String _currencyStepKey = 'onboarding_step_currency_completed';
+  static const String _accountStepKey = 'onboarding_step_account_completed';
+  static const String _goalStepKey = 'onboarding_step_goal_completed';
+  static const String _budgetStepKey = 'onboarding_step_budget_completed';
+  static const String _investmentStepKey =
+      'onboarding_step_investment_completed';
+  static const String _loanStepKey = 'onboarding_step_loan_completed';
+  static const String _subscriptionStepKey =
+      'onboarding_step_subscription_completed';
 
   int _currentStep = 0;
   bool _isSaving = false;
@@ -174,6 +185,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     switch (_currentStep) {
       case 0:
         await context.read<SettingsProvider>().setCurrency(_selectedCurrency);
+        await HiveService.saveSetting(_currencyStepKey, true);
         return true;
 
       case 1:
@@ -191,6 +203,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           createdAt: DateTime.now(),
         );
         await context.read<PaymentAccountProvider>().addAccount(account);
+        await HiveService.saveSetting(_accountStepKey, true);
         return true;
 
       case 2:
@@ -209,6 +222,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           currency: _selectedCurrency,
         );
         await context.read<GoalProvider>().addGoal(goal);
+        await HiveService.saveSetting(_goalStepKey, true);
         return true;
 
       case 3:
@@ -225,6 +239,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           recurrenceType: 'monthly',
           endDate: DateTime(now.year + 1, now.month),
         );
+        await HiveService.saveSetting(_budgetStepKey, true);
         return true;
 
       case 4:
@@ -243,6 +258,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           currency: _selectedCurrency,
         );
         await context.read<InvestmentProvider>().addInvestment(investment);
+        await HiveService.saveSetting(_investmentStepKey, true);
         return true;
 
       case 5:
@@ -275,6 +291,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           createdAt: DateTime.now(),
         );
         await context.read<LoanProvider>().addLoan(loan);
+        await HiveService.saveSetting(_loanStepKey, true);
         return true;
 
       case 6:
@@ -295,6 +312,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         await context
             .read<SubscriptionProvider>()
             .addSubscription(subscription);
+        await HiveService.saveSetting(_subscriptionStepKey, true);
         return true;
 
       case 7:
@@ -590,28 +608,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          DropdownButtonFormField<String>(
-                            initialValue:
+                          DropdownSearch<String>(
+                            selectedItem:
                                 _accountType.isEmpty ? null : _accountType,
-                            decoration: InputDecoration(
-                              labelText: 'Account type',
-                              hintText: 'Select account type',
-                              border: const OutlineInputBorder(),
-                            ),
                             items: const [
-                              DropdownMenuItem(
-                                value: 'Bank Account',
-                                child: Text('Bank Account'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Cash',
-                                child: Text('Cash'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Credit Card',
-                                child: Text('Credit Card'),
-                              ),
+                              'Bank Account',
+                              'Cash',
+                              'Credit Card',
                             ],
+                            dropdownDecoratorProps:
+                                const DropDownDecoratorProps(
+                              dropdownSearchDecoration: InputDecoration(
+                                labelText: 'Account type',
+                                hintText: 'Select account type',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                            popupProps:
+                                DropdownSearchUi.adaptiveMenuPopup<String>(
+                              context: context,
+                              searchHint: 'Search account type...',
+                            ),
                             onChanged: (value) {
                               if (value == null) return;
                               setState(() => _accountType = value);
@@ -662,46 +679,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       subtitle: _stepSubtitles[3],
                       child: Column(
                         children: [
-                          DropdownButtonFormField<String>(
-                            initialValue: _budgetCategory,
-                            decoration: const InputDecoration(
-                              labelText: 'Budget category',
-                              border: OutlineInputBorder(),
-                            ),
+                          DropdownSearch<String>(
+                            selectedItem: _budgetCategory,
                             items: const [
-                              DropdownMenuItem(
-                                value: 'General',
-                                child: Text('General'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Food & Dining',
-                                child: Text('Food & Dining'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Transportation',
-                                child: Text('Transportation'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Shopping',
-                                child: Text('Shopping'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Utilities',
-                                child: Text('Utilities'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Entertainment',
-                                child: Text('Entertainment'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Healthcare',
-                                child: Text('Healthcare'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Education',
-                                child: Text('Education'),
-                              ),
+                              'General',
+                              'Food & Dining',
+                              'Transportation',
+                              'Shopping',
+                              'Utilities',
+                              'Entertainment',
+                              'Healthcare',
+                              'Education',
                             ],
+                            dropdownDecoratorProps:
+                                const DropDownDecoratorProps(
+                              dropdownSearchDecoration: InputDecoration(
+                                labelText: 'Budget category',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                            popupProps:
+                                DropdownSearchUi.adaptiveMenuPopup<String>(
+                              context: context,
+                              searchHint: 'Search budget category...',
+                            ),
                             onChanged: (value) {
                               if (value == null) return;
                               setState(() => _budgetCategory = value);
@@ -868,20 +869,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          DropdownButtonFormField<String>(
-                            initialValue: _subscriptionCycle,
-                            decoration: const InputDecoration(
-                              labelText: 'Billing cycle',
-                              border: OutlineInputBorder(),
+                          DropdownSearch<String>(
+                            selectedItem: _subscriptionCycle,
+                            items: const ['Monthly', 'Quarterly', 'Yearly'],
+                            dropdownDecoratorProps:
+                                const DropDownDecoratorProps(
+                              dropdownSearchDecoration: InputDecoration(
+                                labelText: 'Billing cycle',
+                                border: OutlineInputBorder(),
+                              ),
                             ),
-                            items: const [
-                              DropdownMenuItem(
-                                  value: 'Monthly', child: Text('Monthly')),
-                              DropdownMenuItem(
-                                  value: 'Quarterly', child: Text('Quarterly')),
-                              DropdownMenuItem(
-                                  value: 'Yearly', child: Text('Yearly')),
-                            ],
+                            popupProps:
+                                DropdownSearchUi.adaptiveMenuPopup<String>(
+                              context: context,
+                              searchHint: 'Search billing cycle...',
+                            ),
                             onChanged: (value) {
                               if (value == null) return;
                               setState(() => _subscriptionCycle = value);

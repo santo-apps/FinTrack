@@ -53,7 +53,12 @@ class _ManageExpenseCategoriesScreenState
             }
 
             return ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                contentBottomPadding(context, hasFab: false),
+              ),
               itemCount: categories.length,
               itemBuilder: (context, index) {
                 final category = categories[index];

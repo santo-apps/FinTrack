@@ -50,7 +50,12 @@ class ManageSubscriptionCategoriesScreen extends StatelessWidget {
             }
 
             return ReorderableListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                contentBottomPadding(context, hasFab: false),
+              ),
               itemCount: categories.length,
               onReorder: (oldIndex, newIndex) {
                 if (oldIndex < newIndex) {
@@ -231,8 +236,7 @@ class ManageSubscriptionCategoriesScreen extends StatelessWidget {
           builder: (context, setState) => AlertDialog(
             title: Text(
               isEdit ? 'Edit Category' : 'Add Category',
-              style:
-                  TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
             content: SingleChildScrollView(
               child: Column(
@@ -288,8 +292,7 @@ class ManageSubscriptionCategoriesScreen extends StatelessWidget {
                           child: Center(
                             child: Text(
                               emoji,
-                              style: TextStyle(
-                                  fontSize: 20),
+                              style: TextStyle(fontSize: 20),
                             ),
                           ),
                         ),

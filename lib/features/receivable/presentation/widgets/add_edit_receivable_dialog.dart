@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
+import 'package:fintrack/core/utils/dropdown_search_utils.dart';
 import 'package:fintrack/features/accounts/data/models/payment_account_model.dart';
 import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
 import 'package:fintrack/features/receivable/data/models/receivable_model.dart';
@@ -30,6 +31,7 @@ class _AddEditReceivableDialogState extends State<AddEditReceivableDialog> {
   late int _remindBeforeDays;
   bool _isRecurring = false;
   DateTime? _recurringEndDate;
+  bool _recurringEndDateTouched = false;
   String? _selectedAccountType;
   String? _selectedAccountId;
 
@@ -82,10 +84,16 @@ class _AddEditReceivableDialogState extends State<AddEditReceivableDialog> {
       return;
     }
 
+    final messenger = ScaffoldMessenger.of(context);
+
     final amount = double.tryParse(_amountController.text.trim());
     if (amount == null || amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid amount')),
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid amount'),
+          duration: Duration(seconds: 3),
+        ),
       );
       return;
     }
@@ -94,16 +102,17 @@ class _AddEditReceivableDialogState extends State<AddEditReceivableDialog> {
     final provider = context.read<ReceivableProvider>();
 
     if (_isRecurring && _recurringEndDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a recurring end date')),
-      );
+      setState(() => _recurringEndDateTouched = true);
       return;
     }
 
     if (_isRecurring && _recurringEndDate!.isBefore(_dueDate)) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
         const SnackBar(
-            content: Text('Recurring end date must be on/after due date')),
+          content: Text('Recurring end date must be on/after due date'),
+          duration: Duration(seconds: 3),
+        ),
       );
       return;
     }
@@ -188,6 +197,10 @@ class _AddEditReceivableDialogState extends State<AddEditReceivableDialog> {
         .cast<PaymentAccount?>()
         .firstWhere((account) => account?.id == _selectedAccountId,
             orElse: () => null);
+    final recurringEndDateError =
+        _isRecurring && _recurringEndDateTouched && _recurringEndDate == null
+            ? 'Recurring end date is required'
+            : null;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -220,7 +233,7 @@ class _AddEditReceivableDialogState extends State<AddEditReceivableDialog> {
               ),
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Title'),
+                decoration: const InputDecoration(labelText: 'Title *'),
                 validator: (value) => (value == null || value.trim().isEmpty)
                     ? 'Title is required'
                     : null,
@@ -231,7 +244,7 @@ class _AddEditReceivableDialogState extends State<AddEditReceivableDialog> {
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 decoration:
-                    InputDecoration(labelText: 'Amount ($currencySymbol)'),
+                    InputDecoration(labelText: 'Amount ($currencySymbol) *'),
                 validator: (value) {
                   final amount = double.tryParse(value?.trim() ?? '');
                   if (amount == null || amount <= 0) {
@@ -252,44 +265,37 @@ class _AddEditReceivableDialogState extends State<AddEditReceivableDialog> {
                 ),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<int>(
-                initialValue: _remindBeforeDays,
-                items: const [
-                  DropdownMenuItem(value: 0, child: Text('On due date')),
-                  DropdownMenuItem(value: 1, child: Text('1 day before')),
-                  DropdownMenuItem(value: 2, child: Text('2 days before')),
-                  DropdownMenuItem(value: 3, child: Text('3 days before')),
-                  DropdownMenuItem(value: 5, child: Text('5 days before')),
-                  DropdownMenuItem(value: 7, child: Text('7 days before')),
-                  DropdownMenuItem(value: 10, child: Text('10 days before')),
-                ],
+              DropdownSearch<int>(
+                selectedItem: _remindBeforeDays,
+                items: const [0, 1, 2, 3, 5, 7, 10],
+                itemAsString: (value) => switch (value) {
+                  0 => 'On due date',
+                  1 => '1 day before',
+                  _ => '$value days before',
+                },
+                dropdownDecoratorProps: const DropDownDecoratorProps(
+                  dropdownSearchDecoration: InputDecoration(
+                    labelText: 'Reminder timing',
+                    helperText: 'Choose when reminders should start',
+                  ),
+                ),
+                popupProps: DropdownSearchUi.adaptiveMenuPopup<int>(
+                  context: context,
+                  searchHint: 'Search reminder option...',
+                ),
                 onChanged: (value) {
                   if (value != null) {
                     setState(() => _remindBeforeDays = value);
                   }
                 },
-                decoration: const InputDecoration(
-                  labelText: 'Remind me before',
-                ),
               ),
               const SizedBox(height: 12),
               DropdownSearch<String>(
                 selectedItem: selectedAccountTypeValue,
                 items: accountTypes,
-                popupProps: PopupProps.menu(
-                  showSearchBox: true,
-                  constraints: const BoxConstraints(maxHeight: 320),
-                  fit: FlexFit.loose,
-                  menuProps: MenuProps(
-                    borderRadius: BorderRadius.circular(12),
-                    elevation: 6,
-                  ),
-                  searchFieldProps: const TextFieldProps(
-                    decoration: InputDecoration(
-                      hintText: 'Search account type...',
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                  ),
+                popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                  context: context,
+                  searchHint: 'Search account type...',
                 ),
                 dropdownDecoratorProps: const DropDownDecoratorProps(
                   dropdownSearchDecoration: InputDecoration(
@@ -394,20 +400,9 @@ class _AddEditReceivableDialogState extends State<AddEditReceivableDialog> {
                           ),
                   ),
                 ),
-                popupProps: PopupProps.menu(
-                  showSearchBox: true,
-                  constraints: const BoxConstraints(maxHeight: 320),
-                  fit: FlexFit.loose,
-                  menuProps: MenuProps(
-                    borderRadius: BorderRadius.circular(12),
-                    elevation: 6,
-                  ),
-                  searchFieldProps: const TextFieldProps(
-                    decoration: InputDecoration(
-                      hintText: 'Search accounts...',
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                  ),
+                popupProps: DropdownSearchUi.adaptiveMenuPopup<PaymentAccount?>(
+                  context: context,
+                  searchHint: 'Search accounts...',
                   itemBuilder: (context, account, isSelected) {
                     if (account == null) {
                       return const SizedBox.shrink();
@@ -478,6 +473,7 @@ class _AddEditReceivableDialogState extends State<AddEditReceivableDialog> {
                 onChanged: (value) {
                   setState(() {
                     _isRecurring = value;
+                    _recurringEndDateTouched = false;
                     if (!value) {
                       _recurringEndDate = null;
                     }
@@ -498,12 +494,17 @@ class _AddEditReceivableDialogState extends State<AddEditReceivableDialog> {
                       lastDate: DateTime(2100),
                     );
                     if (picked != null) {
-                      setState(() => _recurringEndDate = picked);
+                      setState(() {
+                        _recurringEndDate = picked;
+                        _recurringEndDateTouched = false;
+                      });
                     }
                   },
                   child: InputDecorator(
-                    decoration:
-                        const InputDecoration(labelText: 'Recurring until'),
+                    decoration: InputDecoration(
+                      labelText: 'Recurring until *',
+                      errorText: recurringEndDateError,
+                    ),
                     child: Text(
                       _recurringEndDate == null
                           ? 'Select end date'

@@ -8,6 +8,10 @@ class ReceivableProvider extends ChangeNotifier {
   static const String _receivableIncomePrefix = 'receivable_income_';
   List<Receivable> _receivables = [];
 
+  double _normalizeAmount(double value) {
+    return (value * 100).roundToDouble() / 100;
+  }
+
   List<Receivable> get receivables => _receivables;
 
   ReceivableProvider() {
@@ -71,6 +75,7 @@ class ReceivableProvider extends ChangeNotifier {
       id: groupId,
       isReceived: false,
       receivedDate: null,
+      receivedAmount: 0,
       recurrenceGroupId: groupId,
     );
 
@@ -89,38 +94,101 @@ class ReceivableProvider extends ChangeNotifier {
   }
 
   Future<void> markAsReceived(Receivable receivable) async {
-    if (receivable.isReceived) {
+    final current = _receivables.firstWhere(
+      (r) => r.id == receivable.id,
+      orElse: () => receivable,
+    );
+    if (current.isReceived) {
       return;
     }
 
-    await _applyMappedAccountDelta(receivable, moveToReceived: true);
-    await _upsertLinkedIncomeTransaction(receivable);
+    final receiveAmount = current.outstandingAmount;
+    if (receiveAmount <= 0) {
+      return;
+    }
 
-    final updated = receivable.copyWith(
+    await _applyMappedAccountDelta(
+      current,
+      amount: receiveAmount,
+      isReceiveAction: true,
+    );
+
+    final updated = current.copyWith(
       isReceived: true,
       receivedDate: DateTime.now(),
+      receivedAmount: current.amount,
     );
     await updateReceivable(updated);
+    await _syncLinkedIncomeTransaction(updated);
   }
 
   Future<void> markAsPending(Receivable receivable) async {
-    if (!receivable.isReceived) {
+    final current = _receivables.firstWhere(
+      (r) => r.id == receivable.id,
+      orElse: () => receivable,
+    );
+    if (current.receivedAmount <= 0) {
       return;
     }
 
-    await _applyMappedAccountDelta(receivable, moveToReceived: false);
-    await _deleteLinkedIncomeTransaction(receivable.id);
+    await _applyMappedAccountDelta(
+      current,
+      amount: current.receivedAmount,
+      isReceiveAction: false,
+    );
 
-    final updated = receivable.copyWith(
+    final updated = current.copyWith(
       isReceived: false,
       receivedDate: null,
+      receivedAmount: 0,
     );
     await updateReceivable(updated);
+    await _deleteLinkedIncomeTransaction(current.id);
+    await refreshData();
+  }
+
+  Future<void> markPartialReceived(
+    Receivable receivable,
+    double amount,
+  ) async {
+    final current = _receivables.firstWhere(
+      (r) => r.id == receivable.id,
+      orElse: () => receivable,
+    );
+
+    if (amount <= 0) {
+      return;
+    }
+
+    final delta =
+        amount > current.outstandingAmount ? current.outstandingAmount : amount;
+    if (delta <= 0) {
+      return;
+    }
+
+    await _applyMappedAccountDelta(
+      current,
+      amount: delta,
+      isReceiveAction: true,
+    );
+
+    final updatedReceived = _normalizeAmount(current.receivedAmount + delta);
+    final isFullyReceived = updatedReceived >= _normalizeAmount(current.amount);
+
+    final updated = current.copyWith(
+      receivedAmount:
+          isFullyReceived ? _normalizeAmount(current.amount) : updatedReceived,
+      isReceived: isFullyReceived,
+      receivedDate: DateTime.now(),
+    );
+
+    await updateReceivable(updated);
+    await _syncLinkedIncomeTransaction(updated);
   }
 
   List<Receivable> getPendingForMonth(DateTime month) {
     return _receivables.where((r) {
-      if (r.isReceived) return false;
+      if (r.outstandingAmount <= 0) return false;
       return r.dueDate.year == month.year && r.dueDate.month == month.month;
     }).toList()
       ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
@@ -128,7 +196,7 @@ class ReceivableProvider extends ChangeNotifier {
 
   List<Receivable> getReceivedForMonth(DateTime month) {
     return _receivables.where((r) {
-      if (!r.isReceived || r.receivedDate == null) return false;
+      if (r.receivedAmount <= 0 || r.receivedDate == null) return false;
       final date = r.receivedDate!;
       return date.year == month.year && date.month == month.month;
     }).toList()
@@ -137,7 +205,7 @@ class ReceivableProvider extends ChangeNotifier {
 
   double getPendingTotalForMonth(DateTime month) {
     return getPendingForMonth(month)
-        .fold<double>(0, (sum, r) => sum + r.amount);
+        .fold<double>(0, (sum, r) => sum + r.outstandingAmount);
   }
 
   int getReminderWindowCount(DateTime month) {
@@ -151,27 +219,28 @@ class ReceivableProvider extends ChangeNotifier {
 
   double getOverallPendingTotal() {
     return _receivables
-        .where((r) => !r.isReceived)
-        .fold<double>(0, (sum, r) => sum + r.amount);
+        .where((r) => r.outstandingAmount > 0)
+        .fold<double>(0, (sum, r) => sum + r.outstandingAmount);
   }
 
   double getOverallReceivedTotal() {
     return _receivables
-        .where((r) => r.isReceived)
-        .fold<double>(0, (sum, r) => sum + r.amount);
+        .where((r) => r.receivedAmount > 0)
+        .fold<double>(0, (sum, r) => sum + r.receivedAmount);
   }
 
   int getOverallPendingCount() {
-    return _receivables.where((r) => !r.isReceived).length;
+    return _receivables.where((r) => r.outstandingAmount > 0).length;
   }
 
   int getOverallReceivedCount() {
-    return _receivables.where((r) => r.isReceived).length;
+    return _receivables.where((r) => r.receivedAmount > 0).length;
   }
 
   Future<void> _applyMappedAccountDelta(
     Receivable receivable, {
-    required bool moveToReceived,
+    required double amount,
+    required bool isReceiveAction,
   }) async {
     final accountId = receivable.accountId?.trim();
     if (accountId == null || accountId.isEmpty) {
@@ -186,24 +255,50 @@ class ReceivableProvider extends ChangeNotifier {
       return;
     }
 
+    if (amount <= 0) {
+      return;
+    }
+
     final isCreditCard = account.accountType.toLowerCase().contains('credit');
-    final receiveDelta = isCreditCard ? -receivable.amount : receivable.amount;
-    final delta = moveToReceived ? receiveDelta : -receiveDelta;
+    final receiveDelta = isCreditCard ? -amount : amount;
+    final delta = isReceiveAction ? receiveDelta : -receiveDelta;
 
     final updatedAccount = account.copyWith(balance: account.balance + delta);
     await HiveService.updatePaymentAccount(updatedAccount);
   }
 
-  Future<void> _upsertLinkedIncomeTransaction(Receivable receivable) async {
+  Future<void> _syncLinkedIncomeTransaction(Receivable receivable) async {
     final accountId = receivable.accountId?.trim();
     if (accountId == null || accountId.isEmpty) {
+      await _deleteLinkedIncomeTransaction(receivable.id);
       return;
+    }
+
+    if (receivable.receivedAmount <= 0) {
+      await _deleteLinkedIncomeTransaction(receivable.id);
+      return;
+    }
+
+    final legacyDuplicates = HiveService.getAllExpenses().where((expense) {
+      final hasReceivableTag =
+          expense.tags.contains('receivable:${receivable.id}');
+      final hasLegacyTitle = expense.title.startsWith(
+        'Receivable Received - ${receivable.title}',
+      );
+      return expense.transactionType == 'income' &&
+          expense.accountId == accountId &&
+          (hasReceivableTag || hasLegacyTitle) &&
+          expense.id != '$_receivableIncomePrefix${receivable.id}';
+    }).toList();
+
+    for (final duplicate in legacyDuplicates) {
+      await HiveService.deleteExpense(duplicate.id);
     }
 
     final linkedExpense = Expense(
       id: '$_receivableIncomePrefix${receivable.id}',
       title: 'Receivable Received - ${receivable.title}',
-      amount: receivable.amount,
+      amount: receivable.receivedAmount,
       category: 'Receivables',
       paymentMethod: 'Receivable Credit',
       date: DateTime.now(),
@@ -245,6 +340,7 @@ class ReceivableProvider extends ChangeNotifier {
         dueDate: dueDate,
         isReceived: false,
         receivedDate: null,
+        receivedAmount: 0,
         recurrenceGroupId: groupId,
       );
       series.add(generated);

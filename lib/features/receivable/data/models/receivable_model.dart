@@ -46,6 +46,9 @@ class Receivable extends HiveObject {
   @HiveField(13)
   String? recurrenceGroupId;
 
+  @HiveField(14)
+  double receivedAmount;
+
   Receivable({
     required this.id,
     required this.title,
@@ -61,6 +64,7 @@ class Receivable extends HiveObject {
     this.isRecurring = false,
     this.recurringEndDate,
     this.recurrenceGroupId,
+    this.receivedAmount = 0,
   });
 
   Receivable copyWith({
@@ -78,6 +82,7 @@ class Receivable extends HiveObject {
     bool? isRecurring,
     DateTime? recurringEndDate,
     String? recurrenceGroupId,
+    double? receivedAmount,
   }) {
     return Receivable(
       id: id ?? this.id,
@@ -94,7 +99,18 @@ class Receivable extends HiveObject {
       isRecurring: isRecurring ?? this.isRecurring,
       recurringEndDate: recurringEndDate ?? this.recurringEndDate,
       recurrenceGroupId: recurrenceGroupId ?? this.recurrenceGroupId,
+      receivedAmount: receivedAmount ?? this.receivedAmount,
     );
+  }
+
+  double get outstandingAmount {
+    final remaining = amount - receivedAmount;
+    if (remaining <= 0.000001) return 0;
+    return (remaining * 100).roundToDouble() / 100;
+  }
+
+  bool get isPartiallyReceived {
+    return receivedAmount > 0 && receivedAmount < amount;
   }
 
   bool get isOverdue {
@@ -130,6 +146,7 @@ class Receivable extends HiveObject {
       'isRecurring': isRecurring,
       'recurringEndDate': recurringEndDate?.toIso8601String(),
       'recurrenceGroupId': recurrenceGroupId,
+      'receivedAmount': receivedAmount,
     };
   }
 
@@ -171,6 +188,10 @@ class Receivable extends HiveObject {
       isRecurring: json['isRecurring'] == true,
       recurringEndDate: parseNullableDate(json['recurringEndDate']),
       recurrenceGroupId: json['recurrenceGroupId']?.toString(),
+      receivedAmount: (json['receivedAmount'] as num?)?.toDouble() ??
+          (json['isReceived'] == true
+              ? (json['amount'] as num?)?.toDouble() ?? 0
+              : 0),
     );
   }
 }

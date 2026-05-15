@@ -110,6 +110,7 @@ class HomeViewModel extends ChangeNotifier {
   int get receivedReceivableCount => _receivedReceivableCount;
   int get totalAccounts => _totalAccounts;
   double get liquidAccountBalance => _liquidAccountBalance;
+  bool get hasTransactions => _expenseProvider.expenses.isNotEmpty;
   int get pendingBillReminderCount => _billProvider
       .getRemindersForMonth(DateTime.now())
       .where((r) => r.status == BillReminderStatus.pending)
@@ -276,13 +277,9 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   void _computeReceivables() {
-    final now = DateTime.now();
-    final pending = _receivableProvider.getPendingForMonth(now);
-    final received = _receivableProvider.getReceivedForMonth(now);
-    _pendingReceivableCount = pending.length;
-    _receivedReceivableCount = received.length;
-    _pendingReceivableTotal =
-        pending.fold<double>(0, (sum, item) => sum + item.amount);
+    _pendingReceivableCount = _receivableProvider.getOverallPendingCount();
+    _receivedReceivableCount = _receivableProvider.getOverallReceivedCount();
+    _pendingReceivableTotal = _receivableProvider.getOverallPendingTotal();
   }
 
   void _computeTopCategories() {

@@ -5,6 +5,7 @@ import 'package:dropdown_search/dropdown_search.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
+import 'package:fintrack/core/utils/dropdown_search_utils.dart';
 import 'package:fintrack/features/budget/data/models/budget_model.dart';
 import 'package:fintrack/features/budget/presentation/providers/budget_provider.dart';
 import 'package:fintrack/features/expense/data/models/expense_model.dart';
@@ -654,8 +655,11 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: categoryColor.withValues(alpha: 0.22),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(
@@ -695,8 +699,9 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                         Text(
                           category,
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -736,24 +741,41 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                       ),
                     ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.edit, size: 18),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () => _showQuickEditDialog(
-                      context,
-                      category,
-                      budgetAmount,
-                    ),
-                    tooltip: 'Edit budget',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline,
-                        size: 18, color: Colors.red),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () => _confirmDeleteBudget(category),
-                    tooltip: 'Delete budget',
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, size: 18),
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        _showQuickEditDialog(context, category, budgetAmount);
+                        return;
+                      }
+                      if (value == 'delete') {
+                        _confirmDeleteBudget(category);
+                      }
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, size: 18),
+                            SizedBox(width: 8),
+                            Text('Edit budget'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline,
+                                size: 18, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Delete budget',
+                                style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -925,23 +947,10 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                 .map((cat) => cat.name as String)
                                 .toList(),
                             selectedItem: selectedCategory,
-                            popupProps: PopupProps.menu(
-                              showSearchBox: true,
-                              constraints: const BoxConstraints(maxHeight: 320),
-                              fit: FlexFit.loose,
-                              menuProps: MenuProps(
-                                borderRadius: BorderRadius.circular(12),
-                                elevation: 6,
-                              ),
-                              searchFieldProps: TextFieldProps(
-                                decoration: InputDecoration(
-                                  hintText: 'Search categories',
-                                  prefixIcon: const Icon(Icons.search),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
+                            popupProps:
+                                DropdownSearchUi.adaptiveMenuPopup<String>(
+                              context: context,
+                              searchHint: 'Search categories',
                               itemBuilder: (context, item, isSelected) {
                                 final cat = categoryMap[item];
                                 return ListTile(

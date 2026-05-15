@@ -52,7 +52,7 @@ class ExpenseCategory extends HiveObject {
       ExpenseCategory(
         id: 'health',
         name: 'Health',
-        icon: '⚕️',
+        icon: '🧩',
         color: '#FF7675',
         isDefault: true,
         createdAt: DateTime.now(),

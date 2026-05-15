@@ -30,12 +30,13 @@ class ReceivableOverviewScreen extends StatelessWidget {
             final key =
                 '${item.dueDate.year}-${item.dueDate.month.toString().padLeft(2, '0')}';
             final value = monthly.putIfAbsent(key, () => _MonthlySummary());
-            if (item.isReceived) {
+            if (item.receivedAmount > 0) {
               value.receivedCount += 1;
-              value.receivedTotal += item.amount;
-            } else {
+              value.receivedTotal += item.receivedAmount;
+            }
+            if (item.outstandingAmount > 0) {
               value.pendingCount += 1;
-              value.pendingTotal += item.amount;
+              value.pendingTotal += item.outstandingAmount;
             }
           }
 

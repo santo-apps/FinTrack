@@ -40,6 +40,7 @@ class BudgetProvider extends ChangeNotifier {
     DateTime? endDate,
   }) async {
     try {
+      await HiveService.saveSetting('onboarding_step_budget_completed', true);
       final existing = getBudgetForMonth(month, year);
       final now = DateTime.now();
 

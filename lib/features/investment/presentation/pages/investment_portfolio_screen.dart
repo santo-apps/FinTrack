@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
+import 'package:fintrack/core/utils/dropdown_search_utils.dart';
 import 'package:fintrack/features/investment/data/models/investment_model.dart';
 import 'package:fintrack/features/investment/presentation/providers/investment_provider.dart';
 import 'package:fintrack/features/investment/presentation/providers/investment_type_provider.dart';
@@ -410,7 +412,7 @@ class _InvestmentCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Current Value',
+                    'Current Market Amount',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   Text(
@@ -577,29 +579,25 @@ class _AddEditInvestmentScreenState extends State<AddEditInvestmentScreen> {
                     _selectedType = types.first.name;
                   }
 
-                  return InputDecorator(
-                    decoration: InputDecoration(
-                      labelText: 'Investment Type *',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  return DropdownSearch<String>(
+                    selectedItem: _selectedType,
+                    items: types.map((t) => t.name).toList(),
+                    dropdownDecoratorProps: DropDownDecoratorProps(
+                      dropdownSearchDecoration: InputDecoration(
+                        labelText: 'Investment Type *',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedType,
-                        isExpanded: true,
-                        items: types
-                            .map((t) => DropdownMenuItem(
-                                  value: t.name,
-                                  child: Text(t.name),
-                                ))
-                            .toList(),
-                        onChanged: (value) => setState(() {
-                          _selectedType = value ??
-                              (types.isNotEmpty ? types.first.name : 'Other');
-                        }),
-                      ),
+                    popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                      context: context,
+                      searchHint: 'Search investment type...',
                     ),
+                    onChanged: (value) => setState(() {
+                      _selectedType = value ??
+                          (types.isNotEmpty ? types.first.name : 'Other');
+                    }),
                   );
                 },
               ),
@@ -623,7 +621,7 @@ class _AddEditInvestmentScreenState extends State<AddEditInvestmentScreen> {
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
-                  labelText: 'Current Value (Optional)',
+                  labelText: 'Current Market Amount (Optional)',
                   hintText: '0.00',
                   helperText: 'Current market value',
                   border: OutlineInputBorder(

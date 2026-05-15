@@ -38,6 +38,7 @@ class LoanProvider extends ChangeNotifier {
   Future<void> addLoan(Loan loan) async {
     try {
       await HiveService.addLoan(loan);
+      await HiveService.saveSetting('onboarding_step_loan_completed', true);
       _loans.add(loan);
       notifyListeners();
     } catch (e) {

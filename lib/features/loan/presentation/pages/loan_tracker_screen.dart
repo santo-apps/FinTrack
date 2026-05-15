@@ -324,8 +324,14 @@ class _LoanTrackerScreenState extends State<LoanTrackerScreen> {
   }
 
   void _showPaymentDialog(BuildContext context, Loan loan) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => RecordPaymentDialog(loan: loan),
     );
   }
@@ -400,7 +406,8 @@ class _LoanCardState extends State<_LoanCard> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      elevation: 0,
+      elevation: 6,
+      shadowColor: AppTheme.primaryColor.withOpacity(0.12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),

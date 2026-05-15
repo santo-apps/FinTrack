@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
+import 'package:fintrack/core/utils/dropdown_search_utils.dart';
 import 'package:fintrack/database/hive_service.dart';
 import 'package:fintrack/features/bill/data/models/bill_model.dart';
 import 'package:fintrack/features/bill/data/models/bill_reminder_model.dart';
@@ -44,7 +46,8 @@ class _BillListScreenState extends State<BillListScreen> {
     SnackBarAction? action,
     Color? backgroundColor,
   }) {
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger =
+        _messengerKey.currentState ?? ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
@@ -773,38 +776,31 @@ class _BillListScreenState extends State<BillListScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedAccountId,
-                  items: accounts
-                      .map(
-                        (account) => DropdownMenuItem<String>(
-                          value: account.id,
-                          child: SizedBox(
-                            width: 250,
-                            child: Text(
-                              '${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})',
-                              style: TextStyle(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(),
+                DropdownSearch<String>(
+                  selectedItem: selectedAccountId,
+                  items: accounts.map((account) => account.id).toList(),
+                  itemAsString: (accountId) {
+                    final account =
+                        accounts.firstWhere((a) => a.id == accountId);
+                    return account.name;
+                  },
+                  dropdownDecoratorProps: DropDownDecoratorProps(
+                    dropdownSearchDecoration: InputDecoration(
+                      hintText: 'Select account',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                  popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                    context: context,
+                    searchHint: 'Search account...',
+                  ),
                   onChanged: (value) {
                     setModalState(() {
                       selectedAccountId = value;
                     });
                   },
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  hint: Text(
-                    'Select account',
-                    style: TextStyle(fontSize: 13),
-                  ),
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
@@ -1283,26 +1279,27 @@ class _BillListScreenState extends State<BillListScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedType,
-                    items: accountTypes
-                        .map((type) => DropdownMenuItem(
-                              value: type,
-                              child: Text(type, style: TextStyle()),
-                            ))
-                        .toList(),
+                  DropdownSearch<String>(
+                    selectedItem: selectedType,
+                    items: accountTypes,
+                    dropdownDecoratorProps: DropDownDecoratorProps(
+                      dropdownSearchDecoration: InputDecoration(
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                      ),
+                    ),
+                    popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                      context: context,
+                      searchHint: 'Search account type...',
+                    ),
                     onChanged: (value) {
                       setState(() {
                         selectedType = value;
                         selectedAccountId = null;
                       });
                     },
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -1327,30 +1324,35 @@ class _BillListScreenState extends State<BillListScreen> {
                       ),
                     )
                   else
-                    DropdownButtonFormField<String>(
-                      initialValue: selectedAccountId,
+                    DropdownSearch<String>(
+                      selectedItem: selectedAccountId,
                       items: filteredByType
-                          .map((account) => DropdownMenuItem<String>(
-                                value: account.id,
-                                child: Text(
-                                  '${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})',
-                                  style: TextStyle(),
-                                ),
-                              ))
+                          .map<String>((account) => account.id)
                           .toList(),
+                      itemAsString: (accountId) {
+                        final account = filteredByType.firstWhere(
+                          (item) => item.id == accountId,
+                        );
+                        return account.name;
+                      },
+                      dropdownDecoratorProps: DropDownDecoratorProps(
+                        dropdownSearchDecoration: InputDecoration(
+                          hintText: 'Choose account',
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                      popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                        context: context,
+                        searchHint: 'Search account...',
+                      ),
                       onChanged: (value) {
                         setState(() {
                           selectedAccountId = value;
                         });
                       },
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                      ),
-                      hint: Text('Choose account',
-                          style: TextStyle(fontSize: 13)),
                     ),
                   const SizedBox(height: 24),
                   Row(
@@ -1579,10 +1581,8 @@ class _BillListScreenState extends State<BillListScreen> {
       return;
     }
 
-    final accountTypes =
-        <String>{...accounts.map((a) => a.accountType)}.toList()..sort();
-    String? selectedType = accountTypes.isNotEmpty ? accountTypes.first : null;
     String? selectedAccountId;
+    String paymentMode = 'emi';
     final remainingAmount = (reminder.amount - reminder.paidAmount)
         .clamp(0.0, reminder.amount)
         .toDouble();
@@ -1600,9 +1600,17 @@ class _BillListScreenState extends State<BillListScreen> {
       ),
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
-          final filteredByType = accountTypes.isEmpty
-              ? []
-              : accounts.where((a) => a.accountType == selectedType).toList();
+          final selectableAccounts = accounts
+              .where((a) => !a.accountType.toLowerCase().contains('loan'))
+              .toList();
+
+          if (selectedAccountId == null && selectableAccounts.isNotEmpty) {
+            selectedAccountId = selectableAccounts.first.id;
+          }
+
+          if (paymentMode == 'emi' && amountController.text.trim().isEmpty) {
+            amountController.text = payableAmount.toStringAsFixed(2);
+          }
 
           return Padding(
             padding: EdgeInsets.only(
@@ -1645,14 +1653,42 @@ class _BillListScreenState extends State<BillListScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('EMI Amount'),
+                        selected: paymentMode == 'emi',
+                        onSelected: (_) {
+                          setState(() {
+                            paymentMode = 'emi';
+                            amountController.text =
+                                payableAmount.toStringAsFixed(2);
+                          });
+                        },
+                      ),
+                      ChoiceChip(
+                        label: const Text('Interest Only'),
+                        selected: paymentMode == 'interest',
+                        onSelected: (_) {
+                          setState(() {
+                            paymentMode = 'interest';
+                            amountController.clear();
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   TextField(
                     controller: amountController,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
                       hintText: 'Enter amount',
-                      helperText:
-                          'Remaining due: ${reminder.currency} ${payableAmount.toStringAsFixed(2)}',
+                      helperText: paymentMode == 'interest'
+                          ? 'Interest payment does not reduce principal balance'
+                          : 'Remaining due: ${reminder.currency} ${payableAmount.toStringAsFixed(2)}',
                       helperStyle:
                           TextStyle(fontSize: 11, color: Colors.grey.shade600),
                       border: OutlineInputBorder(
@@ -1664,36 +1700,6 @@ class _BillListScreenState extends State<BillListScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Select Account Type:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedType,
-                    items: accountTypes
-                        .map((type) => DropdownMenuItem(
-                              value: type,
-                              child: Text(type, style: TextStyle()),
-                            ))
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedType = value;
-                        selectedAccountId = null;
-                      });
-                    },
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
                     'Select Account:',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
@@ -1701,7 +1707,7 @@ class _BillListScreenState extends State<BillListScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  if (filteredByType.isEmpty)
+                  if (selectableAccounts.isEmpty)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
@@ -1715,30 +1721,38 @@ class _BillListScreenState extends State<BillListScreen> {
                       ),
                     )
                   else
-                    DropdownButtonFormField<String>(
-                      initialValue: selectedAccountId,
-                      items: filteredByType
-                          .map((account) => DropdownMenuItem<String>(
-                                value: account.id,
-                                child: Text(
-                                  '${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})',
-                                  style: TextStyle(),
-                                ),
-                              ))
-                          .toList(),
+                    DropdownSearch<String>(
+                      selectedItem: selectedAccountId,
+                      items: selectableAccounts.map((a) => a.id).toList(),
+                      itemAsString: (id) {
+                        final account = selectableAccounts.firstWhere(
+                          (a) => a.id == id,
+                          orElse: () => selectableAccounts.first,
+                        );
+                        return '${account.accountType} - ${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})';
+                      },
+                      compareFn: (first, second) => first == second,
+                      dropdownDecoratorProps: DropDownDecoratorProps(
+                        dropdownSearchDecoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          hintText: 'Choose account',
+                        ),
+                      ),
+                      popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                        context: context,
+                        searchHint: 'Search accounts...',
+                      ),
                       onChanged: (value) {
                         setState(() {
                           selectedAccountId = value;
                         });
                       },
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                      ),
-                      hint: Text('Choose account',
-                          style: TextStyle(fontSize: 13)),
                     ),
                   const SizedBox(height: 24),
                   Row(
@@ -1773,7 +1787,8 @@ class _BillListScreenState extends State<BillListScreen> {
                                     );
                                     return;
                                   }
-                                  if (enteredAmount > payableAmount) {
+                                  if (paymentMode != 'interest' &&
+                                      enteredAmount > payableAmount) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
@@ -1789,7 +1804,11 @@ class _BillListScreenState extends State<BillListScreen> {
                                   final selectedAccount = accounts.firstWhere(
                                       (a) => a.id == selectedAccountId);
                                   _processLoanPayment(
-                                      reminder, selectedAccount, enteredAmount);
+                                    reminder,
+                                    selectedAccount,
+                                    enteredAmount,
+                                    isInterestOnly: paymentMode == 'interest',
+                                  );
                                 },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryColor,
@@ -1820,8 +1839,9 @@ class _BillListScreenState extends State<BillListScreen> {
   Future<void> _processLoanPayment(
     BillReminder reminder,
     PaymentAccount paymentAccount,
-    double paymentAmount,
-  ) async {
+    double paymentAmount, {
+    bool isInterestOnly = false,
+  }) async {
     final loanProvider = context.read<LoanProvider>();
     final expenseProvider = context.read<ExpenseProvider>();
     final paymentAccountProvider = context.read<PaymentAccountProvider>();
@@ -1835,14 +1855,18 @@ class _BillListScreenState extends State<BillListScreen> {
       final expenseId = const Uuid().v4();
       final expense = Expense(
         id: expenseId,
-        title: 'Loan EMI Payment - ${loan.lender}',
+        title: isInterestOnly
+            ? 'Loan Interest Payment - ${loan.lender}'
+            : 'Loan EMI Payment - ${loan.lender}',
         category: 'Loan Repayment',
         amount: paymentAmount,
         date: DateTime.now(),
         currency: loan.currency,
         paymentMethod: 'Bank Transfer',
         accountId: paymentAccount.id,
-        notes: 'EMI payment to ${loan.lender}',
+        notes: isInterestOnly
+            ? 'Interest payment to ${loan.lender}'
+            : 'EMI payment to ${loan.lender}',
         transactionType: 'payment',
       );
 
@@ -1856,16 +1880,22 @@ class _BillListScreenState extends State<BillListScreen> {
             : paymentAccount.balance - paymentAmount, // Other: decrease balance
       );
 
-      await loanProvider.makePayment(loan.id, paymentAmount);
+      if (isInterestOnly) {
+        await loanProvider.makeInterestPayment(loan.id, paymentAmount);
+      } else {
+        await loanProvider.makePayment(loan.id, paymentAmount);
+      }
       await expenseProvider.addExpense(expense);
       await paymentAccountProvider.updateAccount(updatedPaymentAccount);
 
       await billProvider.refreshData();
       if (!mounted) return;
       _showPaymentSnackBar(
-        paymentAmount >= loan.monthlyEmi
-            ? 'Loan EMI payment recorded'
-            : 'Partial loan payment recorded',
+        isInterestOnly
+            ? 'Loan interest payment recorded'
+            : paymentAmount >= loan.monthlyEmi
+                ? 'Loan EMI payment recorded'
+                : 'Partial loan payment recorded',
         action: SnackBarAction(
           label: 'Undo',
           onPressed: () => _reverseLoanPayment(
@@ -1873,6 +1903,7 @@ class _BillListScreenState extends State<BillListScreen> {
             paymentAccount,
             expenseId,
             paymentAmount,
+            isInterestOnly: isInterestOnly,
           ),
         ),
       );
@@ -1891,8 +1922,9 @@ class _BillListScreenState extends State<BillListScreen> {
     Loan loan,
     PaymentAccount paymentAccount,
     String expenseId,
-    double paymentAmount,
-  ) async {
+    double paymentAmount, {
+    bool isInterestOnly = false,
+  }) async {
     final expenseProvider = context.read<ExpenseProvider>();
     final loanProvider = context.read<LoanProvider>();
     final paymentAccountProvider = context.read<PaymentAccountProvider>();
@@ -1910,11 +1942,17 @@ class _BillListScreenState extends State<BillListScreen> {
             : paymentAccount.balance + paymentAmount, // Other: restore balance
       );
 
-      final updatedLoan = loan.copyWith(
-        paidAmount:
-            (loan.paidAmount - paymentAmount).clamp(0.0, double.infinity),
-        lastPaymentDate: null,
-      );
+      final updatedLoan = isInterestOnly
+          ? loan.copyWith(
+              interestPaidAmount: (loan.interestPaidAmount - paymentAmount)
+                  .clamp(0.0, double.infinity),
+              lastPaymentDate: loan.lastPaymentDate,
+            )
+          : loan.copyWith(
+              paidAmount:
+                  (loan.paidAmount - paymentAmount).clamp(0.0, double.infinity),
+              lastPaymentDate: null,
+            );
 
       await expenseProvider.deleteExpense(expenseId);
       await loanProvider.updateLoan(updatedLoan);
@@ -2068,26 +2106,27 @@ class _BillListScreenState extends State<BillListScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedType,
-                    items: accountTypes
-                        .map((type) => DropdownMenuItem(
-                              value: type,
-                              child: Text(type, style: TextStyle()),
-                            ))
-                        .toList(),
+                  DropdownSearch<String>(
+                    selectedItem: selectedType,
+                    items: accountTypes,
+                    dropdownDecoratorProps: DropDownDecoratorProps(
+                      dropdownSearchDecoration: InputDecoration(
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                      ),
+                    ),
+                    popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                      context: context,
+                      searchHint: 'Search account type...',
+                    ),
                     onChanged: (value) {
                       setState(() {
                         selectedType = value;
                         selectedAccountId = null;
                       });
                     },
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -2112,30 +2151,35 @@ class _BillListScreenState extends State<BillListScreen> {
                       ),
                     )
                   else
-                    DropdownButtonFormField<String>(
-                      initialValue: selectedAccountId,
+                    DropdownSearch<String>(
+                      selectedItem: selectedAccountId,
                       items: filteredByType
-                          .map((account) => DropdownMenuItem<String>(
-                                value: account.id,
-                                child: Text(
-                                  '${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})',
-                                  style: TextStyle(),
-                                ),
-                              ))
+                          .map<String>((account) => account.id)
                           .toList(),
+                      itemAsString: (accountId) {
+                        final account = filteredByType.firstWhere(
+                          (item) => item.id == accountId,
+                        );
+                        return account.name;
+                      },
+                      dropdownDecoratorProps: DropDownDecoratorProps(
+                        dropdownSearchDecoration: InputDecoration(
+                          hintText: 'Choose account',
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                      popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                        context: context,
+                        searchHint: 'Search account...',
+                      ),
                       onChanged: (value) {
                         setState(() {
                           selectedAccountId = value;
                         });
                       },
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                      ),
-                      hint: Text('Choose account',
-                          style: TextStyle(fontSize: 13)),
                     ),
                   const SizedBox(height: 24),
                   Row(
@@ -2442,26 +2486,27 @@ class _BillListScreenState extends State<BillListScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedType,
-                    items: accountTypes
-                        .map((type) => DropdownMenuItem(
-                              value: type,
-                              child: Text(type, style: TextStyle()),
-                            ))
-                        .toList(),
+                  DropdownSearch<String>(
+                    selectedItem: selectedType,
+                    items: accountTypes,
+                    dropdownDecoratorProps: DropDownDecoratorProps(
+                      dropdownSearchDecoration: InputDecoration(
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                      ),
+                    ),
+                    popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                      context: context,
+                      searchHint: 'Search account type...',
+                    ),
                     onChanged: (value) {
                       setState(() {
                         selectedType = value;
                         selectedAccountId = null;
                       });
                     },
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -2486,30 +2531,35 @@ class _BillListScreenState extends State<BillListScreen> {
                       ),
                     )
                   else
-                    DropdownButtonFormField<String>(
-                      initialValue: selectedAccountId,
+                    DropdownSearch<String>(
+                      selectedItem: selectedAccountId,
                       items: filteredByType
-                          .map((account) => DropdownMenuItem<String>(
-                                value: account.id,
-                                child: Text(
-                                  '${account.name} (${account.currency} ${account.balance.toStringAsFixed(2)})',
-                                  style: TextStyle(),
-                                ),
-                              ))
+                          .map<String>((account) => account.id)
                           .toList(),
+                      itemAsString: (accountId) {
+                        final account = filteredByType.firstWhere(
+                          (item) => item.id == accountId,
+                        );
+                        return account.name;
+                      },
+                      dropdownDecoratorProps: DropDownDecoratorProps(
+                        dropdownSearchDecoration: InputDecoration(
+                          hintText: 'Choose account',
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                      popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                        context: context,
+                        searchHint: 'Search account...',
+                      ),
                       onChanged: (value) {
                         setState(() {
                           selectedAccountId = value;
                         });
                       },
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                      ),
-                      hint: Text('Choose account',
-                          style: TextStyle(fontSize: 13)),
                     ),
                   const SizedBox(height: 24),
                   Row(
@@ -3248,18 +3298,17 @@ class _AddEditBillScreenState extends State<AddEditBillScreen> {
               if (_isRecurring) ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: DropdownButton<String>(
-                    value: _recurringFrequency,
-                    isExpanded: true,
-                    items: const ['monthly', 'quarterly', 'yearly']
-                        .map((f) => DropdownMenuItem(
-                              value: f,
-                              child: Text(
-                                f.toUpperCase(),
-                                style: TextStyle(),
-                              ),
-                            ))
-                        .toList(),
+                  child: DropdownSearch<String>(
+                    selectedItem: _recurringFrequency,
+                    items: const ['monthly', 'quarterly', 'yearly'],
+                    dropdownDecoratorProps: const DropDownDecoratorProps(
+                      dropdownSearchDecoration: InputDecoration(),
+                    ),
+                    popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                      context: context,
+                      searchHint: 'Search recurring frequency...',
+                    ),
+                    itemAsString: (item) => item.toUpperCase(),
                     onChanged: (value) => setState(
                         () => _recurringFrequency = value ?? 'monthly'),
                   ),

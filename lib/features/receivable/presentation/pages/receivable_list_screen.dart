@@ -90,15 +90,47 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
   }
 
   Future<void> _markAsReceived(Receivable item) async {
-    await context.read<ReceivableProvider>().markAsReceived(item);
+    final provider = context.read<ReceivableProvider>();
+    final receiveAmount = await _askReceiveAmount(item);
+    if (receiveAmount == null || receiveAmount <= 0) {
+      return;
+    }
+
+    if (receiveAmount >= item.outstandingAmount) {
+      await provider.markAsReceived(item);
+    } else {
+      await provider.markPartialReceived(item, receiveAmount);
+    }
+
     if (!mounted) return;
     await context.read<ExpenseProvider>().refreshData();
     if (!mounted) return;
     context.read<PaymentAccountProvider>().refreshData();
   }
 
+  Future<double?> _askReceiveAmount(Receivable item) async {
+    final currencySymbol = context.read<SettingsProvider>().currencySymbol;
+    return showModalBottomSheet<double>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _ReceiveAmountSheet(
+        item: item,
+        currencySymbol: currencySymbol,
+      ),
+    );
+  }
+
   Future<void> _markAsPending(Receivable item) async {
     await context.read<ReceivableProvider>().markAsPending(item);
+    if (!mounted) return;
+    setState(() {
+      _selectedMonth = DateTime(item.dueDate.year, item.dueDate.month, 1);
+      _tabController.index = 0;
+    });
     if (!mounted) return;
     await context.read<ExpenseProvider>().refreshData();
     if (!mounted) return;
@@ -186,6 +218,7 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
                       _buildList(
                         context,
                         items: pending,
+                        isReceivedTab: false,
                         emptyMessage: 'No pending receivables',
                         currencySymbol: settings.currencySymbol,
                         summaryCard: _buildPendingSummaryCard(
@@ -198,6 +231,7 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
                       _buildList(
                         context,
                         items: received,
+                        isReceivedTab: true,
                         emptyMessage: 'No received entries',
                         currencySymbol: settings.currencySymbol,
                       ),
@@ -226,9 +260,24 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
     );
   }
 
+  String _formatDueDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  String _buildReminderSummary(Receivable item) {
+    if (item.remindBeforeDays <= 0) {
+      return 'You will be reminded on the due date.';
+    }
+    if (item.remindBeforeDays == 1) {
+      return 'You will start getting reminders 1 day before due date.';
+    }
+    return 'You will start getting reminders ${item.remindBeforeDays} days before due date.';
+  }
+
   Widget _buildList(
     BuildContext context, {
     required List<Receivable> items,
+    required bool isReceivedTab,
     required String emptyMessage,
     required String currencySymbol,
     Widget? summaryCard,
@@ -257,6 +306,10 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
         final item = items[summaryCard == null ? index : index - 1];
         final isOverdue = item.isOverdue;
         final isReminder = item.isInReminderWindow;
+        final hasPartial = item.isPartiallyReceived;
+        final primaryAmount =
+            isReceivedTab ? item.receivedAmount : item.outstandingAmount;
+        final primaryLabel = isReceivedTab ? 'Received' : 'Outstanding';
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
@@ -280,31 +333,37 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
                       decoration: BoxDecoration(
                         color: item.isReceived
                             ? Colors.green.shade100
-                            : isOverdue
-                                ? Colors.red.shade100
-                                : isReminder
-                                    ? Colors.orange.shade100
-                                    : Colors.blue.shade100,
+                            : hasPartial
+                                ? Colors.indigo.shade100
+                                : isOverdue
+                                    ? Colors.red.shade100
+                                    : isReminder
+                                        ? Colors.orange.shade100
+                                        : Colors.blue.shade100,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         item.isReceived
                             ? 'RECEIVED'
-                            : isOverdue
-                                ? 'OVERDUE'
-                                : isReminder
-                                    ? 'REMINDER'
-                                    : 'PENDING',
+                            : hasPartial
+                                ? 'PARTIAL'
+                                : isOverdue
+                                    ? 'OVERDUE'
+                                    : isReminder
+                                        ? 'DUE SOON'
+                                        : 'PENDING',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: item.isReceived
                               ? Colors.green.shade800
-                              : isOverdue
-                                  ? Colors.red.shade800
-                                  : isReminder
-                                      ? Colors.orange.shade800
-                                      : Colors.blue.shade800,
+                              : hasPartial
+                                  ? Colors.indigo.shade800
+                                  : isOverdue
+                                      ? Colors.red.shade800
+                                      : isReminder
+                                          ? Colors.orange.shade800
+                                          : Colors.blue.shade800,
                         ),
                       ),
                     ),
@@ -312,19 +371,40 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '$currencySymbol ${item.amount.toStringAsFixed(2)}',
+                  '$primaryLabel: $currencySymbol ${primaryAmount.toStringAsFixed(2)}',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.primaryColor,
                   ),
                 ),
+                if (hasPartial) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Received: $currencySymbol ${item.receivedAmount.toStringAsFixed(2)} • Outstanding: $currencySymbol ${item.outstandingAmount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 6),
                 Text(
-                  'Date: ${item.dueDate.day.toString().padLeft(2, '0')}/${item.dueDate.month.toString().padLeft(2, '0')}/${item.dueDate.year} • Reminder: ${item.remindBeforeDays} day(s) before',
+                  'Due on ${_formatDueDate(item.dueDate)}',
                   style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isReceivedTab && item.receivedDate != null
+                      ? 'Received on ${_formatDueDate(item.receivedDate!)}'
+                      : _buildReminderSummary(item),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 if (item.notes != null && item.notes!.trim().isNotEmpty) ...[
                   const SizedBox(height: 6),
@@ -361,15 +441,28 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
                   ],
                 ),
                 const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: item.isReceived
-                      ? OutlinedButton.icon(
+                if (item.isReceived)
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _markAsPending(item),
+                      icon: const Icon(Icons.restore, size: 16),
+                      label: const Text('Move to Pending'),
+                    ),
+                  )
+                else if (hasPartial)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
                           onPressed: () => _markAsPending(item),
-                          icon: const Icon(Icons.restore, size: 16),
+                          icon: const Icon(Icons.undo, size: 16),
                           label: const Text('Move to Pending'),
-                        )
-                      : ElevatedButton.icon(
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
                           onPressed: () => _markAsReceived(item),
                           icon:
                               const Icon(Icons.check_circle_outline, size: 16),
@@ -377,9 +470,24 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
                             backgroundColor: AppTheme.primaryColor,
                             foregroundColor: Colors.white,
                           ),
-                          label: const Text('Mark Received'),
+                          label: const Text('Receive More'),
                         ),
-                ),
+                      ),
+                    ],
+                  )
+                else
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _markAsReceived(item),
+                      icon: const Icon(Icons.check_circle_outline, size: 16),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                      label: const Text('Receive'),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -450,5 +558,119 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
       'Dec',
     ];
     return '${monthNames[date.month - 1]} ${date.year}';
+  }
+}
+
+class _ReceiveAmountSheet extends StatefulWidget {
+  final Receivable item;
+  final String currencySymbol;
+
+  const _ReceiveAmountSheet({
+    required this.item,
+    required this.currencySymbol,
+  });
+
+  @override
+  State<_ReceiveAmountSheet> createState() => _ReceiveAmountSheetState();
+}
+
+class _ReceiveAmountSheetState extends State<_ReceiveAmountSheet> {
+  late final TextEditingController _controller;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.item.outstandingAmount.toStringAsFixed(2),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            effectiveBottomInset(context, minimum: 16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Receive Amount',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Outstanding: ${widget.currencySymbol} ${widget.item.outstandingAmount.toStringAsFixed(2)}',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: 'Amount to receive now',
+              errorText: _errorText,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () =>
+                      Navigator.of(context).pop(widget.item.outstandingAmount),
+                  child: const Text('Receive Full'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    final parsed = double.tryParse(_controller.text.trim());
+                    if (parsed == null || parsed <= 0) {
+                      setState(() => _errorText = 'Enter a valid amount');
+                      return;
+                    }
+                    if (parsed > widget.item.outstandingAmount) {
+                      setState(() => _errorText = 'Amount exceeds outstanding');
+                      return;
+                    }
+                    Navigator.of(context).pop(parsed);
+                  },
+                  child: const Text('Confirm'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -22,6 +22,16 @@ import 'features/auth/presentation/pages/auth_screen.dart';
 import 'features/onboarding/presentation/pages/onboarding_screen.dart';
 import 'services/notification_service.dart';
 
+const List<String> _onboardingStepCompletionKeys = [
+  'onboarding_step_currency_completed',
+  'onboarding_step_account_completed',
+  'onboarding_step_goal_completed',
+  'onboarding_step_budget_completed',
+  'onboarding_step_investment_completed',
+  'onboarding_step_loan_completed',
+  'onboarding_step_subscription_completed',
+];
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
@@ -36,6 +46,21 @@ void main() async {
   await SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.manual,
     overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],
+  );
+
+  // Set initial system UI style to prevent transparent nav bar
+  // This will be overridden by the MaterialApp builder once theme is loaded
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      systemNavigationBarColor: Color(0xFFFFFFFF), // Light mode default
+      systemNavigationBarDividerColor: Color(0xFFFFFFFF),
+      systemNavigationBarIconBrightness: Brightness.dark,
+      statusBarColor: Color(0xFFFFFFFF),
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+      systemStatusBarContrastEnforced: false,
+      systemNavigationBarContrastEnforced: false,
+    ),
   );
 
   // Ignore FlutterError for Google Fonts network issues
@@ -89,7 +114,79 @@ void main() async {
     }
   }
 
+  await _migrateOnboardingStepFlags();
+  await _backfillOnboardingStepFlagsFromData();
+
   runApp(const FinTrack());
+}
+
+Future<void> _migrateOnboardingStepFlags() async {
+  final onboardingCompleted =
+      HiveService.getSetting('onboarding_completed', defaultValue: false) ==
+          true;
+
+  if (!onboardingCompleted) {
+    return;
+  }
+
+  final settings = HiveService.getAllSettings();
+  final hasAnyStepFlag = _onboardingStepCompletionKeys
+      .any((stepKey) => settings.containsKey(stepKey));
+
+  if (hasAnyStepFlag) {
+    return;
+  }
+
+  for (final stepKey in _onboardingStepCompletionKeys) {
+    await HiveService.saveSetting(stepKey, false);
+  }
+}
+
+Future<void> _backfillOnboardingStepFlagsFromData() async {
+  final onboardingCompleted =
+      HiveService.getSetting('onboarding_completed', defaultValue: false) ==
+          true;
+
+  if (!onboardingCompleted) {
+    return;
+  }
+
+  final settings = HiveService.getAllSettings();
+
+  Future<void> setStepIfIncomplete(String key, bool completed) async {
+    if (!completed) return;
+    if (HiveService.getSetting(key, defaultValue: false) == true) return;
+    await HiveService.saveSetting(key, true);
+  }
+
+  await setStepIfIncomplete(
+    'onboarding_step_currency_completed',
+    settings.containsKey('currency'),
+  );
+  await setStepIfIncomplete(
+    'onboarding_step_account_completed',
+    HiveService.getAllPaymentAccounts().isNotEmpty,
+  );
+  await setStepIfIncomplete(
+    'onboarding_step_goal_completed',
+    HiveService.getAllGoals().isNotEmpty,
+  );
+  await setStepIfIncomplete(
+    'onboarding_step_budget_completed',
+    HiveService.getAllBudgets().isNotEmpty,
+  );
+  await setStepIfIncomplete(
+    'onboarding_step_investment_completed',
+    HiveService.getAllInvestments().isNotEmpty,
+  );
+  await setStepIfIncomplete(
+    'onboarding_step_loan_completed',
+    HiveService.getAllLoans().isNotEmpty,
+  );
+  await setStepIfIncomplete(
+    'onboarding_step_subscription_completed',
+    HiveService.getAllSubscriptions().isNotEmpty,
+  );
 }
 
 class FinTrack extends StatelessWidget {
@@ -122,37 +219,6 @@ class FinTrack extends StatelessWidget {
             darkTheme: AppTheme.darkTheme(),
             themeMode:
                 settingsProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            builder: (context, child) {
-              if (child == null) {
-                return const SizedBox.shrink();
-              }
-
-              final theme = Theme.of(context);
-              final isDark = theme.brightness == Brightness.dark;
-              final navSurfaceColor =
-                  theme.bottomNavigationBarTheme.backgroundColor ??
-                      theme.colorScheme.surface;
-              final opaqueNavColor = navSurfaceColor.withAlpha(0xFF);
-              final overlayStyle = SystemUiOverlayStyle(
-                statusBarColor: theme.colorScheme.surface,
-                statusBarIconBrightness:
-                    isDark ? Brightness.light : Brightness.dark,
-                statusBarBrightness:
-                    isDark ? Brightness.dark : Brightness.light,
-                systemNavigationBarColor: opaqueNavColor,
-                systemNavigationBarIconBrightness:
-                    isDark ? Brightness.light : Brightness.dark,
-                systemNavigationBarDividerColor: opaqueNavColor,
-                systemStatusBarContrastEnforced: false,
-                systemNavigationBarContrastEnforced: false,
-              );
-              SystemChrome.setSystemUIOverlayStyle(overlayStyle);
-
-              return AnnotatedRegion<SystemUiOverlayStyle>(
-                value: overlayStyle,
-                child: child,
-              );
-            },
             home: _getHomeScreen(settingsProvider),
           );
         },

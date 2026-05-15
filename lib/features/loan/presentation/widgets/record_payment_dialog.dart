@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
+import 'package:fintrack/core/utils/custom_widgets.dart';
+import 'package:fintrack/core/utils/dropdown_search_utils.dart';
+import 'package:fintrack/features/accounts/data/models/payment_account_model.dart';
 import 'package:fintrack/features/expense/data/models/expense_model.dart';
 import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
 import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
@@ -23,6 +27,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   String _paymentType = 'emi'; // 'emi', 'full', or 'interest'
+  String? _selectedSourceAccountType;
   String? _selectedSourceAccountId;
 
   @override
@@ -151,9 +156,11 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
         .where((a) => !a.accountType.toLowerCase().contains('loan'))
         .toList();
 
-    if (_selectedSourceAccountId == null && sourceAccounts.isNotEmpty) {
-      _selectedSourceAccountId = sourceAccounts.first.id;
-    }
+    final accountTypes = sourceAccounts
+        .map((account) => account.accountType)
+        .toSet()
+        .toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
     final selectedSourceAccount = _selectedSourceAccountId == null
         ? null
@@ -161,296 +168,422 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
             .read<PaymentAccountProvider>()
             .getAccountById(_selectedSourceAccountId!);
 
-    return AlertDialog(
-      title: Text(
-        'Record Payment',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-        ),
+    final selectedAccountTypeValue =
+        accountTypes.contains(_selectedSourceAccountType)
+            ? _selectedSourceAccountType
+            : selectedSourceAccount?.accountType;
+
+    final filteredSourceAccounts = selectedAccountTypeValue == null
+        ? <PaymentAccount>[]
+        : sourceAccounts
+            .where((account) => account.accountType == selectedAccountTypeValue)
+            .toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
+    if (_selectedSourceAccountId == null && filteredSourceAccounts.isNotEmpty) {
+      _selectedSourceAccountId = filteredSourceAccounts.first.id;
+    }
+
+    if (_selectedSourceAccountId != null &&
+        filteredSourceAccounts
+            .every((account) => account.id != _selectedSourceAccountId)) {
+      _selectedSourceAccountId = null;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Loan Info
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          MediaQuery.of(context).viewInsets.bottom +
+              effectiveBottomInset(context, minimum: 12),
+        ),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      widget.loan.lender,
+                      'Record Payment',
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textColor,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Remaining',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppTheme.textSecondaryColor,
-                          ),
-                        ),
-                        Text(
-                          AppUtils.formatCurrency(
-                            remainingAmount,
-                            currencySymbol: currencySymbol,
-                          ),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.errorColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'EMI Amount',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppTheme.textSecondaryColor,
-                          ),
-                        ),
-                        Text(
-                          AppUtils.formatCurrency(
-                            widget.loan.monthlyEmi,
-                            currencySymbol: currencySymbol,
-                          ),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.successColor,
-                          ),
-                        ),
-                      ],
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 16),
-
-              // Quick select buttons - 3 options in a Column
-              Column(
-                children: [
-                  Row(
+                const Divider(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            setState(() {
-                              _paymentType = 'emi';
-                              _amountController.text =
-                                  widget.loan.monthlyEmi.toStringAsFixed(2);
-                            });
-                          },
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: _paymentType == 'emi'
-                                  ? AppTheme.primaryColor
-                                  : Colors.grey,
-                              width: _paymentType == 'emi' ? 2 : 1,
-                            ),
-                          ),
-                          child: Text(
-                            'EMI Amount',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: _paymentType == 'emi'
-                                  ? AppTheme.primaryColor
-                                  : Colors.grey,
-                            ),
-                          ),
+                      Text(
+                        widget.loan.lender,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textColor,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            setState(() {
-                              _paymentType = 'full';
-                              _amountController.text =
-                                  remainingAmount.toStringAsFixed(2);
-                            });
-                          },
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: _paymentType == 'full'
-                                  ? AppTheme.primaryColor
-                                  : Colors.grey,
-                              width: _paymentType == 'full' ? 2 : 1,
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Remaining',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondaryColor,
                             ),
                           ),
-                          child: Text(
-                            'Full Amount',
+                          Text(
+                            AppUtils.formatCurrency(
+                              remainingAmount,
+                              currencySymbol: currencySymbol,
+                            ),
                             style: TextStyle(
                               fontSize: 12,
-                              color: _paymentType == 'full'
-                                  ? AppTheme.primaryColor
-                                  : Colors.grey,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.errorColor,
                             ),
                           ),
-                        ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'EMI Amount',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondaryColor,
+                            ),
+                          ),
+                          Text(
+                            AppUtils.formatCurrency(
+                              widget.loan.monthlyEmi,
+                              currencySymbol: currencySymbol,
+                            ),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.successColor,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _paymentType = 'interest';
-                          _amountController.text = '';
-                        });
-                      },
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(
-                          color: _paymentType == 'interest'
-                              ? AppTheme.accentColor
-                              : Colors.grey,
-                          width: _paymentType == 'interest' ? 2 : 1,
-                        ),
-                      ),
-                      icon: Icon(
-                        Icons.percent,
-                        size: 16,
-                        color: _paymentType == 'interest'
-                            ? AppTheme.accentColor
-                            : Colors.grey,
-                      ),
-                      label: Text(
-                        'Interest Only (Balance Unchanged)',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: _paymentType == 'interest'
-                              ? AppTheme.accentColor
-                              : Colors.grey,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Payment Amount
-              TextFormField(
-                controller: _amountController,
-                decoration: InputDecoration(
-                  labelText: 'Payment Amount',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.attach_money),
-                  prefixText: currencySymbol,
                 ),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                ],
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter payment amount';
-                  }
-                  final amount = double.tryParse(value);
-                  if (amount == null || amount <= 0) {
-                    return 'Please enter a valid amount';
-                  }
-                  // Only validate against remaining balance for non-interest payments
-                  if (_paymentType != 'interest' && amount > remainingAmount) {
-                    return 'Amount exceeds remaining balance';
-                  }
-                  return null;
-                },
-                onChanged: (_) {
-                  // Don't auto-change payment type on manual input
-                },
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedSourceAccountId,
-                decoration: const InputDecoration(
-                  labelText: 'Source Account',
-                  helperText: 'Select account used for this payment',
-                ),
-                items: sourceAccounts
-                    .map(
-                      (account) => DropdownMenuItem<String>(
-                        value: account.id,
-                        child: Row(
-                          children: [
-                            if (account.icon != null)
-                              Text(
-                                '${account.icon} ',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                ),
-                              ),
-                            Expanded(
-                              child: Text(
-                                account.name,
-                                overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 16),
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setState(() {
+                                _paymentType = 'emi';
+                                _amountController.text =
+                                    widget.loan.monthlyEmi.toStringAsFixed(2);
+                              });
+                            },
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                color: _paymentType == 'emi'
+                                    ? AppTheme.primaryColor
+                                    : Colors.grey,
+                                width: _paymentType == 'emi' ? 2 : 1,
                               ),
                             ),
-                          ],
+                            child: Text(
+                              'EMI Amount',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _paymentType == 'emi'
+                                    ? AppTheme.primaryColor
+                                    : Colors.grey,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setState(() {
+                                _paymentType = 'full';
+                                _amountController.text =
+                                    remainingAmount.toStringAsFixed(2);
+                              });
+                            },
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                color: _paymentType == 'full'
+                                    ? AppTheme.primaryColor
+                                    : Colors.grey,
+                                width: _paymentType == 'full' ? 2 : 1,
+                              ),
+                            ),
+                            child: Text(
+                              'Full Amount',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _paymentType == 'full'
+                                    ? AppTheme.primaryColor
+                                    : Colors.grey,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _paymentType = 'interest';
+                            _amountController.text = '';
+                          });
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: _paymentType == 'interest'
+                                ? AppTheme.accentColor
+                                : Colors.grey,
+                            width: _paymentType == 'interest' ? 2 : 1,
+                          ),
+                        ),
+                        icon: Icon(
+                          Icons.percent,
+                          size: 16,
+                          color: _paymentType == 'interest'
+                              ? AppTheme.accentColor
+                              : Colors.grey,
+                        ),
+                        label: Text(
+                          'Interest Only (Balance Unchanged)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _paymentType == 'interest'
+                                ? AppTheme.accentColor
+                                : Colors.grey,
+                          ),
                         ),
                       ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedSourceAccountId = value;
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please select source account';
-                  }
-                  return null;
-                },
-              ),
-              if (selectedSourceAccount != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    'Balance: ${AppUtils.formatCurrency(selectedSourceAccount.balance, currencySymbol: currencySymbol)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _amountController,
+                  decoration: InputDecoration(
+                    labelText: 'Payment Amount',
+                    border: const OutlineInputBorder(),
+                    prefixText: '$currencySymbol ',
+                  ),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d+\.?\d{0,2}')),
+                  ],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter payment amount';
+                    }
+                    final amount = double.tryParse(value);
+                    if (amount == null || amount <= 0) {
+                      return 'Please enter a valid amount';
+                    }
+                    if (_paymentType != 'interest' &&
+                        amount > remainingAmount) {
+                      return 'Amount exceeds remaining balance';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                DropdownSearch<String>(
+                  selectedItem: selectedAccountTypeValue,
+                  items: accountTypes,
+                  dropdownDecoratorProps: const DropDownDecoratorProps(
+                    dropdownSearchDecoration: InputDecoration(
+                      labelText: 'Account Type',
+                      helperText: 'Filter source accounts by type',
                     ),
                   ),
+                  popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                    context: context,
+                    searchHint: 'Search account type...',
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedSourceAccountType = value;
+                      _selectedSourceAccountId = null;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please select account type';
+                    }
+                    return null;
+                  },
                 ),
-            ],
+                const SizedBox(height: 12),
+                DropdownSearch<String>(
+                  selectedItem: _selectedSourceAccountId,
+                  items: filteredSourceAccounts
+                      .map((account) => account.id)
+                      .toList(),
+                  itemAsString: (id) {
+                    final account = filteredSourceAccounts.firstWhere(
+                      (item) => item.id == id,
+                      orElse: () => filteredSourceAccounts.first,
+                    );
+                    return account.name;
+                  },
+                  compareFn: (first, second) => first == second,
+                  dropdownBuilder: (context, selectedItem) {
+                    if (selectedAccountTypeValue == null) {
+                      return Text(
+                        'Select account type first',
+                        style: TextStyle(color: Theme.of(context).hintColor),
+                      );
+                    }
+
+                    if (selectedItem == null) {
+                      return Text(
+                        'Select source account',
+                        style: TextStyle(color: Theme.of(context).hintColor),
+                      );
+                    }
+
+                    final account = filteredSourceAccounts.firstWhere(
+                      (item) => item.id == selectedItem,
+                      orElse: () => filteredSourceAccounts.first,
+                    );
+
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          account.accountType,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).hintColor,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          account.name,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    );
+                  },
+                  dropdownDecoratorProps: DropDownDecoratorProps(
+                    dropdownSearchDecoration: InputDecoration(
+                      labelText: 'Source Account',
+                      helperText: selectedAccountTypeValue == null
+                          ? 'Choose account type first'
+                          : 'Showing $selectedAccountTypeValue accounts',
+                    ),
+                  ),
+                  popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                    context: context,
+                    searchHint: 'Search accounts...',
+                    itemBuilder: (context, accountId, isSelected) {
+                      final account = filteredSourceAccounts.firstWhere(
+                        (item) => item.id == accountId,
+                        orElse: () => filteredSourceAccounts.first,
+                      );
+
+                      return ListTile(
+                        title: Text(account.name),
+                        subtitle: Text(
+                          '${account.accountType} • ${AppUtils.formatCurrency(account.balance, currencySymbol: currencySymbol)}',
+                        ),
+                      );
+                    },
+                    emptyBuilder: (context, searchEntry) => const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text('No accounts found for this type'),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedSourceAccountId = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please select source account';
+                    }
+                    return null;
+                  },
+                ),
+                if (selectedSourceAccount != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      'Balance: ${AppUtils.formatCurrency(selectedSourceAccount.balance, currencySymbol: currencySymbol)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _recordPayment,
+                        child: const Text('Record Payment'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: _recordPayment,
-          child: const Text('Record Payment'),
-        ),
-      ],
     );
   }
 }

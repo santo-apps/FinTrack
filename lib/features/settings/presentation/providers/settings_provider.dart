@@ -5,6 +5,17 @@ import 'package:fintrack/features/subscription/data/models/subscription_category
 import 'package:fintrack/services/notification_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
+  static const List<String> _defaultGoalCategories = [
+    'Savings',
+    'Travel',
+    'Home',
+    'Education',
+    'Car',
+    'Wedding',
+    'Investment',
+    'Other',
+  ];
+
   static const List<String> _supportedOverviewItems = [
     'monthly_spending',
     'subscriptions',
@@ -33,6 +44,7 @@ class SettingsProvider extends ChangeNotifier {
   Map<String, String> _customCurrencySymbols = {};
   List<SubscriptionCategoryModel> _subscriptionCategories =
       SubscriptionCategoryModel.getDefaultCategories();
+  List<String> _goalCategories = List<String>.from(_defaultGoalCategories);
   int _dataRefreshVersion = 0;
 
   bool get isDarkMode => _isDarkMode;
@@ -54,6 +66,7 @@ class SettingsProvider extends ChangeNotifier {
   List<String> get overviewItems => List.unmodifiable(_overviewItems);
   List<SubscriptionCategoryModel> get subscriptionCategories =>
       List.unmodifiable(_subscriptionCategories);
+  List<String> get goalCategories => List.unmodifiable(_goalCategories);
   Map<String, String> get customCurrencySymbols =>
       Map.unmodifiable(_customCurrencySymbols);
   int get dataRefreshVersion => _dataRefreshVersion;
@@ -129,6 +142,7 @@ class SettingsProvider extends ChangeNotifier {
       };
     }
     _loadSubscriptionCategories();
+    _loadGoalCategories();
   }
 
   Future<void> setDarkMode(bool value) async {
@@ -229,6 +243,7 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setCurrency(String value) async {
     _currency = value;
     await HiveService.saveSetting('currency', value);
+    await HiveService.saveSetting('onboarding_step_currency_completed', true);
     notifyListeners();
   }
 
@@ -502,6 +517,120 @@ class SettingsProvider extends ChangeNotifier {
     _subscriptionCategories =
         _normalizeSubscriptionCategories(_subscriptionCategories);
     await _saveSubscriptionCategories();
+    notifyListeners();
+    return true;
+  }
+
+  // Goal Categories Management
+  void _loadGoalCategories() {
+    final stored = HiveService.getSetting('goal_categories');
+    if (stored is List) {
+      final parsed = stored
+          .map((item) => item.toString().trim())
+          .where((item) => item.isNotEmpty)
+          .toList();
+      _goalCategories = _normalizeGoalCategories(parsed);
+      return;
+    }
+    _goalCategories = List<String>.from(_defaultGoalCategories);
+  }
+
+  List<String> _normalizeGoalCategories(List<String> categories) {
+    final normalized = <String>[];
+    final seen = <String>{};
+
+    for (final category in categories) {
+      final trimmed = category.trim();
+      if (trimmed.isEmpty) continue;
+      final key = trimmed.toLowerCase();
+      if (seen.add(key)) {
+        normalized.add(trimmed);
+      }
+    }
+
+    if (normalized.isEmpty) {
+      normalized.addAll(_defaultGoalCategories);
+    }
+
+    if (!normalized.any((category) => category.toLowerCase() == 'other')) {
+      normalized.add('Other');
+    }
+
+    return normalized;
+  }
+
+  Future<void> _saveGoalCategories() async {
+    await HiveService.saveSetting('goal_categories', _goalCategories);
+  }
+
+  Future<bool> addGoalCategory(String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) {
+      return false;
+    }
+
+    final exists = _goalCategories
+        .any((category) => category.toLowerCase() == trimmed.toLowerCase());
+    if (exists) {
+      return false;
+    }
+
+    _goalCategories = _normalizeGoalCategories([..._goalCategories, trimmed]);
+    await _saveGoalCategories();
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> updateGoalCategory(String oldName, String newName) async {
+    final oldTrimmed = oldName.trim();
+    final newTrimmed = newName.trim();
+
+    if (oldTrimmed.isEmpty || newTrimmed.isEmpty) {
+      return false;
+    }
+
+    if (oldTrimmed.toLowerCase() == 'other' &&
+        newTrimmed.toLowerCase() != 'other') {
+      return false;
+    }
+
+    final oldIndex = _goalCategories.indexWhere(
+        (category) => category.toLowerCase() == oldTrimmed.toLowerCase());
+    if (oldIndex == -1) {
+      return false;
+    }
+
+    final duplicateIndex = _goalCategories.indexWhere(
+        (category) => category.toLowerCase() == newTrimmed.toLowerCase());
+    if (duplicateIndex != -1 && duplicateIndex != oldIndex) {
+      return false;
+    }
+
+    final updated = List<String>.from(_goalCategories);
+    updated[oldIndex] = newTrimmed;
+    _goalCategories = _normalizeGoalCategories(updated);
+    await _saveGoalCategories();
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> deleteGoalCategory(String categoryName) async {
+    final trimmed = categoryName.trim();
+    if (trimmed.isEmpty || trimmed.toLowerCase() == 'other') {
+      return false;
+    }
+
+    final oldLength = _goalCategories.length;
+    _goalCategories = _goalCategories
+        .where((category) => category.toLowerCase() != trimmed.toLowerCase())
+        .toList();
+
+    if (_goalCategories.length == oldLength) {
+      return false;
+    }
+
+    _goalCategories = _normalizeGoalCategories(_goalCategories);
+    await _saveGoalCategories();
     notifyListeners();
     return true;
   }

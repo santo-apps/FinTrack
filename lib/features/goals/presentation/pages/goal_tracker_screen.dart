@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
+import 'package:fintrack/core/utils/dropdown_search_utils.dart';
 import 'package:fintrack/features/goals/data/models/financial_goal_model.dart';
 import 'package:fintrack/features/goals/presentation/providers/goal_provider.dart';
+import 'package:fintrack/features/settings/presentation/pages/manage_goal_categories_screen.dart';
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
 
 class GoalTrackerScreen extends StatefulWidget {
@@ -483,10 +486,15 @@ class _AddEditGoalScreenState extends State<AddEditGoalScreen> {
   late TextEditingController _descriptionController;
   late DateTime _selectedTargetDate;
   late String _selectedCategory;
+  late List<String> _goalCategories;
 
   @override
   void initState() {
     super.initState();
+    _goalCategories = List<String>.from(
+      context.read<SettingsProvider>().goalCategories,
+    );
+
     if (widget.goal != null) {
       _nameController = TextEditingController(text: widget.goal!.goalName);
       _targetController =
@@ -504,6 +512,10 @@ class _AddEditGoalScreenState extends State<AddEditGoalScreen> {
       _descriptionController = TextEditingController();
       _selectedTargetDate = DateTime.now().add(const Duration(days: 365));
       _selectedCategory = 'Savings';
+    }
+
+    if (!_goalCategories.contains(_selectedCategory)) {
+      _goalCategories = [..._goalCategories, _selectedCategory];
     }
   }
 
@@ -561,32 +573,38 @@ class _AddEditGoalScreenState extends State<AddEditGoalScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              InputDecorator(
-                decoration: InputDecoration(
-                  labelText: 'Category',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+              DropdownSearch<String>(
+                selectedItem: _selectedCategory,
+                items: _goalCategories,
+                dropdownDecoratorProps: DropDownDecoratorProps(
+                  dropdownSearchDecoration: InputDecoration(
+                    labelText: 'Category',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _selectedCategory,
-                    isExpanded: true,
-                    items: const [
-                      'Savings',
-                      'Travel',
-                      'Home',
-                      'Education',
-                      'Car',
-                      'Wedding',
-                      'Investment',
-                      'Other'
-                    ]
-                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                        .toList(),
-                    onChanged: (value) =>
-                        setState(() => _selectedCategory = value ?? 'Savings'),
-                  ),
+                popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                  context: context,
+                  searchHint: 'Search goal category...',
+                ),
+                onChanged: (value) =>
+                    setState(() => _selectedCategory = value ?? 'Savings'),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _openManageCategoriesScreen,
+                  icon: const Icon(Icons.settings, size: 18),
+                  label: const Text('Manage categories'),
+                ),
+              ),
+              Text(
+                'Tip: Categories are managed in Settings > Content Management.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 16),
@@ -715,6 +733,25 @@ class _AddEditGoalScreenState extends State<AddEditGoalScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _openManageCategoriesScreen() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const ManageGoalCategoriesScreen(),
+      ),
+    );
+
+    if (!mounted) return;
+    final refreshed =
+        List<String>.from(context.read<SettingsProvider>().goalCategories);
+    setState(() {
+      _goalCategories = refreshed;
+      if (!_goalCategories.contains(_selectedCategory) &&
+          _goalCategories.isNotEmpty) {
+        _selectedCategory = _goalCategories.first;
+      }
+    });
   }
 }
 

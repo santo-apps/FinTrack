@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/constants/app_constants.dart';
+import 'package:fintrack/database/hive_service.dart';
 import 'package:fintrack/features/dashboard/presentation/providers/home_viewmodel.dart';
 import 'package:fintrack/features/dashboard/presentation/pages/networth_breakdown_screen.dart';
 import 'package:fintrack/features/accounts/presentation/pages/account_list_screen.dart';
@@ -12,6 +13,8 @@ import 'package:fintrack/features/goals/presentation/pages/goal_tracker_screen.d
 import 'package:fintrack/features/bill/presentation/pages/bill_list_screen.dart';
 import 'package:fintrack/features/investment/presentation/pages/investment_portfolio_screen.dart';
 import 'package:fintrack/features/expense/presentation/pages/expense_list_screen.dart';
+import 'package:fintrack/features/subscription/presentation/pages/subscription_list_screen.dart';
+import 'package:fintrack/features/settings/presentation/pages/settings_screen.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
 import 'package:fintrack/features/budget/presentation/providers/budget_provider.dart';
@@ -22,6 +25,7 @@ import 'package:fintrack/features/goals/presentation/providers/goal_provider.dar
 import 'package:fintrack/features/bill/presentation/providers/bill_provider.dart';
 import 'package:fintrack/features/receivable/presentation/providers/receivable_provider.dart';
 import 'package:fintrack/features/receivable/presentation/pages/receivable_list_screen.dart';
+import 'package:fintrack/features/subscription/presentation/providers/subscription_provider.dart';
 
 /// DashboardScreen: Premium financial control center
 /// Clean, calm, structured – manual discipline MVP
@@ -93,6 +97,118 @@ class _DashboardScreenContentState extends State<_DashboardScreenContent>
     await viewModel.refresh();
   }
 
+  bool _isOnboardingStepComplete(String key) {
+    return HiveService.getSetting(key, defaultValue: false) == true;
+  }
+
+  List<_SetupTask> _buildSetupTasks({
+    required PaymentAccountProvider accountProvider,
+    required GoalProvider goalProvider,
+    required BudgetProvider budgetProvider,
+    required InvestmentProvider investmentProvider,
+    required LoanProvider loanProvider,
+    required SettingsProvider settingsProvider,
+    required SubscriptionProvider subscriptionProvider,
+  }) {
+    // Helper: Check if task is complete by flag OR if data exists
+    bool isTaskComplete(String flag, bool hasData) {
+      return _isOnboardingStepComplete(flag) || hasData;
+    }
+
+    final hasAccounts = accountProvider.accounts.isNotEmpty;
+    final hasGoals = goalProvider.goals.isNotEmpty;
+    final hasBudgets = budgetProvider.budgets.isNotEmpty;
+    final hasInvestments = investmentProvider.investments.isNotEmpty;
+    final hasLoans = loanProvider.loans.isNotEmpty;
+    final hasSubscriptions = subscriptionProvider.subscriptions.isNotEmpty;
+    final currencySet =
+        settingsProvider.currency != 'USD'; // Assume USD is default
+
+    final tasks = <_SetupTask>[
+      _SetupTask(
+        title: 'Set preferred currency',
+        subtitle: 'Choose the currency used across transactions and reports.',
+        isComplete:
+            isTaskComplete('onboarding_step_currency_completed', currencySet),
+        icon: Icons.currency_exchange,
+        destinationBuilder: (_) => const SettingsScreen(),
+        actionLabel: 'Open Settings',
+      ),
+      _SetupTask(
+        title: 'Add your first account',
+        subtitle: 'Start tracking cash in bank, wallet, or cash accounts.',
+        isComplete:
+            isTaskComplete('onboarding_step_account_completed', hasAccounts),
+        icon: Icons.account_balance_wallet_outlined,
+        destinationBuilder: (_) => const AccountListScreen(
+          showAppBar: true,
+          showBackButton: true,
+        ),
+        actionLabel: 'Add Account',
+      ),
+      _SetupTask(
+        title: 'Set a financial goal',
+        subtitle: 'Create one goal to start tracking your progress.',
+        isComplete: isTaskComplete('onboarding_step_goal_completed', hasGoals),
+        icon: Icons.flag_outlined,
+        destinationBuilder: (_) => const GoalTrackerScreen(
+          showAppBar: true,
+          showBackButton: true,
+        ),
+        actionLabel: 'Add Goal',
+      ),
+      _SetupTask(
+        title: 'Create a monthly budget',
+        subtitle: 'Set spending limits to monitor progress during the month.',
+        isComplete:
+            isTaskComplete('onboarding_step_budget_completed', hasBudgets),
+        icon: Icons.pie_chart_outline,
+        destinationBuilder: (_) => const BudgetPlannerScreen(
+          showAppBar: true,
+          showBackButton: true,
+        ),
+        actionLabel: 'Set Budget',
+      ),
+      _SetupTask(
+        title: 'Track an investment',
+        subtitle: 'Add an investment to monitor current market value.',
+        isComplete: isTaskComplete(
+            'onboarding_step_investment_completed', hasInvestments),
+        icon: Icons.trending_up,
+        destinationBuilder: (_) => const InvestmentPortfolioScreen(
+          showAppBar: true,
+          showBackButton: true,
+        ),
+        actionLabel: 'Add Investment',
+      ),
+      _SetupTask(
+        title: 'Add a loan',
+        subtitle: 'Track EMIs and remaining balances for liabilities.',
+        isComplete: isTaskComplete('onboarding_step_loan_completed', hasLoans),
+        icon: Icons.request_quote_outlined,
+        destinationBuilder: (_) => const LoanTrackerScreen(
+          showAppBar: true,
+          showBackButton: true,
+        ),
+        actionLabel: 'Add Loan',
+      ),
+      _SetupTask(
+        title: 'Add a subscription',
+        subtitle: 'Keep recurring charges visible in one place.',
+        isComplete: isTaskComplete(
+            'onboarding_step_subscription_completed', hasSubscriptions),
+        icon: Icons.subscriptions_outlined,
+        destinationBuilder: (_) => const SubscriptionListScreen(
+          showAppBar: true,
+          showBackButton: true,
+        ),
+        actionLabel: 'Add Subscription',
+      ),
+    ];
+
+    return tasks;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,8 +216,31 @@ class _DashboardScreenContentState extends State<_DashboardScreenContent>
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _refresh,
-          child: Consumer2<HomeViewModel, SettingsProvider>(
-            builder: (context, viewModel, settings, _) {
+          child: Consumer<HomeViewModel>(
+            builder: (context, viewModel, _) {
+              final settings = context.watch<SettingsProvider>();
+              final accountProvider = context.watch<PaymentAccountProvider>();
+              final goalProvider = context.watch<GoalProvider>();
+              final budgetProvider = context.watch<BudgetProvider>();
+              final investmentProvider = context.watch<InvestmentProvider>();
+              final loanProvider = context.watch<LoanProvider>();
+              final subscriptionProvider =
+                  context.watch<SubscriptionProvider>();
+
+              final allSetupTasks = _buildSetupTasks(
+                accountProvider: accountProvider,
+                goalProvider: goalProvider,
+                budgetProvider: budgetProvider,
+                investmentProvider: investmentProvider,
+                loanProvider: loanProvider,
+                settingsProvider: settings,
+                subscriptionProvider: subscriptionProvider,
+              );
+              final pendingSetupTasks =
+                  allSetupTasks.where((task) => !task.isComplete).toList();
+              final completedSetupTasks =
+                  allSetupTasks.where((task) => task.isComplete).toList();
+
               // Animate net worth if changed
               if (viewModel.netWorth != _previousNetWorth) {
                 _netWorthAnimationController.forward(from: 0);
@@ -132,6 +271,15 @@ class _DashboardScreenContentState extends State<_DashboardScreenContent>
                       animation: _netWorthAnimationController,
                     ),
                     const SizedBox(height: 16),
+
+                    if (pendingSetupTasks.isNotEmpty) ...[
+                      _PendingSetupCard(
+                        pendingTasks: pendingSetupTasks,
+                        completedTasks: completedSetupTasks,
+                        totalTasks: 7,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
                     // 1.5️⃣ Pending Bills Alert Card
                     if (viewModel.pendingBillReminderCount > 0) ...[
@@ -635,7 +783,7 @@ class _InvestmentSummaryCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Current Value',
+                        'Current Market Amount',
                         style: TextStyle(
                           fontSize: 10,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1291,6 +1439,236 @@ class _AlertsStrip extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PendingSetupCard extends StatelessWidget {
+  final List<_SetupTask> pendingTasks;
+  final List<_SetupTask> completedTasks;
+  final int totalTasks;
+
+  const _PendingSetupCard({
+    required this.pendingTasks,
+    required this.completedTasks,
+    required this.totalTasks,
+  });
+
+  Widget _buildTaskRow(
+    BuildContext context,
+    _SetupTask task, {
+    bool completed = false,
+  }) {
+    final borderColor =
+        completed ? Colors.green.shade100 : Colors.orange.shade100;
+    final iconColor =
+        completed ? Colors.green.shade700 : const Color(0xFFD97706);
+    final actionColor =
+        completed ? Colors.green.shade700 : const Color(0xFFD97706);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: task.destinationBuilder),
+          );
+        },
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: borderColor),
+          ),
+          child: Row(
+            children: [
+              Icon(task.icon, color: iconColor, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task.title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      task.subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                completed ? 'Review' : task.actionLabel,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: actionColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final completedCount = completedTasks.length;
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFFFF4E6),
+              Color(0xFFFFFDF7),
+            ],
+          ),
+          border: Border.all(
+            color: const Color(0xFFF59E0B).withValues(alpha: 0.25),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.checklist_rounded,
+                    color: Color(0xFFD97706),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Quick Setup Guide',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$completedCount of $totalTasks completed',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            if (pendingTasks.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.shade100),
+                ),
+                child: Text(
+                  'All setup items are completed.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.green.shade800,
+                  ),
+                ),
+              )
+            else
+              ...pendingTasks.map((task) => _buildTaskRow(context, task)),
+            if (completedTasks.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Theme(
+                data: Theme.of(context)
+                    .copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: EdgeInsets.zero,
+                  title: Text(
+                    'Completed Setup Items (${completedTasks.length})',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.green.shade800,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Tap to review completed onboarding setup steps',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  iconColor: Colors.green.shade700,
+                  collapsedIconColor: Colors.green.shade700,
+                  children: completedTasks
+                      .map(
+                        (task) => _buildTaskRow(
+                          context,
+                          task,
+                          completed: true,
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SetupTask {
+  final String title;
+  final String subtitle;
+  final bool isComplete;
+  final IconData icon;
+  final WidgetBuilder destinationBuilder;
+  final String actionLabel;
+
+  const _SetupTask({
+    required this.title,
+    required this.subtitle,
+    required this.isComplete,
+    required this.icon,
+    required this.destinationBuilder,
+    required this.actionLabel,
+  });
 }
 
 class _ReceivableSummaryCard extends StatelessWidget {

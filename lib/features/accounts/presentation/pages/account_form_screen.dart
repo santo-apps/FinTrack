@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
+import 'package:fintrack/core/utils/dropdown_search_utils.dart';
 import 'package:fintrack/features/accounts/data/models/payment_account_model.dart';
 import 'package:fintrack/features/accounts/data/models/account_type_model.dart';
 import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
@@ -193,8 +194,7 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                               if (item.icon != null)
                                 Text(
                                   item.icon!,
-                                  style: TextStyle(
-                                      fontSize: 20),
+                                  style: TextStyle(fontSize: 20),
                                 )
                               else
                                 Icon(
@@ -339,30 +339,51 @@ class _AccountFormScreenState extends State<AccountFormScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppTheme.borderColor),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _cardNetwork,
-                      isExpanded: true,
-                      hint: const Text('Select network'),
-                      items: _cardNetworks.map((network) {
-                        return DropdownMenuItem(
-                          value: network,
-                          child: Text(network),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _cardNetwork = value;
-                        });
-                      },
+                DropdownSearch<String>(
+                  selectedItem: _cardNetwork,
+                  items: _cardNetworks,
+                  dropdownDecoratorProps: DropDownDecoratorProps(
+                    dropdownSearchDecoration: InputDecoration(
+                      hintText: 'Select network',
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppTheme.borderColor),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppTheme.borderColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide:
+                            BorderSide(color: AppTheme.primaryColor, width: 2),
+                      ),
                     ),
                   ),
+                  popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                    context: context,
+                    searchHint: 'Search network...',
+                    borderRadius: BorderRadius.circular(8),
+                    elevation: 4,
+                    searchFieldProps: TextFieldProps(
+                      decoration: InputDecoration(
+                        hintText: 'Search network...',
+                        prefixIcon: const Icon(Icons.search),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _cardNetwork = value;
+                    });
+                  },
                 ),
                 const SizedBox(height: 16),
               ],

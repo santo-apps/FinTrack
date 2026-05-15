@@ -9,6 +9,9 @@ import 'package:fintrack/features/expense/data/models/expense_model.dart';
 import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
 import 'package:fintrack/features/expense/presentation/pages/expense_list_screen.dart';
+import 'package:fintrack/features/expense/presentation/widgets/transaction_calculator_sheet.dart';
+import 'package:fintrack/features/bill/presentation/providers/bill_provider.dart';
+import 'package:fintrack/features/bill/data/models/bill_reminder_model.dart';
 
 bool shouldShowTransactionForAccount(Expense expense, String accountId) {
   final isSourceAccount = expense.accountId == accountId;
@@ -56,7 +59,31 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
   @override
   void initState() {
     super.initState();
-    _selectedTabIndex = 0;
+    _selectedTabIndex = -1;
+  }
+
+  bool _isCreditAccount(PaymentAccount account) {
+    return account.accountType.toLowerCase().contains('credit');
+  }
+
+  double _getOutstandingFromCurrentMonthReminder(
+    BillProvider billProvider,
+    PaymentAccount account,
+  ) {
+    final reminders = billProvider.getRemindersForMonth(DateTime.now());
+    final cardReminder = reminders.where((reminder) {
+      return reminder.type == BillReminderType.creditCard &&
+          reminder.sourceId == account.id &&
+          (reminder.status == BillReminderStatus.pending ||
+              reminder.status == BillReminderStatus.overdue ||
+              reminder.status == BillReminderStatus.partiallyPaid);
+    });
+
+    return cardReminder.fold<double>(0.0, (sum, reminder) {
+      final remaining =
+          (reminder.amount - reminder.paidAmount).clamp(0.0, double.infinity);
+      return sum + remaining;
+    });
   }
 
   @override
@@ -77,8 +104,9 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
       ),
       body: SafeArea(
         top: false,
-        child: Consumer2<ExpenseProvider, PaymentAccountProvider>(
-          builder: (context, expenseProvider, accountProvider, _) {
+        child: Consumer3<ExpenseProvider, PaymentAccountProvider, BillProvider>(
+          builder:
+              (context, expenseProvider, accountProvider, billProvider, _) {
             // Get the latest account data from provider
             final currentAccount =
                 accountProvider.getAccountById(widget.account.id);
@@ -150,48 +178,25 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
               }
             }
 
-            if (filteredExpenses.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.receipt_long,
-                      size: 80,
-                      color: AppTheme.textSecondaryColor,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No transactions',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: isDarkMode
-                            ? Colors.white
-                            : AppTheme.textSecondaryColor,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'No expenses recorded for this account',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isDarkMode
-                            ? Colors.white70
-                            : AppTheme.textSecondaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
+            final isCreditCard = _isCreditAccount(currentAccount);
+            final reminderOutstanding = isCreditCard
+                ? _getOutstandingFromCurrentMonthReminder(
+                    billProvider,
+                    currentAccount,
+                  )
+                : 0.0;
+            final summaryBalance = isCreditCard
+                ? (reminderOutstanding > 0
+                    ? reminderOutstanding
+                    : currentAccount.balance)
+                : currentAccount.balance;
 
             return ListView(
               padding: EdgeInsets.fromLTRB(
                 16,
                 16,
                 16,
-                contentBottomPadding(context),
+                contentBottomPadding(context, hasFab: false),
               ),
               children: [
                 // Summary Card
@@ -230,7 +235,9 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Account Balance',
+                        isCreditCard
+                            ? 'Outstanding Balance'
+                            : 'Account Balance',
                         style: TextStyle(
                           fontSize: 14,
                           color: Theme.of(context).brightness == Brightness.dark
@@ -242,7 +249,7 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                       const SizedBox(height: 8),
                       Text(
                         AppUtils.formatCurrency(
-                          currentAccount.balance,
+                          summaryBalance,
                           currencySymbol:
                               context.watch<SettingsProvider>().currencySymbol,
                         ),
@@ -341,6 +348,9 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                 ),
                 const SizedBox(height: 24),
 
+                _buildTransactionActionBar(),
+                const SizedBox(height: 20),
+
                 // Transactions List
                 Text(
                   'Transactions',
@@ -409,109 +419,203 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
                   ],
                 ),
                 const SizedBox(height: 12),
-                ...filteredExpenses.map((expense) => _TransactionCard(
-                      key: Key(expense.id),
-                      expense: expense,
-                      currentAccountId: currentAccount.id,
-                      currencySymbol:
-                          context.watch<SettingsProvider>().currencySymbol,
-                      isCreditCard: currentAccount.accountType
-                          .toLowerCase()
-                          .contains('credit'),
-                      onEdit: () => _editTransaction(expense),
-                      onDelete: () => _deleteTransaction(expense),
-                    )),
+                if (filteredExpenses.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 32,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Theme.of(context).dividerColor),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.receipt_long,
+                          size: 52,
+                          color: AppTheme.textSecondaryColor,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No transactions yet',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color:
+                                isDarkMode ? Colors.white : AppTheme.textColor,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Use the action tabs above to add an expense, income, transfer, or payment for this account.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDarkMode
+                                ? Colors.white70
+                                : AppTheme.textSecondaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  ...filteredExpenses.map((expense) => _TransactionCard(
+                        key: Key(expense.id),
+                        expense: expense,
+                        currentAccountId: currentAccount.id,
+                        currencySymbol:
+                            context.watch<SettingsProvider>().currencySymbol,
+                        isCreditCard: currentAccount.accountType
+                            .toLowerCase()
+                            .contains('credit'),
+                        onEdit: () => _editTransaction(expense),
+                        onDelete: () => _deleteTransaction(expense),
+                      )),
               ],
             );
           },
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDarkMode ? Theme.of(context).colorScheme.surface : null,
-            border: Border(
-              top: BorderSide(
-                color: isDarkMode ? Colors.white24 : Colors.grey.shade200,
-                width: 1,
-              ),
+    );
+  }
+
+  Widget _buildTransactionActionBar() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final actions = _getTransactionActions();
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDarkMode ? Colors.white10 : Colors.grey.shade200,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Quick Actions',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: isDarkMode ? Colors.white : AppTheme.textColor,
             ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: _getTransactionTabs(),
+          const SizedBox(height: 10),
+          Row(
+            children: actions
+                .asMap()
+                .entries
+                .map((entry) =>
+                    _buildTransactionActionCard(entry.key, entry.value))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransactionActionCard(int index, _TransactionAction action) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final isSelected = _selectedTabIndex == index;
+
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              setState(() => _selectedTabIndex = index);
+              _showCalculator(action.type);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? action.color.withValues(alpha: 0.16)
+                    : (isDarkMode
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.white),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected
+                      ? action.color.withValues(alpha: 0.55)
+                      : (isDarkMode ? Colors.white12 : Colors.grey.shade200),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    action.icon,
+                    size: 20,
+                    color: isSelected
+                        ? action.color
+                        : (isDarkMode
+                            ? Colors.white70
+                            : AppTheme.textSecondaryColor),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    action.label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected
+                          ? action.color
+                          : (isDarkMode ? Colors.white : AppTheme.textColor),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  List<Widget> _getTransactionTabs() {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+  List<_TransactionAction> _getTransactionActions() {
     final isCreditCard = widget.account.accountType == 'Credit Card';
-    final tabs = [
-      ('Expense', 'expense', '💸'),
-      (isCreditCard ? 'Refund' : 'Income', 'income', '💰'),
+    final actions = <_TransactionAction>[
+      _TransactionAction(
+        label: 'Expense',
+        type: 'expense',
+        icon: Icons.remove_circle_outline,
+        color: const Color(0xFFE4572E),
+      ),
+      _TransactionAction(
+        label: isCreditCard ? 'Refund' : 'Income',
+        type: 'income',
+        icon: Icons.add_circle_outline,
+        color: const Color(0xFF2E9E58),
+      ),
       if (isCreditCard)
-        ('Payment', 'payment', '💳')
+        _TransactionAction(
+          label: 'Payment',
+          type: 'payment',
+          icon: Icons.credit_score_outlined,
+          color: const Color(0xFF335CFF),
+        )
       else
-        ('Transfer', 'transfer', '🔄'),
+        _TransactionAction(
+          label: 'Transfer',
+          type: 'transfer',
+          icon: Icons.swap_horiz,
+          color: const Color(0xFF7E5CEF),
+        ),
     ];
 
-    return tabs.asMap().entries.map((entry) {
-      final index = entry.key;
-      final tab = entry.value;
-      final isSelected = _selectedTabIndex == index;
-
-      return Expanded(
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              setState(() => _selectedTabIndex = index);
-              _showCalculator(tab.$2);
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    tab.$3,
-                    style: TextStyle(fontSize: 20),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    tab.$1,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w500,
-                      color: isSelected
-                          ? AppTheme.primaryColor
-                          : (isDarkMode
-                              ? Colors.white70
-                              : AppTheme.textSecondaryColor),
-                    ),
-                  ),
-                  if (isSelected)
-                    Container(
-                      margin: const EdgeInsets.only(top: 4),
-                      height: 2,
-                      width: 24,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor,
-                        borderRadius: BorderRadius.circular(1),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }).toList();
+    return actions;
   }
 
   void _showCalculator(String transactionType) {
@@ -525,9 +629,29 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => TransactionCalculator(
-        account: widget.account,
+      builder: (context) => TransactionCalculatorSheet(
+        sourceAccount: widget.account,
         transactionType: transactionType,
+        onSubmit: (amount, selectedAccountId) async {
+          if (!mounted) return;
+          final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+          await showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            useSafeArea: true,
+            backgroundColor:
+                isDarkMode ? Theme.of(context).colorScheme.surface : null,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            builder: (context) => AddEditExpenseScreen(
+              initialAccountId: widget.account.id,
+              initialTransactionType: transactionType,
+              initialAmount: amount,
+              initialDestinationAccountId: selectedAccountId,
+            ),
+          );
+        },
       ),
     );
   }
@@ -675,708 +799,18 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
 
 enum _TransactionSortOption { date, amount, category }
 
-/// Calculator widget for entering transaction amounts
-class TransactionCalculator extends StatefulWidget {
-  final PaymentAccount account;
-  final String transactionType;
+class _TransactionAction {
+  final String label;
+  final String type;
+  final IconData icon;
+  final Color color;
 
-  const TransactionCalculator({
-    super.key,
-    required this.account,
-    required this.transactionType,
+  const _TransactionAction({
+    required this.label,
+    required this.type,
+    required this.icon,
+    required this.color,
   });
-
-  @override
-  State<TransactionCalculator> createState() => _TransactionCalculatorState();
-}
-
-class _TransactionCalculatorState extends State<TransactionCalculator> {
-  String _display = '0';
-  String _input = '';
-  String _operation = '';
-  double _accumulated = 0;
-  bool _newNumber = true;
-  String? _selectedAccountId;
-  final TextEditingController _accountFieldController = TextEditingController();
-
-  @override
-  void dispose() {
-    _accountFieldController.dispose();
-    super.dispose();
-  }
-
-  void _handleNumber(String number) {
-    setState(() {
-      if (_newNumber) {
-        _input = number;
-        _newNumber = false;
-      } else {
-        _input += number;
-      }
-      _display = _input.isEmpty ? '0' : _input;
-    });
-  }
-
-  void _handleDecimal() {
-    setState(() {
-      if (_newNumber) {
-        _input = '0.';
-        _newNumber = false;
-      } else if (!_input.contains('.')) {
-        _input += '.';
-      }
-      _display = _input;
-    });
-  }
-
-  void _handleOperation(String op) {
-    final currentValue = double.tryParse(_input) ?? 0;
-
-    if (_accumulated != 0 && _input.isNotEmpty) {
-      _calculate();
-    } else {
-      _accumulated = currentValue;
-    }
-
-    setState(() {
-      _operation = op;
-      _input = '';
-      _newNumber = true;
-    });
-  }
-
-  void _calculate() {
-    if (_operation.isEmpty || _input.isEmpty) return;
-
-    final currentValue = double.tryParse(_input) ?? 0;
-    double result = 0;
-
-    switch (_operation) {
-      case '+':
-        result = _accumulated + currentValue;
-        break;
-      case '-':
-        result = _accumulated - currentValue;
-        break;
-      case '×':
-        result = _accumulated * currentValue;
-        break;
-      case '÷':
-        result = currentValue != 0 ? _accumulated / currentValue : 0;
-        break;
-    }
-
-    setState(() {
-      _accumulated = result;
-      _input = result.toString();
-      _display = result.toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '');
-      _operation = '';
-      _newNumber = true;
-    });
-  }
-
-  void _clear() {
-    setState(() {
-      _display = '0';
-      _input = '';
-      _operation = '';
-      _accumulated = 0;
-      _newNumber = true;
-    });
-  }
-
-  void _delete() {
-    setState(() {
-      if (_input.isNotEmpty) {
-        _input = _input.substring(0, _input.length - 1);
-        _display = _input.isEmpty ? '0' : _input;
-        if (_input.isEmpty) {
-          _newNumber = true;
-        }
-      }
-    });
-  }
-
-  void _proceed() {
-    final amount = double.tryParse(_input) ?? 0;
-    if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid amount')),
-      );
-      return;
-    }
-
-    final requiresAccount = widget.transactionType == 'transfer' ||
-        widget.transactionType == 'payment';
-    if (requiresAccount && _selectedAccountId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.transactionType == 'transfer'
-                ? 'Select a target account'
-                : 'Select a source account',
-          ),
-        ),
-      );
-      return;
-    }
-
-    _proceedToForm(amount, _selectedAccountId);
-  }
-
-  void _showAccountPicker(
-    List<PaymentAccount> availableAccounts,
-    String title,
-  ) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor:
-          isDarkMode ? Theme.of(context).colorScheme.surface : null,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        String query = '';
-
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-            final filteredAccounts = availableAccounts.where((account) {
-              final nameMatch =
-                  account.name.toLowerCase().contains(query.toLowerCase());
-              final typeMatch = account.accountType
-                  .toLowerCase()
-                  .contains(query.toLowerCase());
-              return nameMatch || typeMatch;
-            }).toList();
-
-            return SafeArea(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  16,
-                  16,
-                  effectiveBottomInset(context) + 12,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: isDarkMode ? Colors.white : AppTheme.textColor,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search),
-                        hintText: 'Search accounts',
-                      ),
-                      onChanged: (value) {
-                        setSheetState(() {
-                          query = value.trim();
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    if (filteredAccounts.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Text(
-                          'No matching accounts',
-                          style: TextStyle(
-                            color: isDarkMode ? Colors.white70 : null,
-                          ),
-                        ),
-                      )
-                    else
-                      SizedBox(
-                        height: 300,
-                        child: ListView.builder(
-                          itemCount: filteredAccounts.length,
-                          itemBuilder: (context, index) {
-                            final account = filteredAccounts[index];
-                            return ListTile(
-                              title: Text(
-                                account.name,
-                                style: TextStyle(
-                                  color: isDarkMode ? Colors.white : null,
-                                ),
-                              ),
-                              subtitle: Text(
-                                account.accountType,
-                                style: TextStyle(
-                                  color: isDarkMode ? Colors.white70 : null,
-                                ),
-                              ),
-                              onTap: () {
-                                setState(() {
-                                  _selectedAccountId = account.id;
-                                  _accountFieldController.text = account.name;
-                                });
-                                Navigator.pop(context);
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _proceedToForm(double amount, String? destinationAccountId) {
-    // Close the calculator modal bottom sheet
-    Navigator.pop(context);
-
-    // Show the form in a full-screen bottom sheet
-    Future.delayed(const Duration(milliseconds: 200), () {
-      if (mounted) {
-        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          useSafeArea: true,
-          backgroundColor:
-              isDarkMode ? Theme.of(context).colorScheme.surface : null,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          builder: (context) => AddEditExpenseScreen(
-            initialAccountId: widget.account.id,
-            initialTransactionType: widget.transactionType,
-            initialAmount: amount,
-            initialDestinationAccountId: destinationAccountId,
-          ),
-        );
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final accountProvider = context.watch<PaymentAccountProvider>();
-    final currentAccount = accountProvider.getAccountById(widget.account.id);
-
-    if (currentAccount == null) {
-      return const Center(
-        child: Text('Account not found'),
-      );
-    }
-
-    final isCreditCard =
-        currentAccount.accountType.toLowerCase().contains('credit');
-    final transactionLabel = _getTransactionLabel(isCreditCard);
-    final requiresAccount = widget.transactionType == 'transfer' ||
-        widget.transactionType == 'payment';
-    final accounts = accountProvider.accounts;
-    final availableAccounts = accounts.where((account) {
-      if (!account.isActive) {
-        return false;
-      }
-      if (widget.transactionType == 'transfer') {
-        return account.id != currentAccount.id &&
-            account.accountType.toLowerCase().contains('bank');
-      }
-      if (widget.transactionType == 'payment') {
-        return account.accountType.toLowerCase().contains('bank');
-      }
-      return false;
-    }).toList();
-
-    final selectedAccountName = _selectedAccountId == null
-        ? ''
-        : availableAccounts
-            .firstWhere(
-              (account) => account.id == _selectedAccountId,
-              orElse: () => accounts.firstWhere(
-                (account) => account.id == _selectedAccountId,
-                orElse: () => PaymentAccount(
-                  id: 'temp',
-                  name: '',
-                  accountType: 'Unknown',
-                  createdAt: DateTime.now(),
-                ),
-              ),
-            )
-            .name;
-
-    if (_accountFieldController.text != selectedAccountName) {
-      _accountFieldController.text = selectedAccountName;
-    }
-
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        color:
-            isDarkMode ? Theme.of(context).colorScheme.surface : Colors.white,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle bar
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 8),
-              height: 4,
-              width: 40,
-              decoration: BoxDecoration(
-                color: isDarkMode ? Colors.white54 : Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          if (requiresAccount) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextFormField(
-                controller: _accountFieldController,
-                readOnly: true,
-                decoration: InputDecoration(
-                  labelText: widget.transactionType == 'transfer'
-                      ? 'Transfer To'
-                      : 'Payment From',
-                  helperText: widget.transactionType == 'transfer'
-                      ? 'Select target account'
-                      : 'Select source bank account',
-                  suffixIcon: const Icon(Icons.search),
-                ),
-                onTap: availableAccounts.isEmpty
-                    ? null
-                    : () {
-                        final title = widget.transactionType == 'transfer'
-                            ? 'Select Target Account'
-                            : 'Select Source Bank Account';
-                        _showAccountPicker(availableAccounts, title);
-                      },
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // Header with Save button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  transactionLabel,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: isDarkMode ? Colors.white : AppTheme.textColor,
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: _proceed,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 10,
-                    ),
-                  ),
-                  child: Text(
-                    'SAVE',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Display
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Text(
-              _display,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.w700,
-                color: isDarkMode ? Colors.white : AppTheme.textColor,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Calculator Grid
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              children: [
-                // Row 1: 1, 2, 3, ×
-                Row(
-                  children: [
-                    _buildNumberButton('1'),
-                    const SizedBox(width: 8),
-                    _buildNumberButton('2'),
-                    const SizedBox(width: 8),
-                    _buildNumberButton('3'),
-                    const SizedBox(width: 8),
-                    _buildOperationButton('×'),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // Row 2: 4, 5, 6, ÷
-                Row(
-                  children: [
-                    _buildNumberButton('4'),
-                    const SizedBox(width: 8),
-                    _buildNumberButton('5'),
-                    const SizedBox(width: 8),
-                    _buildNumberButton('6'),
-                    const SizedBox(width: 8),
-                    _buildOperationButton('÷'),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // Row 3: 7, 8, 9, +
-                Row(
-                  children: [
-                    _buildNumberButton('7'),
-                    const SizedBox(width: 8),
-                    _buildNumberButton('8'),
-                    const SizedBox(width: 8),
-                    _buildNumberButton('9'),
-                    const SizedBox(width: 8),
-                    _buildOperationButton('+'),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // Row 4: ., 0, Delete, -
-                Row(
-                  children: [
-                    _buildDecimalButton(),
-                    const SizedBox(width: 8),
-                    _buildNumberButton('0'),
-                    const SizedBox(width: 8),
-                    _buildDeleteButton(),
-                    const SizedBox(width: 8),
-                    _buildOperationButton('-'),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // Row 5: Equals (full width)
-                SizedBox(
-                  height: 50,
-                  child: GestureDetector(
-                    onTap: _handleEquals,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '=',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Clear Button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: OutlinedButton(
-                onPressed: _clear,
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(
-                    color: isDarkMode ? Colors.white54 : Colors.grey.shade300,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: Text(
-                  'Clear',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: isDarkMode
-                        ? Colors.white70
-                        : AppTheme.textSecondaryColor,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          SizedBox(height: effectiveBottomInset(context) + 24),
-        ],
-      ),
-    );
-  }
-
-  void _handleEquals() {
-    if (_operation.isNotEmpty && _input.isNotEmpty) {
-      _calculate();
-    }
-  }
-
-  Widget _buildNumberButton(String number) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _handleNumber(number),
-        child: Container(
-          height: 50,
-          decoration: BoxDecoration(
-            color: isDarkMode
-                ? Colors.white.withValues(alpha: 0.1)
-                : Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Center(
-            child: Text(
-              number,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: isDarkMode ? Colors.white : AppTheme.textColor,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOperationButton(String op) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _handleOperation(op),
-        child: Container(
-          height: 50,
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Center(
-            child: Text(
-              op,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.primaryColor,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDecimalButton() {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Expanded(
-      child: GestureDetector(
-        onTap: _handleDecimal,
-        child: Container(
-          height: 50,
-          decoration: BoxDecoration(
-            color: isDarkMode
-                ? Colors.white.withValues(alpha: 0.1)
-                : Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Center(
-            child: Text(
-              '.',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: isDarkMode ? Colors.white : AppTheme.textColor,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDeleteButton() {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Expanded(
-      child: GestureDetector(
-        onTap: _delete,
-        child: Container(
-          height: 50,
-          decoration: BoxDecoration(
-            color: isDarkMode
-                ? Colors.white.withValues(alpha: 0.1)
-                : Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Center(
-            child: Icon(
-              Icons.backspace_outlined,
-              color: isDarkMode ? Colors.white : AppTheme.textColor,
-              size: 20,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _getTransactionLabel(bool isCreditCard) {
-    if (isCreditCard && widget.transactionType == 'income') {
-      return 'Add Refund';
-    }
-
-    switch (widget.transactionType) {
-      case 'income':
-        return 'Add Income';
-      case 'transfer':
-        return 'Transfer';
-      case 'payment':
-        return 'Make Payment';
-      default:
-        return 'Add Expense';
-    }
-  }
 }
 
 class _SummaryItem extends StatelessWidget {

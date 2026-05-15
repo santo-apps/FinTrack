@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
 import 'package:fintrack/services/security_service.dart';
 import 'package:fintrack/features/home/presentation/pages/home_screen.dart';
+import 'package:fintrack/core/utils/custom_widgets.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -91,7 +92,12 @@ class _AuthScreenState extends State<AuthScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.fromLTRB(
+              24,
+              24,
+              24,
+              24 + contentBottomPadding(context, hasFab: false),
+            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

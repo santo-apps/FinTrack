@@ -57,11 +57,7 @@ class AppTheme {
           statusBarColor: surfaceColor,
           statusBarIconBrightness: Brightness.dark,
           statusBarBrightness: Brightness.light,
-          systemNavigationBarColor: Colors.white,
-          systemNavigationBarIconBrightness: Brightness.dark,
-          systemNavigationBarDividerColor: Colors.white,
           systemStatusBarContrastEnforced: false,
-          systemNavigationBarContrastEnforced: false,
         ),
         toolbarTextStyle: const TextStyle(
           fontFamily: 'Poppins',
@@ -242,11 +238,7 @@ class AppTheme {
           statusBarColor: darkSurfaceColor,
           statusBarIconBrightness: Brightness.light,
           statusBarBrightness: Brightness.dark,
-          systemNavigationBarColor: Colors.black,
-          systemNavigationBarIconBrightness: Brightness.light,
-          systemNavigationBarDividerColor: Colors.black,
           systemStatusBarContrastEnforced: false,
-          systemNavigationBarContrastEnforced: false,
         ),
         toolbarTextStyle: const TextStyle(
           fontFamily: 'Poppins',

@@ -16,6 +16,7 @@ import 'package:fintrack/features/accounts/presentation/pages/account_list_scree
 import 'package:fintrack/features/accounts/presentation/pages/account_form_screen.dart';
 import 'package:fintrack/features/loan/presentation/widgets/add_edit_loan_dialog.dart';
 import 'package:fintrack/features/receivable/presentation/pages/receivable_list_screen.dart';
+import 'package:fintrack/core/utils/custom_widgets.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -448,7 +449,12 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Container(
           color: Colors.grey[50],
           child: ListView(
-            padding: EdgeInsets.zero,
+            padding: EdgeInsets.fromLTRB(
+              0,
+              0,
+              0,
+              contentBottomPadding(context, hasFab: false),
+            ),
             children: [
               // Modern Gradient Header
               Container(

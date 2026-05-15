@@ -25,6 +25,7 @@ class GoalProvider extends ChangeNotifier {
   Future<void> addGoal(FinancialGoal goal) async {
     try {
       await HiveService.addGoal(goal);
+      await HiveService.saveSetting('onboarding_step_goal_completed', true);
       _goals.add(goal);
       notifyListeners();
     } catch (e) {
