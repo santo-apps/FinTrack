@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 import 'package:fintrack/core/theme/app_theme.dart';
 import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/core/utils/dropdown_search_utils.dart';
+import 'package:fintrack/features/accounts/data/models/payment_account_model.dart';
+import 'package:fintrack/features/accounts/presentation/providers/payment_account_provider.dart';
+import 'package:fintrack/features/expense/data/models/expense_model.dart';
+import 'package:fintrack/features/expense/presentation/providers/expense_provider.dart';
 import 'package:fintrack/features/settings/presentation/pages/manage_subscription_categories_screen.dart';
+import 'package:fintrack/features/subscription/data/models/subscription_category_model.dart';
 import 'package:fintrack/features/subscription/data/models/subscription_model.dart';
 import 'package:fintrack/features/subscription/presentation/providers/subscription_provider.dart';
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
@@ -23,20 +29,48 @@ class SubscriptionListScreen extends StatefulWidget {
   State<SubscriptionListScreen> createState() => _SubscriptionListScreenState();
 }
 
-class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
+class _SubscriptionListScreenState extends State<SubscriptionListScreen>
+    with SingleTickerProviderStateMixin {
   static const String _allCategoriesFilter = 'All';
   String _selectedCategoryFilter = _allCategoriesFilter;
+  String _searchQuery = '';
   bool _showArchived = false;
+  late TabController _tabController;
+
+  void _handleScreenSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity.abs() < 180) return;
+
+    final nextArchived = velocity < 0;
+    final targetIndex = nextArchived ? 1 : 0;
+    if (_tabController.index == targetIndex) return;
+    _tabController.animateTo(targetIndex);
+  }
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      final isPast = _tabController.index == 1;
+      if (_showArchived == isPast) return;
+      setState(() {
+        _showArchived = isPast;
+        _selectedCategoryFilter = _allCategoriesFilter;
+      });
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
       }
       context.read<SubscriptionProvider>().initSubscriptions();
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -53,295 +87,529 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
         child: Consumer2<SubscriptionProvider, SettingsProvider>(
           builder: (context, subProvider, settingsProvider, _) {
             final currencySymbol = settingsProvider.currencySymbol;
+            final categoryModels = settingsProvider.subscriptionCategories;
+            final categoryByName = {
+              for (final category in categoryModels)
+                category.name.toLowerCase(): category,
+            };
+
             final subscriptions = _showArchived
                 ? subProvider.archivedSubscriptions
                 : subProvider.activeSubscriptions;
-
-            if (subscriptions.isEmpty) {
-              return EmptyStateWidget(
-                icon: Icons.subscriptions,
-                title: _showArchived
-                    ? 'No Past Subscriptions'
-                    : 'No Subscriptions',
-                description: _showArchived
-                    ? 'Deleted subscriptions with historical records will appear here'
-                    : 'Track your recurring subscriptions here',
-                actionLabel: _showArchived ? null : 'Add Subscription',
-                onAction:
-                    _showArchived ? null : () => _showAddEditDialog(context),
-              );
-            }
 
             final categoryFilters = _buildCategoryFilters(subscriptions);
             if (!categoryFilters.contains(_selectedCategoryFilter)) {
               _selectedCategoryFilter = _allCategoriesFilter;
             }
+
+            final query = _searchQuery.trim().toLowerCase();
+            final searchedSubscriptions = query.isEmpty
+                ? subscriptions
+                : subscriptions.where((subscription) {
+                    final haystack = [
+                      subscription.name,
+                      subscription.category ?? '',
+                      subscription.notes ?? '',
+                      subscription.billingCycle,
+                    ].join(' ').toLowerCase();
+                    return haystack.contains(query);
+                  }).toList();
+
             final filteredSubscriptions = _getFilteredSubscriptions(
-                subscriptions, _selectedCategoryFilter);
+              searchedSubscriptions,
+              _selectedCategoryFilter,
+            )..sort((a, b) => a.renewalDate.compareTo(b.renewalDate));
+            final hasActiveFilter = _searchQuery.trim().isNotEmpty ||
+                _selectedCategoryFilter != _allCategoriesFilter;
 
             double totalMonthly = 0;
             for (var sub in filteredSubscriptions) {
               totalMonthly += sub.getMonthlyAmount();
             }
-            final categoryBreakdown =
-                _calculateCategoryBreakdown(filteredSubscriptions);
 
-            return Column(
-              children: [
-                Container(
-                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                  child: Row(
-                    children: [
-                      ChoiceChip(
-                        label: const Text('Active'),
-                        selected: !_showArchived,
-                        checkmarkColor: Colors.white,
-                        selectedColor: AppTheme.primaryColor,
-                        labelStyle: TextStyle(
-                          color: !_showArchived ? Colors.white : null,
-                          fontWeight: !_showArchived
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                        ),
-                        onSelected: (value) {
-                          if (!value) return;
-                          setState(() {
-                            _showArchived = false;
-                            _selectedCategoryFilter = _allCategoriesFilter;
-                          });
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      ChoiceChip(
-                        label: const Text('Past'),
-                        selected: _showArchived,
-                        checkmarkColor: Colors.white,
-                        selectedColor: AppTheme.primaryColor,
-                        labelStyle: TextStyle(
-                          color: _showArchived ? Colors.white : null,
-                          fontWeight:
-                              _showArchived ? FontWeight.w600 : FontWeight.w400,
-                        ),
-                        onSelected: (value) {
-                          if (!value) return;
-                          setState(() {
-                            _showArchived = true;
-                            _selectedCategoryFilter = _allCategoriesFilter;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Theme.of(context).colorScheme.surface
-                        : null,
-                    gradient: Theme.of(context).brightness == Brightness.dark
-                        ? null
-                        : LinearGradient(
-                            colors: [
-                              AppTheme.primaryColor.withOpacity(0.85),
-                              AppTheme.primaryColor,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+            final now = DateTime.now();
+            final today = DateTime(now.year, now.month, now.day);
+            final overdueSubscriptions = _showArchived
+                ? <Subscription>[]
+                : filteredSubscriptions.where((subscription) {
+                    final renewal = DateTime(
+                      subscription.renewalDate.year,
+                      subscription.renewalDate.month,
+                      subscription.renewalDate.day,
+                    );
+                    return renewal.isBefore(today);
+                  }).toList();
+            final dueSoonSubscriptions = _showArchived
+                ? <Subscription>[]
+                : filteredSubscriptions.where((subscription) {
+                    final renewal = DateTime(
+                      subscription.renewalDate.year,
+                      subscription.renewalDate.month,
+                      subscription.renewalDate.day,
+                    );
+                    final days = renewal.difference(today).inDays;
+                    return days >= 0 && days <= 7;
+                  }).toList();
+            final upcomingSubscriptions = _showArchived
+                ? filteredSubscriptions
+                : filteredSubscriptions.where((subscription) {
+                    final renewal = DateTime(
+                      subscription.renewalDate.year,
+                      subscription.renewalDate.month,
+                      subscription.renewalDate.day,
+                    );
+                    final days = renewal.difference(today).inDays;
+                    return days > 7;
+                  }).toList();
+
+            Widget sectionTitle(String title, int count, {Color? color}) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                child: Row(
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: color,
                           ),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Theme.of(context).brightness == Brightness.dark
-                        ? Border.all(color: Theme.of(context).dividerColor)
-                        : null,
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Monthly Cost',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant
-                                  : Colors.white70,
-                            ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: (color ?? AppTheme.primaryColor)
+                            .withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(999),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '$currencySymbol${totalMonthly.toStringAsFixed(2)}',
-                        style:
-                            Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  color: Theme.of(context).brightness ==
-                                          Brightness.dark
-                                      ? Theme.of(context).colorScheme.onSurface
-                                      : Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                      child: Text(
+                        '$count',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: color ?? AppTheme.primaryColor,
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Across ${filteredSubscriptions.length} subscriptions',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant
-                                  : Colors.white70,
-                            ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: categoryFilters.map((category) {
-                        final isSelected = category == _selectedCategoryFilter;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Text(category),
-                            selected: isSelected,
-                            onSelected: (_) {
-                              setState(() {
-                                _selectedCategoryFilter = category;
-                              });
-                            },
-                            elevation: isSelected ? 4 : 2,
-                            pressElevation: 6,
-                            shadowColor: Colors.black26,
-                            backgroundColor:
-                                Theme.of(context).colorScheme.surface,
-                            selectedColor: AppTheme.primaryColor,
-                            side: BorderSide(
-                              color: isSelected
-                                  ? AppTheme.primaryColor
-                                  : Theme.of(context).dividerColor,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            checkmarkColor: Colors.white,
-                            labelStyle:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: isSelected
-                                          ? Colors.white
-                                          : Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.color,
-                                      fontWeight: isSelected
-                                          ? FontWeight.w600
-                                          : FontWeight.w400,
-                                    ),
-                          ),
-                        );
-                      }).toList(),
+              );
+            }
+
+            return GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragEnd: _handleScreenSwipe,
+              child: Column(
+                children: [
+                  Container(
+                    color: Theme.of(context).colorScheme.surface,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TabBar(
+                          controller: _tabController,
+                          tabs: const [
+                            Tab(text: 'Active'),
+                            Tab(text: 'Past'),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                if (categoryBreakdown.isNotEmpty)
-                  Card(
-                    elevation: 3,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 8),
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.primaryColor,
+                          AppTheme.accentColor,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.22),
+                          blurRadius: 14,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Category Breakdown',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 12),
-                          ...categoryBreakdown.entries.map((entry) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.subscriptions_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: AppTheme.primaryColor,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      '${entry.key} (${entry.value.count})',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium,
-                                    ),
-                                  ),
                                   Text(
-                                    '$currencySymbol${entry.value.monthlyAmount.toStringAsFixed(2)}',
+                                    _showArchived
+                                        ? 'Past subscriptions'
+                                        : 'Monthly spend',
                                     style: Theme.of(context)
                                         .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(fontWeight: FontWeight.w600),
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Colors.white70,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _showArchived
+                                        ? '${filteredSubscriptions.length} items'
+                                        : 'Recurring charges at a glance',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                   ),
                                 ],
                               ),
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: filteredSubscriptions.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No subscriptions in this category',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: () async =>
-                              subProvider.initSubscriptions(),
-                          child: ListView.builder(
-                            padding: EdgeInsets.fromLTRB(
-                              16,
-                              0,
-                              16,
-                              contentBottomPadding(context),
                             ),
-                            itemCount: filteredSubscriptions.length,
-                            itemBuilder: (context, index) {
-                              final sub = filteredSubscriptions[index];
-                              return _SubscriptionCard(
-                                subscription: sub,
-                                onEdit: _showArchived
-                                    ? null
-                                    : () => _showAddEditDialog(context, sub),
-                                onDelete: _showArchived
-                                    ? () => _deleteSubscriptionPermanently(
-                                          context,
-                                          sub,
-                                        )
-                                    : () => _deleteSubscription(context, sub),
-                                onRestore: _showArchived
-                                    ? () => _restoreSubscription(context, sub)
-                                    : null,
-                              );
-                            },
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          _showArchived
+                              ? '${filteredSubscriptions.length} total'
+                              : 'Monthly spend: $currencySymbol${totalMonthly.toStringAsFixed(2)}',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                        const SizedBox(height: 12),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _CompactStatPill(
+                                label: 'Total',
+                                value: '${filteredSubscriptions.length}',
+                                inverted: true,
+                              ),
+                              const SizedBox(width: 6),
+                              _CompactStatPill(
+                                label: 'Due 7d',
+                                value: '${dueSoonSubscriptions.length}',
+                                inverted: true,
+                              ),
+                              const SizedBox(width: 6),
+                              _CompactStatPill(
+                                label: 'Overdue',
+                                value: '${overdueSubscriptions.length}',
+                                inverted: true,
+                                emphasize: overdueSubscriptions.isNotEmpty,
+                              ),
+                            ],
                           ),
                         ),
-                ),
-              ],
+                      ],
+                    ),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerLowest
+                          .withValues(alpha: 0.95),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            onChanged: (value) {
+                              setState(() {
+                                _searchQuery = value;
+                              });
+                            },
+                            decoration: InputDecoration(
+                              isDense: true,
+                              hintText: 'Search subscriptions',
+                              prefixIcon: const Icon(Icons.search, size: 20),
+                              suffixIcon: _searchQuery.trim().isEmpty
+                                  ? null
+                                  : IconButton(
+                                      tooltip: 'Clear search',
+                                      icon: const Icon(Icons.close, size: 18),
+                                      onPressed: () {
+                                        setState(() {
+                                          _searchQuery = '';
+                                        });
+                                      },
+                                    ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () async {
+                            final selected = await showModalBottomSheet<String>(
+                              context: context,
+                              useSafeArea: true,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(16),
+                                ),
+                              ),
+                              builder: (sheetContext) => SafeArea(
+                                child: ListView(
+                                  shrinkWrap: true,
+                                  children: [
+                                    const ListTile(
+                                      title: Text('Filter by category'),
+                                    ),
+                                    ...categoryFilters.map((category) {
+                                      final isSelected =
+                                          category == _selectedCategoryFilter;
+                                      return ListTile(
+                                        title: Text(category),
+                                        trailing: isSelected
+                                            ? Icon(
+                                                Icons.check,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary,
+                                              )
+                                            : null,
+                                        onTap: () => Navigator.of(sheetContext)
+                                            .pop(category),
+                                      );
+                                    }),
+                                  ],
+                                ),
+                              ),
+                            );
+                            if (selected == null) return;
+                            setState(() {
+                              _selectedCategoryFilter = selected;
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: Theme.of(context)
+                                    .dividerColor
+                                    .withValues(alpha: 0.7),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.tune,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                ConstrainedBox(
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 92),
+                                  child: Text(
+                                    _selectedCategoryFilter ==
+                                            _allCategoriesFilter
+                                        ? 'All'
+                                        : _selectedCategoryFilter,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (hasActiveFilter) ...[
+                          const SizedBox(width: 6),
+                          IconButton(
+                            tooltip: 'Clear filters',
+                            visualDensity: const VisualDensity(
+                              horizontal: -3,
+                              vertical: -3,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _searchQuery = '';
+                                _selectedCategoryFilter = _allCategoriesFilter;
+                              });
+                            },
+                            icon: const Icon(Icons.restart_alt, size: 20),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: filteredSubscriptions.isEmpty
+                        ? Center(
+                            child: EmptyStateWidget(
+                              icon: _showArchived
+                                  ? Icons.history
+                                  : Icons.subscriptions,
+                              title: _showArchived
+                                  ? 'No Past Subscriptions'
+                                  : 'No Active Subscriptions',
+                              description: _searchQuery.trim().isEmpty
+                                  ? (_showArchived
+                                      ? 'Move a subscription from Active and it will appear here.'
+                                      : 'Add your recurring subscriptions to track renewals and spend.')
+                                  : 'No subscriptions match your search/filter.',
+                              actionLabel:
+                                  _showArchived ? null : 'Add Subscription',
+                              onAction: _showArchived
+                                  ? null
+                                  : () => _showAddEditDialog(context),
+                            ),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: () async =>
+                                subProvider.initSubscriptions(),
+                            child: ListView(
+                              padding: EdgeInsets.fromLTRB(
+                                16,
+                                0,
+                                16,
+                                contentBottomPadding(context),
+                              ),
+                              children: [
+                                if (_showArchived) ...[
+                                  sectionTitle('Past Subscriptions',
+                                      filteredSubscriptions.length),
+                                  ...filteredSubscriptions.map((sub) {
+                                    return _SubscriptionCard(
+                                      subscription: sub,
+                                      categoryIcon: categoryByName[
+                                              (sub.category ?? 'other')
+                                                  .toLowerCase()]
+                                          ?.icon,
+                                      onDelete: () =>
+                                          _deleteSubscriptionPermanently(
+                                        context,
+                                        sub,
+                                      ),
+                                      onRestore: () =>
+                                          _restoreSubscription(context, sub),
+                                    );
+                                  }),
+                                ] else ...[
+                                  if (overdueSubscriptions.isNotEmpty) ...[
+                                    sectionTitle(
+                                        'Overdue', overdueSubscriptions.length,
+                                        color: Colors.red.shade700),
+                                    ...overdueSubscriptions.map((sub) {
+                                      return _SubscriptionCard(
+                                        subscription: sub,
+                                        categoryIcon: categoryByName[
+                                                (sub.category ?? 'other')
+                                                    .toLowerCase()]
+                                            ?.icon,
+                                        onEdit: () =>
+                                            _showAddEditDialog(context, sub),
+                                        onDelete: () =>
+                                            _deleteSubscription(context, sub),
+                                        onRestore: null,
+                                        onMarkPaid: () =>
+                                            _showMarkSubscriptionPaidSheet(
+                                          context,
+                                          sub,
+                                        ),
+                                      );
+                                    }),
+                                  ],
+                                  if (dueSoonSubscriptions.isNotEmpty) ...[
+                                    sectionTitle(
+                                        'Due Soon', dueSoonSubscriptions.length,
+                                        color: Colors.orange.shade700),
+                                    ...dueSoonSubscriptions.map((sub) {
+                                      return _SubscriptionCard(
+                                        subscription: sub,
+                                        categoryIcon: categoryByName[
+                                                (sub.category ?? 'other')
+                                                    .toLowerCase()]
+                                            ?.icon,
+                                        onEdit: () =>
+                                            _showAddEditDialog(context, sub),
+                                        onDelete: () =>
+                                            _deleteSubscription(context, sub),
+                                        onRestore: null,
+                                        onMarkPaid: () =>
+                                            _showMarkSubscriptionPaidSheet(
+                                          context,
+                                          sub,
+                                        ),
+                                      );
+                                    }),
+                                  ],
+                                  if (upcomingSubscriptions.isNotEmpty) ...[
+                                    sectionTitle('Upcoming',
+                                        upcomingSubscriptions.length),
+                                    ...upcomingSubscriptions.map((sub) {
+                                      return _SubscriptionCard(
+                                        subscription: sub,
+                                        categoryIcon: categoryByName[
+                                                (sub.category ?? 'other')
+                                                    .toLowerCase()]
+                                            ?.icon,
+                                        onEdit: () =>
+                                            _showAddEditDialog(context, sub),
+                                        onDelete: () =>
+                                            _deleteSubscription(context, sub),
+                                        onRestore: null,
+                                        onMarkPaid: () =>
+                                            _showMarkSubscriptionPaidSheet(
+                                          context,
+                                          sub,
+                                        ),
+                                      );
+                                    }),
+                                  ],
+                                ],
+                              ],
+                            ),
+                          ),
+                  ),
+                ],
+              ),
             );
           },
         ),
@@ -405,6 +673,236 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
     );
   }
 
+  void _showMarkSubscriptionPaidSheet(
+    BuildContext context,
+    Subscription subscription,
+  ) {
+    final accountProvider = context.read<PaymentAccountProvider>();
+    final accounts = accountProvider.activeAccounts;
+    if (accounts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No active payment account found')),
+      );
+      return;
+    }
+
+    String selectedAccountId = accounts.first.id;
+    final amountController =
+        TextEditingController(text: subscription.cost.toStringAsFixed(2));
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            final selectedAccount = accounts.firstWhere(
+              (account) => account.id == selectedAccountId,
+              orElse: () => accounts.first,
+            );
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom +
+                    effectiveBottomInset(sheetContext) +
+                    16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Mark as Paid',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subscription.name,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownSearch<String>(
+                    selectedItem: selectedAccountId,
+                    items: accounts.map((account) => account.id).toList(),
+                    itemAsString: (id) {
+                      final account = accounts.firstWhere((a) => a.id == id);
+                      return '${account.name} (${account.accountType})';
+                    },
+                    popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                      context: sheetContext,
+                      searchHint: 'Search account...',
+                      preferBelow: true,
+                    ),
+                    dropdownDecoratorProps: DropDownDecoratorProps(
+                      dropdownSearchDecoration: const InputDecoration(
+                        labelText: 'Payment Account',
+                      ),
+                    ),
+                    onChanged: (id) {
+                      if (id == null) return;
+                      setSheetState(() {
+                        selectedAccountId = id;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: amountController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Paid Amount',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Account type: ${selectedAccount.accountType}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final amount =
+                            double.tryParse(amountController.text.trim());
+                        if (amount == null || amount <= 0) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Enter a valid amount')),
+                          );
+                          return;
+                        }
+                        Navigator.pop(sheetContext);
+                        final account = accounts.firstWhere(
+                          (a) => a.id == selectedAccountId,
+                        );
+                        await _processSubscriptionPayment(
+                          context,
+                          subscription,
+                          account,
+                          amount,
+                        );
+                      },
+                      child: const Text('Confirm Payment'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(amountController.dispose);
+  }
+
+  Future<void> _processSubscriptionPayment(
+    BuildContext context,
+    Subscription subscription,
+    PaymentAccount selectedAccount,
+    double paymentAmount,
+  ) async {
+    final expenseProvider = context.read<ExpenseProvider>();
+    final accountProvider = context.read<PaymentAccountProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      final expenseId = const Uuid().v4();
+      final expense = Expense(
+        id: expenseId,
+        title: 'Subscription Payment - ${subscription.name}',
+        category: 'Subscriptions',
+        amount: paymentAmount,
+        date: DateTime.now(),
+        currency: subscription.currency,
+        paymentMethod: 'Bank Transfer',
+        accountId: selectedAccount.id,
+        notes: 'Paid from ${selectedAccount.name}',
+        transactionType: 'payment',
+      );
+
+      final isCreditCard =
+          selectedAccount.accountType.toLowerCase().contains('credit');
+      final updatedAccount = selectedAccount.copyWith(
+        balance: isCreditCard
+            ? selectedAccount.balance + paymentAmount
+            : selectedAccount.balance - paymentAmount,
+        lastUpdated: DateTime.now(),
+      );
+
+      await expenseProvider.addExpense(expense);
+      await accountProvider.updateAccount(updatedAccount);
+
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            paymentAmount >= subscription.cost
+                ? 'Subscription marked as paid'
+                : 'Partial subscription payment recorded',
+          ),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => _reverseSubscriptionPayment(
+              selectedAccount,
+              expenseId,
+              paymentAmount,
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Error recording payment: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    }
+  }
+
+  Future<void> _reverseSubscriptionPayment(
+    PaymentAccount originalAccount,
+    String expenseId,
+    double paymentAmount,
+  ) async {
+    final expenseProvider = context.read<ExpenseProvider>();
+    final accountProvider = context.read<PaymentAccountProvider>();
+
+    try {
+      await expenseProvider.deleteExpense(expenseId);
+      final latestAccount =
+          accountProvider.getAccountById(originalAccount.id) ?? originalAccount;
+      final isCreditCard =
+          latestAccount.accountType.toLowerCase().contains('credit');
+      await accountProvider.updateAccount(
+        latestAccount.copyWith(
+          balance: isCreditCard
+              ? latestAccount.balance - paymentAmount
+              : latestAccount.balance + paymentAmount,
+          lastUpdated: DateTime.now(),
+        ),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Payment reverted')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to revert payment: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    }
+  }
+
   void _deleteSubscriptionPermanently(
       BuildContext context, Subscription subscription) {
     showDialog(
@@ -433,27 +931,6 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
         ],
       ),
     );
-  }
-
-  Map<String, _CategorySummary> _calculateCategoryBreakdown(
-    List<Subscription> subscriptions,
-  ) {
-    final grouped = <String, _CategorySummary>{};
-
-    for (final subscription in subscriptions) {
-      final category = _normalizeCategory(subscription.category);
-      final existing = grouped[category];
-      final monthlyAmount = subscription.getMonthlyAmount();
-
-      grouped[category] = _CategorySummary(
-        count: (existing?.count ?? 0) + 1,
-        monthlyAmount: (existing?.monthlyAmount ?? 0) + monthlyAmount,
-      );
-    }
-
-    final sortedEntries = grouped.entries.toList()
-      ..sort((a, b) => b.value.monthlyAmount.compareTo(a.value.monthlyAmount));
-    return Map<String, _CategorySummary>.fromEntries(sortedEntries);
   }
 
   String _normalizeCategory(String? category) {
@@ -493,93 +970,195 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
 
 class _SubscriptionCard extends StatelessWidget {
   final Subscription subscription;
+  final String? categoryIcon;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onRestore;
+  final VoidCallback? onMarkPaid;
 
   const _SubscriptionCard({
     required this.subscription,
+    this.categoryIcon,
     this.onEdit,
     this.onDelete,
     this.onRestore,
+    this.onMarkPaid,
   });
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final renewalDay = DateTime(
+      subscription.renewalDate.year,
+      subscription.renewalDate.month,
+      subscription.renewalDate.day,
+    );
+    final daysToRenewal = renewalDay.difference(today).inDays;
+
+    Color statusColor;
+    String statusLabel;
+    if (daysToRenewal < 0) {
+      statusColor = Colors.red.shade700;
+      statusLabel = 'Overdue ${daysToRenewal.abs()}d';
+    } else if (daysToRenewal == 0) {
+      statusColor = Colors.orange.shade700;
+      statusLabel = 'Due today';
+    } else if (daysToRenewal <= 7) {
+      statusColor = Colors.orange.shade700;
+      statusLabel = 'Due in ${daysToRenewal}d';
+    } else {
+      statusColor = Colors.green.shade700;
+      statusLabel = 'On track';
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.subscriptions, color: AppTheme.primaryColor),
-        ),
-        title: Text(
-          subscription.name,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              'Renews: ${_formatDate(subscription.renewalDate)}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${subscription.currency} ${subscription.cost.toStringAsFixed(2)} / ${subscription.billingCycle}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _displayCategory(subscription.category),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
-        trailing: (onEdit != null || onDelete != null || onRestore != null)
-            ? PopupMenuButton(
-                itemBuilder: (context) {
-                  final items = <PopupMenuEntry>[];
-                  if (onEdit != null) {
-                    items.add(
-                      PopupMenuItem(
-                        onTap: onEdit,
-                        child: const Text('Edit'),
-                      ),
-                    );
-                  }
-                  if (onRestore != null) {
-                    items.add(
-                      PopupMenuItem(
-                        onTap: onRestore,
-                        child: const Text('Restore'),
-                      ),
-                    );
-                  }
-                  if (onDelete != null) {
-                    items.add(
-                      PopupMenuItem(
-                        onTap: onDelete,
-                        child: const Text('Delete',
-                            style: TextStyle(color: Colors.red)),
-                      ),
-                    );
-                  }
-                  return items;
-                },
-              )
-            : null,
+      child: InkWell(
         onTap: () => _showDetails(context),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        categoryIcon ?? '📋',
+                        style: const TextStyle(fontSize: 22),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          subscription.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          _displayCategory(subscription.category),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (onEdit != null ||
+                      onDelete != null ||
+                      onRestore != null ||
+                      onMarkPaid != null)
+                    PopupMenuButton(
+                      itemBuilder: (context) {
+                        final items = <PopupMenuEntry>[];
+                        if (onMarkPaid != null) {
+                          items.add(
+                            PopupMenuItem(
+                              onTap: onMarkPaid,
+                              child: const Text('Mark as Paid'),
+                            ),
+                          );
+                        }
+                        if (onEdit != null) {
+                          items.add(
+                            PopupMenuItem(
+                              onTap: onEdit,
+                              child: const Text('Edit'),
+                            ),
+                          );
+                        }
+                        if (onRestore != null) {
+                          items.add(
+                            PopupMenuItem(
+                              onTap: onRestore,
+                              child: const Text('Restore'),
+                            ),
+                          );
+                        }
+                        if (onDelete != null) {
+                          items.add(
+                            PopupMenuItem(
+                              onTap: onDelete,
+                              child: const Text('Delete',
+                                  style: TextStyle(color: Colors.red)),
+                            ),
+                          );
+                        }
+                        return items;
+                      },
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${subscription.currency} ${subscription.cost.toStringAsFixed(2)} / ${_formatCycle(subscription.billingCycle)}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      statusLabel,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: statusColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(
+                    Icons.event,
+                    size: 14,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Renews on ${_formatDate(subscription.renewalDate)}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  String _formatCycle(String cycle) {
+    final value = cycle.trim().toLowerCase();
+    if (value.isEmpty) return 'Monthly';
+    return '${value[0].toUpperCase()}${value.substring(1)}';
   }
 
   void _showDetails(BuildContext context) {
@@ -631,6 +1210,74 @@ class _SubscriptionCard extends StatelessWidget {
   }
 }
 
+class _CompactStatPill extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool emphasize;
+  final bool inverted;
+
+  const _CompactStatPill({
+    required this.label,
+    required this.value,
+    this.emphasize = false,
+    this.inverted = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      decoration: BoxDecoration(
+        color: inverted
+            ? (emphasize
+                ? Colors.white.withValues(alpha: 0.24)
+                : Colors.white.withValues(alpha: 0.14))
+            : (emphasize
+                ? Theme.of(context).colorScheme.errorContainer
+                : Theme.of(context).colorScheme.surface),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: inverted
+              ? Colors.white.withValues(alpha: 0.28)
+              : (emphasize
+                  ? Theme.of(context).colorScheme.error.withValues(alpha: 0.35)
+                  : Theme.of(context).dividerColor.withValues(alpha: 0.55)),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              color: inverted
+                  ? Colors.white70
+                  : (emphasize
+                      ? Theme.of(context).colorScheme.onErrorContainer
+                      : Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: inverted
+                  ? Colors.white
+                  : (emphasize
+                      ? Theme.of(context).colorScheme.onErrorContainer
+                      : Theme.of(context).colorScheme.onSurface),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _DetailRow extends StatelessWidget {
   final String label;
   final String value;
@@ -667,6 +1314,13 @@ class AddEditSubscriptionScreen extends StatefulWidget {
 }
 
 class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
+  static const List<String> _billingCycles = [
+    'weekly',
+    'monthly',
+    'quarterly',
+    'yearly',
+  ];
+
   late TextEditingController _nameController;
   late TextEditingController _costController;
   late TextEditingController _notesController;
@@ -712,12 +1366,39 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final categoryModels =
+    final allCategoryModels =
         context.watch<SettingsProvider>().subscriptionCategories;
+    final subscriptions = context.watch<SubscriptionProvider>().subscriptions;
+
+    final usage = <String, int>{};
+    for (final subscription in subscriptions) {
+      final category = subscription.category?.trim();
+      if (category == null || category.isEmpty) continue;
+      final key = category.toLowerCase();
+      usage[key] = (usage[key] ?? 0) + 1;
+    }
+
+    final categoryModels =
+        List<SubscriptionCategoryModel>.from(allCategoryModels)
+          ..sort((a, b) {
+            final aCount = usage[a.name.toLowerCase()] ?? 0;
+            final bCount = usage[b.name.toLowerCase()] ?? 0;
+            if (aCount != bCount) {
+              return bCount.compareTo(aCount);
+            }
+            return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          });
+
     final categories = categoryModels.map((c) => c.name).toList();
+    final availableCategories = categories.isEmpty ? ['Other'] : categories;
+    final Map<String, SubscriptionCategoryModel> categoryByName = {
+      for (final category in categoryModels) category.name: category,
+    };
+
     if (!categories.contains(_selectedCategory)) {
-      _selectedCategory =
-          categories.contains('Other') ? 'Other' : categories.first;
+      _selectedCategory = availableCategories.contains('Other')
+          ? 'Other'
+          : availableCategories.first;
     }
 
     return Material(
@@ -785,7 +1466,13 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
                     width: 150,
                     child: DropdownSearch<String>(
                       selectedItem: _selectedBillingCycle,
-                      items: const ['weekly', 'monthly', 'quarterly', 'yearly'],
+                      items: _billingCycles,
+                      dropdownBuilder: (context, selectedItem) {
+                        return Text(
+                          _formatBillingCycleLabel(selectedItem ?? 'monthly'),
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        );
+                      },
                       dropdownDecoratorProps: DropDownDecoratorProps(
                         dropdownSearchDecoration: InputDecoration(
                           border: OutlineInputBorder(
@@ -796,6 +1483,17 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
                       popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
                         context: context,
                         searchHint: 'Search cycle...',
+                        preferBelow: true,
+                        itemBuilder: (context, item, isSelected) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 12),
+                            child: Text(
+                              _formatBillingCycleLabel(item),
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                          );
+                        },
                       ),
                       onChanged: (value) => setState(
                           () => _selectedBillingCycle = value ?? 'monthly'),
@@ -817,46 +1515,99 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              DropdownSearch<String>(
-                selectedItem: _selectedCategory,
-                items: categories,
-                dropdownDecoratorProps: DropDownDecoratorProps(
-                  dropdownSearchDecoration: InputDecoration(
-                    labelText: 'Category',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: DropdownSearch<String>(
+                      selectedItem: _selectedCategory,
+                      items: availableCategories,
+                      dropdownBuilder: (context, selectedItem) {
+                        final model = selectedItem == null
+                            ? null
+                            : categoryByName[selectedItem];
+                        return Row(
+                          children: [
+                            Text(
+                              model?.icon ?? '📋',
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                selectedItem ?? 'Other',
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                      dropdownDecoratorProps: DropDownDecoratorProps(
+                        dropdownSearchDecoration: InputDecoration(
+                          labelText: 'Category',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
+                        context: context,
+                        searchHint: 'Search category...',
+                        preferBelow: true,
+                        itemBuilder: (context, item, isSelected) {
+                          final model = categoryByName[item];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 12),
+                            child: Row(
+                              children: [
+                                Text(
+                                  model?.icon ?? '📋',
+                                  style: const TextStyle(fontSize: 20),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    item,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        Theme.of(context).textTheme.bodyLarge,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => _selectedCategory = value);
+                        }
+                      },
                     ),
                   ),
-                ),
-                popupProps: DropdownSearchUi.adaptiveMenuPopup<String>(
-                  context: context,
-                  searchHint: 'Search category...',
-                ),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _selectedCategory = value);
-                  }
-                },
-              ),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const ManageSubscriptionCategoriesScreen(),
-                      ),
-                    );
-                    if (mounted) {
-                      setState(() {});
-                    }
-                  },
-                  icon: const Icon(Icons.settings),
-                  label: const Text('Manage categories'),
-                ),
+                  const SizedBox(width: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: IconButton(
+                      tooltip: 'Manage category icons',
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const ManageSubscriptionCategoriesScreen(),
+                          ),
+                        );
+                        if (mounted) {
+                          setState(() {});
+                        }
+                      },
+                      icon: const Icon(Icons.settings),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               TextField(
@@ -961,14 +1712,12 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
   String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
-}
 
-class _CategorySummary {
-  final int count;
-  final double monthlyAmount;
-
-  const _CategorySummary({
-    required this.count,
-    required this.monthlyAmount,
-  });
+  String _formatBillingCycleLabel(String cycle) {
+    final value = cycle.trim().toLowerCase();
+    if (value.isEmpty) {
+      return 'Monthly';
+    }
+    return '${value[0].toUpperCase()}${value.substring(1)}';
+  }
 }

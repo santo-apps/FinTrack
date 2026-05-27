@@ -4,6 +4,8 @@ part 'receivable_model.g.dart';
 
 @HiveType(typeId: 14)
 class Receivable extends HiveObject {
+  static const Object _unset = Object();
+
   @HiveField(0)
   String id;
 
@@ -74,14 +76,14 @@ class Receivable extends HiveObject {
     DateTime? dueDate,
     String? currency,
     bool? isReceived,
-    DateTime? receivedDate,
+    Object? receivedDate = _unset,
     int? remindBeforeDays,
-    String? notes,
+    Object? notes = _unset,
     DateTime? createdAt,
-    String? accountId,
+    Object? accountId = _unset,
     bool? isRecurring,
-    DateTime? recurringEndDate,
-    String? recurrenceGroupId,
+    Object? recurringEndDate = _unset,
+    Object? recurrenceGroupId = _unset,
     double? receivedAmount,
   }) {
     return Receivable(
@@ -91,14 +93,20 @@ class Receivable extends HiveObject {
       dueDate: dueDate ?? this.dueDate,
       currency: currency ?? this.currency,
       isReceived: isReceived ?? this.isReceived,
-      receivedDate: receivedDate ?? this.receivedDate,
+      receivedDate: receivedDate == _unset
+          ? this.receivedDate
+          : receivedDate as DateTime?,
       remindBeforeDays: remindBeforeDays ?? this.remindBeforeDays,
-      notes: notes ?? this.notes,
+      notes: notes == _unset ? this.notes : notes as String?,
       createdAt: createdAt ?? this.createdAt,
-      accountId: accountId ?? this.accountId,
+      accountId: accountId == _unset ? this.accountId : accountId as String?,
       isRecurring: isRecurring ?? this.isRecurring,
-      recurringEndDate: recurringEndDate ?? this.recurringEndDate,
-      recurrenceGroupId: recurrenceGroupId ?? this.recurrenceGroupId,
+      recurringEndDate: recurringEndDate == _unset
+          ? this.recurringEndDate
+          : recurringEndDate as DateTime?,
+      recurrenceGroupId: recurrenceGroupId == _unset
+          ? this.recurrenceGroupId
+          : recurrenceGroupId as String?,
       receivedAmount: receivedAmount ?? this.receivedAmount,
     );
   }

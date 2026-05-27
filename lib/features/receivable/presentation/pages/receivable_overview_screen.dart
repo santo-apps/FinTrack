@@ -4,8 +4,16 @@ import 'package:fintrack/core/utils/custom_widgets.dart';
 import 'package:fintrack/features/receivable/presentation/providers/receivable_provider.dart';
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
 
-class ReceivableOverviewScreen extends StatelessWidget {
+class ReceivableOverviewScreen extends StatefulWidget {
   const ReceivableOverviewScreen({super.key});
+
+  @override
+  State<ReceivableOverviewScreen> createState() =>
+      _ReceivableOverviewScreenState();
+}
+
+class _ReceivableOverviewScreenState extends State<ReceivableOverviewScreen> {
+  bool _showAllMonths = false;
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +75,9 @@ class ReceivableOverviewScreen extends StatelessWidget {
               return bMonth.compareTo(aMonth);
             });
 
+          final visibleMonthKeys =
+              _showAllMonths ? keys : keys.take(6).toList();
+
           return ListView(
             padding: EdgeInsets.fromLTRB(
                 16, 16, 16, contentBottomPadding(context, hasFab: false)),
@@ -99,7 +110,7 @@ class ReceivableOverviewScreen extends StatelessWidget {
                   ),
                 )
               else
-                ...keys.map((key) {
+                ...visibleMonthKeys.map((key) {
                   final summary = monthly[key]!;
                   final monthTotal =
                       summary.pendingTotal + summary.receivedTotal;
@@ -118,6 +129,23 @@ class ReceivableOverviewScreen extends StatelessWidget {
                     currencySymbol: settings.currencySymbol,
                   );
                 }),
+              if (keys.length > 6) ...[
+                const SizedBox(height: 4),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _showAllMonths = !_showAllMonths;
+                      });
+                    },
+                    icon: Icon(
+                        _showAllMonths ? Icons.expand_less : Icons.expand_more),
+                    label: Text(_showAllMonths
+                        ? 'Show less'
+                        : 'Show all months (${keys.length})'),
+                  ),
+                ),
+              ],
             ],
           );
         },
@@ -178,7 +206,7 @@ class _TopSummaryCard extends StatelessWidget {
       end: Alignment.bottomRight,
       colors: [
         Theme.of(context).colorScheme.primary,
-        Theme.of(context).colorScheme.primary.withOpacity(0.75),
+        Theme.of(context).colorScheme.primary.withValues(alpha: 0.75),
       ],
     );
 
@@ -228,7 +256,7 @@ class _TopSummaryCard extends StatelessWidget {
                     child: LinearProgressIndicator(
                       minHeight: 8,
                       value: (collectionRate / 100).clamp(0, 1),
-                      backgroundColor: Colors.white.withOpacity(0.28),
+                      backgroundColor: Colors.white.withValues(alpha: 0.28),
                       valueColor:
                           const AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
@@ -243,16 +271,18 @@ class _TopSummaryCard extends StatelessWidget {
                   Expanded(
                     child: _Metric(
                       label: 'Pending',
-                      value:
-                          '$pendingCount • $currencySymbol ${pendingTotal.toStringAsFixed(2)}',
+                      count: pendingCount,
+                      amount: pendingTotal,
+                      currencySymbol: currencySymbol,
                       color: Colors.orange.shade700,
                     ),
                   ),
                   Expanded(
                     child: _Metric(
                       label: 'Received',
-                      value:
-                          '$receivedCount • $currencySymbol ${receivedTotal.toStringAsFixed(2)}',
+                      count: receivedCount,
+                      amount: receivedTotal,
+                      currencySymbol: currencySymbol,
                       color: Colors.green.shade700,
                     ),
                   ),
@@ -285,7 +315,7 @@ class _SectionHeader extends StatelessWidget {
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(9),
           ),
           child: Icon(icon,
@@ -369,7 +399,7 @@ class _MonthlyCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 minHeight: 7,
                 value: (collectionRate / 100).clamp(0, 1),
-                backgroundColor: Colors.orange.withOpacity(0.2),
+                backgroundColor: Colors.orange.withValues(alpha: 0.2),
                 valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
               ),
             ),
@@ -379,16 +409,18 @@ class _MonthlyCard extends StatelessWidget {
                 Expanded(
                   child: _Metric(
                     label: 'Pending',
-                    value:
-                        '$pendingCount • $currencySymbol ${pendingTotal.toStringAsFixed(2)}',
+                    count: pendingCount,
+                    amount: pendingTotal,
+                    currencySymbol: currencySymbol,
                     color: Colors.orange.shade700,
                   ),
                 ),
                 Expanded(
                   child: _Metric(
                     label: 'Received',
-                    value:
-                        '$receivedCount • $currencySymbol ${receivedTotal.toStringAsFixed(2)}',
+                    count: receivedCount,
+                    amount: receivedTotal,
+                    currencySymbol: currencySymbol,
                     color: Colors.green.shade700,
                   ),
                 ),
@@ -403,10 +435,18 @@ class _MonthlyCard extends StatelessWidget {
 
 class _Metric extends StatelessWidget {
   final String label;
-  final String value;
+  final int count;
+  final double amount;
+  final String currencySymbol;
   final Color? color;
 
-  const _Metric({required this.label, required this.value, this.color});
+  const _Metric({
+    required this.label,
+    required this.count,
+    required this.amount,
+    required this.currencySymbol,
+    this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -416,7 +456,13 @@ class _Metric extends StatelessWidget {
         Text(label,
             style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
         const SizedBox(height: 4),
-        Text(value,
+        Text('$count item${count == 1 ? '' : 's'}',
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+            )),
+        const SizedBox(height: 2),
+        Text('$currencySymbol ${amount.toStringAsFixed(2)}',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,

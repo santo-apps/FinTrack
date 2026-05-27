@@ -49,6 +49,101 @@ class AdaptiveBottomFab extends StatelessWidget {
   }
 }
 
+class TwoStateSegmentedTab extends StatelessWidget {
+  final bool secondSelected;
+  final String firstLabel;
+  final String secondLabel;
+  final IconData firstIcon;
+  final IconData secondIcon;
+  final ValueChanged<bool> onChanged;
+  final EdgeInsetsGeometry? padding;
+  final bool enableSwipe;
+  final double swipeVelocityThreshold;
+
+  const TwoStateSegmentedTab({
+    super.key,
+    required this.secondSelected,
+    required this.firstLabel,
+    required this.secondLabel,
+    required this.firstIcon,
+    required this.secondIcon,
+    required this.onChanged,
+    this.padding,
+    this.enableSwipe = true,
+    this.swipeVelocityThreshold = 180,
+  });
+
+  ButtonStyle _tabStyle(BuildContext context) {
+    return ButtonStyle(
+      side: const WidgetStatePropertyAll(BorderSide(color: Colors.transparent)),
+      textStyle: const WidgetStatePropertyAll(
+        TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      ),
+      foregroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return Colors.white;
+        }
+        return Theme.of(context).colorScheme.onSurface;
+      }),
+      backgroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppTheme.primaryColor;
+        }
+        return Theme.of(context).colorScheme.surface;
+      }),
+    );
+  }
+
+  void _onSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity.abs() < swipeVelocityThreshold) {
+      return;
+    }
+
+    if (velocity < 0 && !secondSelected) {
+      onChanged(true);
+    } else if (velocity > 0 && secondSelected) {
+      onChanged(false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tab = SegmentedButton<bool>(
+      segments: [
+        ButtonSegment<bool>(
+          value: false,
+          label: Text(firstLabel),
+          icon: Icon(firstIcon, size: 16),
+        ),
+        ButtonSegment<bool>(
+          value: true,
+          label: Text(secondLabel),
+          icon: Icon(secondIcon, size: 16),
+        ),
+      ],
+      selected: {secondSelected},
+      style: _tabStyle(context),
+      onSelectionChanged: (selection) => onChanged(selection.first),
+    );
+
+    final content = Padding(
+      padding: padding ?? EdgeInsets.zero,
+      child: tab,
+    );
+
+    if (!enableSwipe) {
+      return content;
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragEnd: _onSwipe,
+      child: content,
+    );
+  }
+}
+
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
@@ -149,7 +244,7 @@ class EmptyStateWidget extends StatelessWidget {
             Icon(
               icon,
               size: 80,
-              color: AppTheme.primaryColor.withOpacity(0.3),
+              color: AppTheme.primaryColor.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 24),
             Text(
@@ -219,7 +314,7 @@ class GradientCard extends StatelessWidget {
           borderRadius: borderRadius,
           boxShadow: [
             BoxShadow(
-              color: startColor.withOpacity(0.3),
+              color: startColor.withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -318,7 +413,7 @@ class AnimatedStatCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: color, size: 24),

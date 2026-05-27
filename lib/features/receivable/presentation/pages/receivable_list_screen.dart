@@ -89,6 +89,39 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
     await context.read<ReceivableProvider>().deleteReceivable(receivable.id);
   }
 
+  Future<void> _confirmDeleteSeries(Receivable receivable) async {
+    final shouldDelete = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Delete recurring series?'),
+            content: const Text(
+              'This will delete all entries in this recurring receivable series.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade600,
+                ),
+                child: const Text(
+                  'Delete Series',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!shouldDelete) return;
+    if (!mounted) return;
+    await context.read<ReceivableProvider>().deleteRecurringSeries(receivable);
+  }
+
   Future<void> _markAsReceived(Receivable item) async {
     final provider = context.read<ReceivableProvider>();
     final receiveAmount = await _askReceiveAmount(item);
@@ -218,6 +251,7 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
                       _buildList(
                         context,
                         items: pending,
+                        allReceivables: provider.receivables,
                         isReceivedTab: false,
                         emptyMessage: 'No pending receivables',
                         currencySymbol: settings.currencySymbol,
@@ -231,6 +265,7 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
                       _buildList(
                         context,
                         items: received,
+                        allReceivables: provider.receivables,
                         isReceivedTab: true,
                         emptyMessage: 'No received entries',
                         currencySymbol: settings.currencySymbol,
@@ -277,6 +312,7 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
   Widget _buildList(
     BuildContext context, {
     required List<Receivable> items,
+    required List<Receivable> allReceivables,
     required bool isReceivedTab,
     required String emptyMessage,
     required String currencySymbol,
@@ -310,6 +346,8 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
         final primaryAmount =
             isReceivedTab ? item.receivedAmount : item.outstandingAmount;
         final primaryLabel = isReceivedTab ? 'Received' : 'Outstanding';
+        final seriesCount =
+            item.isRecurring ? _seriesSizeFor(item, allReceivables) : 0;
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
@@ -321,10 +359,56 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        item.title,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                          if (item.isRecurring) ...[
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: 0.28),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.repeat,
+                                    size: 12,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Recurring Series${seriesCount > 0 ? ' • $seriesCount' : ''}',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                     Container(
@@ -440,6 +524,21 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
                     ),
                   ],
                 ),
+                if (item.isRecurring) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _confirmDeleteSeries(item),
+                      icon: const Icon(Icons.delete_sweep_outlined, size: 16),
+                      label: const Text('Delete Series'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red.shade700,
+                        side: BorderSide(color: Colors.red.shade300),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 8),
                 if (item.isReceived)
                   SizedBox(
@@ -558,6 +657,37 @@ class _ReceivableListScreenState extends State<ReceivableListScreen>
       'Dec',
     ];
     return '${monthNames[date.month - 1]} ${date.year}';
+  }
+
+  int _seriesSizeFor(Receivable item, List<Receivable> allReceivables) {
+    final groupId = _resolveSeriesGroupId(item);
+    return allReceivables.where((candidate) {
+      final recurrenceGroup = candidate.recurrenceGroupId?.trim();
+      if (recurrenceGroup != null && recurrenceGroup == groupId) {
+        return true;
+      }
+      if (candidate.id == groupId || candidate.id.startsWith('${groupId}_')) {
+        return true;
+      }
+      return false;
+    }).length;
+  }
+
+  String _resolveSeriesGroupId(Receivable item) {
+    final explicit = item.recurrenceGroupId?.trim();
+    if (explicit != null && explicit.isNotEmpty) {
+      return explicit;
+    }
+
+    final match = RegExp(r'^(.*)_\d{4}_\d{1,2}$').firstMatch(item.id);
+    if (match != null) {
+      final root = match.group(1);
+      if (root != null && root.isNotEmpty) {
+        return root;
+      }
+    }
+
+    return item.id;
   }
 }
 

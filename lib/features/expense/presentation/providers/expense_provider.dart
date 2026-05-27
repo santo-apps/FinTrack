@@ -13,6 +13,43 @@ class ExpenseProvider extends ChangeNotifier {
   List<ExpenseCategory> get categories => _categories;
   Expense? get selectedExpense => _selectedExpense;
 
+  List<ExpenseCategory> getCategoriesOrderedByUsage({
+    String? transactionType,
+  }) {
+    final normalizedType = transactionType?.trim().toLowerCase();
+    final categoryUsage = <String, int>{};
+
+    for (final expense in _expenses) {
+      final expenseType = (expense.transactionType ?? 'expense').toLowerCase();
+      if (normalizedType != null && normalizedType.isNotEmpty) {
+        if (normalizedType == 'expense' || normalizedType == 'payment') {
+          if (expenseType != 'expense' && expenseType != 'payment') {
+            continue;
+          }
+        } else if (expenseType != normalizedType) {
+          continue;
+        }
+      }
+      final key = expense.category.trim().toLowerCase();
+      if (key.isEmpty) continue;
+      categoryUsage[key] = (categoryUsage[key] ?? 0) + 1;
+    }
+
+    final ordered = List<ExpenseCategory>.from(_categories)
+      ..sort((a, b) {
+        final aKey = a.name.trim().toLowerCase();
+        final bKey = b.name.trim().toLowerCase();
+        final aCount = categoryUsage[aKey] ?? 0;
+        final bCount = categoryUsage[bKey] ?? 0;
+        if (aCount != bCount) {
+          return bCount.compareTo(aCount);
+        }
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
+
+    return ordered;
+  }
+
   ExpenseProvider() {
     _loadInitialData();
   }

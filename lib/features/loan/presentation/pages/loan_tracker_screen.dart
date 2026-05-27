@@ -24,15 +24,42 @@ class LoanTrackerScreen extends StatefulWidget {
   State<LoanTrackerScreen> createState() => _LoanTrackerScreenState();
 }
 
-class _LoanTrackerScreenState extends State<LoanTrackerScreen> {
+class _LoanTrackerScreenState extends State<LoanTrackerScreen>
+    with SingleTickerProviderStateMixin {
   bool _showCompletedLoans = false;
+  late TabController _tabController;
+
+  void _handleScreenSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity.abs() < 180) return;
+
+    final nextCompleted = velocity < 0;
+    final targetIndex = nextCompleted ? 1 : 0;
+    if (_tabController.index == targetIndex) return;
+    _tabController.animateTo(targetIndex);
+  }
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      final completed = _tabController.index == 1;
+      if (_showCompletedLoans == completed) return;
+      setState(() {
+        _showCompletedLoans = completed;
+      });
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       Provider.of<LoanProvider>(context, listen: false).initLoans();
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -67,193 +94,155 @@ class _LoanTrackerScreenState extends State<LoanTrackerScreen> {
             final totalOutstanding = loanProvider.getTotalOutstandingAmount();
             final totalMonthlyEmi = loanProvider.getTotalMonthlyEmi();
 
-            return Column(
-              children: [
-                // Summary Card
-                Container(
-                  margin: const EdgeInsets.all(12),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppTheme.primaryColor,
-                        AppTheme.accentColor,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryColor.withOpacity(0.25),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Outstanding Loan Amount',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        AppUtils.formatCurrency(
-                          totalOutstanding,
-                          currencySymbol: currencySymbol,
-                        ),
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _SummaryItem(
-                            label: 'Monthly EMI',
-                            value: AppUtils.formatCurrency(
-                              totalMonthlyEmi,
-                              currencySymbol: currencySymbol,
-                            ),
-                          ),
-                          Container(
-                            width: 1,
-                            height: 32,
-                            color: Colors.white.withOpacity(0.3),
-                          ),
-                          _SummaryItem(
-                            label: 'Active Loans',
-                            value: '${activeLoans.length}',
-                          ),
+            return GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragEnd: _handleScreenSwipe,
+              child: Column(
+                children: [
+                  // Summary Card
+                  Container(
+                    margin: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.primaryColor,
+                          AppTheme.accentColor,
                         ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    ],
-                  ),
-                ),
-
-                // Toggle between active and completed
-                if (completedLoans.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.25),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Column(
                       children: [
-                        Expanded(
-                          child: SegmentedButton<bool>(
-                            segments: const [
-                              ButtonSegment<bool>(
-                                value: false,
-                                label: Text('Active'),
-                                icon: Icon(Icons.pending_actions, size: 16),
-                              ),
-                              ButtonSegment<bool>(
-                                value: true,
-                                label: Text('Completed'),
-                                icon: Icon(Icons.check_circle, size: 16),
-                              ),
-                            ],
-                            selected: {_showCompletedLoans},
-                            style: ButtonStyle(
-                              side: WidgetStatePropertyAll(
-                                BorderSide(
-                                  color: Colors.transparent,
-                                ),
-                              ),
-                              textStyle: WidgetStatePropertyAll(
-                                TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              foregroundColor:
-                                  WidgetStateProperty.resolveWith((states) {
-                                if (states.contains(WidgetState.selected)) {
-                                  return Colors.white;
-                                }
-                                return Theme.of(context).colorScheme.onSurface;
-                              }),
-                              backgroundColor:
-                                  WidgetStateProperty.resolveWith((states) {
-                                if (states.contains(WidgetState.selected)) {
-                                  return AppTheme.primaryColor
-                                      .withOpacity(0.75);
-                                }
-                                return Theme.of(context).colorScheme.surface;
-                              }),
-                            ),
-                            onSelectionChanged: (Set<bool> selected) {
-                              setState(() {
-                                _showCompletedLoans = selected.first;
-                              });
-                            },
+                        Text(
+                          'Outstanding Loan Amount',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white70,
                           ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          AppUtils.formatCurrency(
+                            totalOutstanding,
+                            currencySymbol: currencySymbol,
+                          ),
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _SummaryItem(
+                              label: 'Monthly EMI',
+                              value: AppUtils.formatCurrency(
+                                totalMonthlyEmi,
+                                currencySymbol: currencySymbol,
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 32,
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
+                            _SummaryItem(
+                              label: 'Active Loans',
+                              value: '${activeLoans.length}',
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
 
-                const SizedBox(height: 8),
+                  // Toggle between active and completed
+                  Container(
+                    color: Theme.of(context).colorScheme.surface,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TabBar(
+                          controller: _tabController,
+                          tabs: const [
+                            Tab(text: 'Active'),
+                            Tab(text: 'Completed'),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
 
-                // Loan List
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: () async => loanProvider.initLoans(),
-                    child: displayLoans.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  _showCompletedLoans
-                                      ? Icons.check_circle_outline
-                                      : Icons.pending_actions_outlined,
-                                  size: 64,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  _showCompletedLoans
-                                      ? 'No completed loans'
-                                      : 'No active loans',
-                                  style: TextStyle(
-                                    fontSize: 16,
+                  const SizedBox(height: 8),
+
+                  // Loan List
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: () async => loanProvider.initLoans(),
+                      child: displayLoans.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _showCompletedLoans
+                                        ? Icons.check_circle_outline
+                                        : Icons.pending_actions_outlined,
+                                    size: 64,
                                     color: Colors.grey,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    _showCompletedLoans
+                                        ? 'No completed loans'
+                                        : 'No active loans',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: EdgeInsets.fromLTRB(
+                                12,
+                                0,
+                                12,
+                                contentBottomPadding(context),
+                              ),
+                              itemCount: displayLoans.length,
+                              itemBuilder: (context, index) {
+                                final loan = displayLoans[index];
+                                return _LoanCard(
+                                  loan: loan,
+                                  currencySymbol: currencySymbol,
+                                  onTap: () => _showLoanDetails(context, loan),
+                                  onEdit: () =>
+                                      _showAddLoanDialog(context, loan),
+                                  onDelete: () => _deleteLoan(context, loan),
+                                  onPayment: () =>
+                                      _showPaymentDialog(context, loan),
+                                );
+                              },
                             ),
-                          )
-                        : ListView.builder(
-                            padding: EdgeInsets.fromLTRB(
-                              12,
-                              0,
-                              12,
-                              contentBottomPadding(context),
-                            ),
-                            itemCount: displayLoans.length,
-                            itemBuilder: (context, index) {
-                              final loan = displayLoans[index];
-                              return _LoanCard(
-                                loan: loan,
-                                currencySymbol: currencySymbol,
-                                onTap: () => _showLoanDetails(context, loan),
-                                onEdit: () => _showAddLoanDialog(context, loan),
-                                onDelete: () => _deleteLoan(context, loan),
-                                onPayment: () =>
-                                    _showPaymentDialog(context, loan),
-                              );
-                            },
-                          ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             );
           },
         ),
@@ -407,7 +396,7 @@ class _LoanCardState extends State<_LoanCard> {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 6,
-      shadowColor: AppTheme.primaryColor.withOpacity(0.12),
+      shadowColor: AppTheme.primaryColor.withValues(alpha: 0.12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -426,7 +415,7 @@ class _LoanCardState extends State<_LoanCard> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withOpacity(0.1),
+                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
@@ -551,10 +540,10 @@ class _LoanCardState extends State<_LoanCard> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppTheme.successColor.withOpacity(0.1),
+                  color: AppTheme.successColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: AppTheme.successColor.withOpacity(0.3),
+                    color: AppTheme.successColor.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),

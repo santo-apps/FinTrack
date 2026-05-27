@@ -40,12 +40,14 @@ class _BillListScreenState extends State<BillListScreen> {
   late DateTime _selectedMonth;
   final GlobalKey<ScaffoldMessengerState> _messengerKey =
       GlobalKey<ScaffoldMessengerState>();
+  int _paymentSnackBarToken = 0;
 
   void _showPaymentSnackBar(
     String message, {
     SnackBarAction? action,
     Color? backgroundColor,
   }) {
+    final token = ++_paymentSnackBarToken;
     final messenger =
         _messengerKey.currentState ?? ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
@@ -57,6 +59,19 @@ class _BillListScreenState extends State<BillListScreen> {
         backgroundColor: backgroundColor,
       ),
     );
+
+    // Ensure payment snackbars are dismissed even if the platform keeps
+    // action snackbars visible for accessibility settings.
+    Future.delayed(const Duration(seconds: 5), () {
+      if (!mounted || token != _paymentSnackBarToken) return;
+      messenger.hideCurrentSnackBar();
+    });
+  }
+
+  void _openCompletedTab() {
+    final tabController = DefaultTabController.maybeOf(context);
+    if (tabController == null) return;
+    tabController.animateTo(2);
   }
 
   @override
@@ -275,10 +290,11 @@ class _BillListScreenState extends State<BillListScreen> {
         reminders.where((r) => r.type == BillReminderType.bill).toList();
 
     final subscriptionTotal =
-        subscriptions.fold(0.0, (sum, r) => sum + r.amount);
-    final creditCardTotal = creditCards.fold(0.0, (sum, r) => sum + r.amount);
-    final loanTotal = loans.fold(0.0, (sum, r) => sum + r.amount);
-    final billTotal = bills.fold(0.0, (sum, r) => sum + r.amount);
+        subscriptions.fold(0.0, (sum, r) => sum + _summaryAmount(r));
+    final creditCardTotal =
+        creditCards.fold(0.0, (sum, r) => sum + _summaryAmount(r));
+    final loanTotal = loans.fold(0.0, (sum, r) => sum + _summaryAmount(r));
+    final billTotal = bills.fold(0.0, (sum, r) => sum + _summaryAmount(r));
     final grandTotal =
         subscriptionTotal + creditCardTotal + loanTotal + billTotal;
 
@@ -366,6 +382,16 @@ class _BillListScreenState extends State<BillListScreen> {
     );
   }
 
+  double _summaryAmount(BillReminder reminder) {
+    if (reminder.status != BillReminderStatus.partiallyPaid) {
+      return reminder.amount;
+    }
+
+    return (reminder.amount - reminder.paidAmount)
+        .clamp(0.0, double.infinity)
+        .toDouble();
+  }
+
   Widget _buildSummaryRow(
     String label,
     int count,
@@ -427,6 +453,10 @@ class _BillListScreenState extends State<BillListScreen> {
     final isPending = reminder.status == BillReminderStatus.pending;
     final isPaid = reminder.status == BillReminderStatus.completed;
     final isPartiallyPaid = reminder.status == BillReminderStatus.partiallyPaid;
+    final remainingAmount = (reminder.amount - reminder.paidAmount)
+        .clamp(0.0, double.infinity)
+        .toDouble();
+    final headlineAmount = isPartiallyPaid ? remainingAmount : reminder.amount;
     final daysUntilDue = reminder.getDaysUntilDue();
     final dueStatusText = daysUntilDue == 0
         ? 'Due today'
@@ -528,13 +558,38 @@ class _BillListScreenState extends State<BillListScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    '${reminder.currency} ${reminder.amount.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryColor,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (isPartiallyPaid)
+                        Text(
+                          'Remaining Due',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      Text(
+                        '${reminder.currency} ${headlineAmount.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryColor,
+                        ),
+                      ),
+                      if (isPartiallyPaid)
+                        Text(
+                          'Billed: ${reminder.currency} ${reminder.amount.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -586,7 +641,7 @@ class _BillListScreenState extends State<BillListScreen> {
                         ),
                       ),
                       Text(
-                        'Remaining: ${reminder.currency} ${(reminder.amount - reminder.paidAmount).toStringAsFixed(2)}',
+                        'Remaining: ${reminder.currency} ${remainingAmount.toStringAsFixed(2)}',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -1485,6 +1540,9 @@ class _BillListScreenState extends State<BillListScreen> {
       await billProvider.refreshData();
 
       if (!mounted) return;
+      if (isFullyPaid) {
+        _openCompletedTab();
+      }
       _showPaymentSnackBar(
         isFullyPaid ? 'Bill marked as paid' : 'Partial payment recorded',
         action: SnackBarAction(
@@ -1890,6 +1948,11 @@ class _BillListScreenState extends State<BillListScreen> {
 
       await billProvider.refreshData();
       if (!mounted) return;
+      final isFullyPaidForCycle =
+          !isInterestOnly && paymentAmount >= reminder.amount;
+      if (isFullyPaidForCycle) {
+        _openCompletedTab();
+      }
       _showPaymentSnackBar(
         isInterestOnly
             ? 'Loan interest payment recorded'
@@ -2303,6 +2366,9 @@ class _BillListScreenState extends State<BillListScreen> {
 
       await billProvider.refreshData();
       if (!mounted) return;
+      if (paymentAmount >= reminder.amount) {
+        _openCompletedTab();
+      }
       _showPaymentSnackBar(
         paymentAmount >= reminder.amount
             ? 'Credit card payment recorded'
@@ -2688,6 +2754,9 @@ class _BillListScreenState extends State<BillListScreen> {
       await billProvider.refreshData();
 
       if (!mounted) return;
+      if (paymentAmount >= subscription.cost) {
+        _openCompletedTab();
+      }
       _showPaymentSnackBar(
         paymentAmount >= subscription.cost
             ? 'Subscription payment recorded'

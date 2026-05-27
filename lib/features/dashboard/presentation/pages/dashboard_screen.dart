@@ -343,6 +343,10 @@ class _DashboardScreenContentState extends State<_DashboardScreenContent>
 
                     // 7️⃣ Goals Section
                     const _GoalsSection(),
+                    const SizedBox(height: 16),
+
+                    // 8️⃣ Subscriptions Summary
+                    const _SubscriptionsSection(),
                     const SizedBox(height: 24), // Padding at bottom
                   ],
                 ),
@@ -1914,6 +1918,212 @@ class _GoalsSection extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       color: AppTheme.primaryColor,
                     ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SubscriptionsSection extends StatelessWidget {
+  const _SubscriptionsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer2<SubscriptionProvider, SettingsProvider>(
+      builder: (context, subscriptionProvider, settingsProvider, _) {
+        final subscriptions = subscriptionProvider.activeSubscriptions;
+        if (subscriptions.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final monthlyTotal = subscriptionProvider.getMonthlySubscriptionTotal();
+        final sortedByRenewal = List.of(subscriptions)
+          ..sort((a, b) => a.renewalDate.compareTo(b.renewalDate));
+        final nextRenewal = sortedByRenewal.first;
+        final nextThree = sortedByRenewal.take(3).toList();
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final dueSoonCount = subscriptions.where((subscription) {
+          final due = DateTime(
+            subscription.renewalDate.year,
+            subscription.renewalDate.month,
+            subscription.renewalDate.day,
+          );
+          final days = due.difference(today).inDays;
+          return days >= 0 && days <= 7;
+        }).length;
+        final overdueCount = subscriptions.where((subscription) {
+          final due = DateTime(
+            subscription.renewalDate.year,
+            subscription.renewalDate.month,
+            subscription.renewalDate.day,
+          );
+          return due.isBefore(today);
+        }).length;
+
+        Widget metricTile(String label, String value, {Color? valueColor}) {
+          return Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: valueColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Card(
+          elevation: 3,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const SubscriptionListScreen(
+                    showAppBar: true,
+                    showBackButton: true,
+                  ),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppTheme.primaryColor.withValues(alpha: 0.92),
+                          AppTheme.primaryColor,
+                        ],
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.subscriptions,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Subscriptions',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                '${subscriptions.length} active',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      metricTile(
+                        'Monthly',
+                        AppUtils.formatCurrency(
+                          monthlyTotal,
+                          currencySymbol: settingsProvider.currencySymbol,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      metricTile(
+                        'Due in 7d',
+                        '$dueSoonCount',
+                        valueColor: Colors.orange.shade700,
+                      ),
+                      const SizedBox(width: 8),
+                      metricTile(
+                        'Overdue',
+                        '$overdueCount',
+                        valueColor: overdueCount > 0
+                            ? Colors.red.shade700
+                            : Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Next renewal: ${nextRenewal.name} • ${AppUtils.formatDate(nextRenewal.renewalDate)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: nextThree.map((subscription) {
+                      return Chip(
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        label: Text(
+                          '${subscription.name} • ${AppUtils.formatDate(subscription.renewalDate)}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
+                      );
+                    }).toList(),
                   ),
                 ],
               ),

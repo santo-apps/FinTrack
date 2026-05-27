@@ -894,7 +894,13 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
         ),
         builder: (sheetContext) {
           String? errorMsg;
-          List<dynamic> currentCategories = categories;
+          List<dynamic> currentCategories = rootContext
+              .read<ExpenseProvider>()
+              .getCategoriesOrderedByUsage(transactionType: 'expense');
+
+          if (currentCategories.isEmpty) {
+            currentCategories = categories;
+          }
 
           return StatefulBuilder(builder: (context, setState) {
             final availableCategories = currentCategories
@@ -980,7 +986,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                     setState(() {
                                       currentCategories = rootContext
                                           .read<ExpenseProvider>()
-                                          .categories;
+                                          .getCategoriesOrderedByUsage(
+                                              transactionType: 'expense');
                                       if (selectedCategory != null &&
                                           !currentCategories.any((cat) =>
                                               cat.name == selectedCategory)) {
@@ -1032,7 +1039,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                             setState(() {
                               currentCategories = rootContext
                                   .read<ExpenseProvider>()
-                                  .categories;
+                                  .getCategoriesOrderedByUsage(
+                                      transactionType: 'expense');
                               if (selectedCategory != null &&
                                   !currentCategories.any(
                                       (cat) => cat.name == selectedCategory)) {

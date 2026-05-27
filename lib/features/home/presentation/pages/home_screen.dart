@@ -305,32 +305,70 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Creates a screen with back button enabled for sidebar navigation
   Widget _createScreenWithBackButton(String screenId) {
+    Widget child;
+    String title;
+
     switch (screenId) {
       case 'budget':
-        return const BudgetPlannerScreen(
-            showAppBar: true, showBackButton: true);
+        child = const BudgetPlannerScreen(showAppBar: false);
+        title = 'Budget';
+        break;
       case 'bills':
-        return const BillListScreen(showAppBar: true, showBackButton: true);
+        child = const BillListScreen(showAppBar: false);
+        title = 'Bills';
+        break;
       case 'loans':
-        return const LoanTrackerScreen(showAppBar: true, showBackButton: true);
+        child = const LoanTrackerScreen(showAppBar: false);
+        title = 'Loans';
+        break;
       case 'subscriptions':
-        return const SubscriptionListScreen(
-            showAppBar: true, showBackButton: true);
+        child = const SubscriptionListScreen(showAppBar: false);
+        title = 'Subscriptions';
+        break;
       case 'investments':
-        return const InvestmentPortfolioScreen(
-            showAppBar: true, showBackButton: true);
+        child = const InvestmentPortfolioScreen(showAppBar: false);
+        title = 'Investments';
+        break;
       case 'goals':
-        return const GoalTrackerScreen(showAppBar: true, showBackButton: true);
+        child = const GoalTrackerScreen(showAppBar: false);
+        title = 'Goals';
+        break;
       case 'receivables':
-        return const ReceivableListScreen(
-            showAppBar: true, showBackButton: true);
+        child = const ReceivableListScreen(showAppBar: false);
+        title = 'Receivables';
+        break;
       case 'expenses':
-        return const ExpenseListScreen(showAppBar: true, showBackButton: true);
+        child = const ExpenseListScreen(showAppBar: false);
+        title = 'Expenses';
+        break;
       case 'accounts':
-        return const AccountListScreen(showAppBar: true, showBackButton: true);
+        child = const AccountListScreen(showAppBar: false);
+        title = 'Accounts';
+        break;
       default:
-        return const Placeholder();
+        child = const Placeholder();
+        title = 'Module';
     }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        actions: [
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const SettingsScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: SafeArea(top: false, child: child),
+    );
   }
 
   @override
@@ -359,6 +397,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     : Text(currentModule.appBarTitle ?? currentModule.label),
                 elevation: 0,
                 automaticallyImplyLeading: true,
+                actions: [
+                  IconButton(
+                    tooltip: 'Settings',
+                    icon: const Icon(Icons.settings),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SettingsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
               drawer: _buildDrawer(context, bottomModules),
               body: SafeArea(

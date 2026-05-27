@@ -2626,6 +2626,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
     return DropdownSearchUi.adaptiveMenuPopup<T>(
       context: context,
       searchHint: searchHint,
+      preferBelow: true,
     );
   }
 
@@ -2671,7 +2672,10 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
   @override
   void initState() {
     super.initState();
-    final categories = context.read<ExpenseProvider>().categories;
+    final initialType = widget.initialTransactionType ?? 'expense';
+    final categories = context
+        .read<ExpenseProvider>()
+        .getCategoriesOrderedByUsage(transactionType: initialType);
     final accounts = context.read<PaymentAccountProvider>().accounts;
 
     if (widget.expense != null) {
@@ -2771,7 +2775,9 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
   @override
   Widget build(BuildContext context) {
     final currencySymbol = context.watch<SettingsProvider>().currencySymbol;
-    final categories = context.watch<ExpenseProvider>().categories;
+    final categories = context
+        .watch<ExpenseProvider>()
+        .getCategoriesOrderedByUsage(transactionType: selectedTransactionType);
     return Scaffold(
       appBar: AppBar(
         title: Text(_getFormTitle()),

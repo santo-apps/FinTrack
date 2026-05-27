@@ -10,8 +10,6 @@ import 'package:fintrack/features/expense/presentation/providers/expense_provide
 import 'package:fintrack/features/settings/presentation/providers/settings_provider.dart';
 import 'package:fintrack/features/expense/presentation/pages/expense_list_screen.dart';
 import 'package:fintrack/features/expense/presentation/widgets/transaction_calculator_sheet.dart';
-import 'package:fintrack/features/bill/presentation/providers/bill_provider.dart';
-import 'package:fintrack/features/bill/data/models/bill_reminder_model.dart';
 
 bool shouldShowTransactionForAccount(Expense expense, String accountId) {
   final isSourceAccount = expense.accountId == accountId;
@@ -66,26 +64,6 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
     return account.accountType.toLowerCase().contains('credit');
   }
 
-  double _getOutstandingFromCurrentMonthReminder(
-    BillProvider billProvider,
-    PaymentAccount account,
-  ) {
-    final reminders = billProvider.getRemindersForMonth(DateTime.now());
-    final cardReminder = reminders.where((reminder) {
-      return reminder.type == BillReminderType.creditCard &&
-          reminder.sourceId == account.id &&
-          (reminder.status == BillReminderStatus.pending ||
-              reminder.status == BillReminderStatus.overdue ||
-              reminder.status == BillReminderStatus.partiallyPaid);
-    });
-
-    return cardReminder.fold<double>(0.0, (sum, reminder) {
-      final remaining =
-          (reminder.amount - reminder.paidAmount).clamp(0.0, double.infinity);
-      return sum + remaining;
-    });
-  }
-
   @override
   void dispose() {
     _searchController.dispose();
@@ -104,9 +82,8 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
       ),
       body: SafeArea(
         top: false,
-        child: Consumer3<ExpenseProvider, PaymentAccountProvider, BillProvider>(
-          builder:
-              (context, expenseProvider, accountProvider, billProvider, _) {
+        child: Consumer2<ExpenseProvider, PaymentAccountProvider>(
+          builder: (context, expenseProvider, accountProvider, _) {
             // Get the latest account data from provider
             final currentAccount =
                 accountProvider.getAccountById(widget.account.id);
@@ -179,17 +156,7 @@ class _AccountTransactionScreenState extends State<AccountTransactionScreen>
             }
 
             final isCreditCard = _isCreditAccount(currentAccount);
-            final reminderOutstanding = isCreditCard
-                ? _getOutstandingFromCurrentMonthReminder(
-                    billProvider,
-                    currentAccount,
-                  )
-                : 0.0;
-            final summaryBalance = isCreditCard
-                ? (reminderOutstanding > 0
-                    ? reminderOutstanding
-                    : currentAccount.balance)
-                : currentAccount.balance;
+            final summaryBalance = currentAccount.balance;
 
             return ListView(
               padding: EdgeInsets.fromLTRB(
@@ -994,12 +961,26 @@ class _TransactionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    expense.category,
+                    expense.title.trim().isEmpty
+                        ? expense.category
+                        : expense.title,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: isDarkMode ? Colors.white : AppTheme.textColor,
                     ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    expense.category,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDarkMode
+                          ? Colors.white70
+                          : AppTheme.textSecondaryColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 3),
                   // Transaction type badge

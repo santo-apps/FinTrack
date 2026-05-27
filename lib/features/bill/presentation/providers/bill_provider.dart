@@ -275,13 +275,20 @@ class BillProvider extends ChangeNotifier {
         return _isWithinInclusiveRange(e.date, cycleStart, cycleEnd);
       }).toList();
 
-      final billedAmount = statementCharges.fold<double>(0, (sum, e) {
+      final statementAmount = statementCharges.fold<double>(0, (sum, e) {
         final type = e.transactionType ?? 'expense';
         if (type == 'income') {
           return sum - e.amount;
         }
         return sum + e.amount;
       }).clamp(0.0, double.infinity);
+
+      final accountOutstanding = (card.balance as num)
+          .toDouble()
+          .clamp(0.0, double.infinity)
+          .toDouble();
+      final billedAmount =
+          accountOutstanding > 0.0 ? accountOutstanding : statementAmount;
 
       final paymentWindowStart = cycleEnd.add(const Duration(days: 1));
       final cardPayments = expenses.where((e) {
@@ -497,7 +504,8 @@ class BillProvider extends ChangeNotifier {
       // Only treat already-executed payments as paid. Planned/future entries
       // should not move reminders to Completed.
       final executedPayments = periodPayments
-          .where((expense) => !expense.date.isAfter(now))
+          .where((expense) =>
+              !expense.date.isAfter(now) && _isSameMonth(expense.date, month))
           .toList()
         ..sort((a, b) => a.date.compareTo(b.date));
 
@@ -510,12 +518,10 @@ class BillProvider extends ChangeNotifier {
 
       final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
       BillReminderStatus status;
-      // Keep future dues pending even if an early payment record exists.
-      // This avoids showing upcoming renewals as Completed ahead of due date.
-      if (dueDay.isAfter(startOfToday)) {
-        status = BillReminderStatus.pending;
-      } else if (currentPeriodPaid) {
+      if (paidAmount >= subscription.cost && paidAmount > 0.0) {
         status = BillReminderStatus.completed;
+      } else if (paidAmount > 0.0) {
+        status = BillReminderStatus.partiallyPaid;
       } else if (dueDay.isBefore(startOfToday)) {
         status = BillReminderStatus.overdue;
       } else {

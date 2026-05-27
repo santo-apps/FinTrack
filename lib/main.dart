@@ -44,18 +44,14 @@ void main() async {
 
   // Keep system bars visible to avoid OEM gesture/nav overlap on some devices.
   await SystemChrome.setEnabledSystemUIMode(
-    SystemUiMode.manual,
-    overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],
+    SystemUiMode.edgeToEdge,
   );
 
-  // Set initial system UI style to prevent transparent nav bar
-  // This will be overridden by the MaterialApp builder once theme is loaded
+  // Set initial icon/contrast style only; avoid deprecated system bar color APIs.
+  // This will be overridden by the MaterialApp builder once theme is loaded.
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-      systemNavigationBarColor: Color(0xFFFFFFFF), // Light mode default
-      systemNavigationBarDividerColor: Color(0xFFFFFFFF),
       systemNavigationBarIconBrightness: Brightness.dark,
-      statusBarColor: Color(0xFFFFFFFF),
       statusBarIconBrightness: Brightness.dark,
       statusBarBrightness: Brightness.light,
       systemStatusBarContrastEnforced: false,

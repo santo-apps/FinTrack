@@ -8,6 +8,7 @@ class DropdownSearchUi {
     required BuildContext context,
     required String searchHint,
     double maxHeight = 320,
+    bool preferBelow = true,
     bool showSearchBox = true,
     FlexFit fit = FlexFit.loose,
     DropdownSearchPopupItemBuilder<T>? itemBuilder,
@@ -44,6 +45,7 @@ class DropdownSearchUi {
             popupButtonObject: popupButtonObject,
             overlay: overlay,
             desiredPopupHeight: maxHeight,
+            preferBelow: preferBelow,
           );
         },
       ),
@@ -62,6 +64,7 @@ class DropdownSearchUi {
     required RenderBox popupButtonObject,
     required RenderBox overlay,
     required double desiredPopupHeight,
+    bool preferBelow = false,
   }) {
     final mediaQuery = MediaQuery.of(context);
     final topSafe = mediaQuery.padding.top;
@@ -71,10 +74,6 @@ class DropdownSearchUi {
     );
     final keyboardHeight = mediaQuery.viewInsets.bottom;
 
-    final topLeft = popupButtonObject.localToGlobal(
-      Offset.zero,
-      ancestor: overlay,
-    );
     final bottomLeft = popupButtonObject.localToGlobal(
       popupButtonObject.size.bottomLeft(Offset.zero),
       ancestor: overlay,
@@ -85,30 +84,20 @@ class DropdownSearchUi {
     );
 
     const edgeGap = 8.0;
-    const minPopupHeight = 96.0;
 
     final usableTop = topSafe + edgeGap;
     final usableBottom =
         overlay.size.height - keyboardHeight - bottomSafe - edgeGap;
 
     final availableBelow = usableBottom - bottomLeft.dy;
-    final availableAbove = topLeft.dy - usableTop;
-
-    final bestAvailable = math.max(availableBelow, availableAbove);
-    final popupHeight = math.max(
-      minPopupHeight,
-      math.min(desiredPopupHeight, bestAvailable),
+    final popupHeight = math.min(
+      desiredPopupHeight,
+      math.max(0.0, availableBelow),
     );
-
-    final openUpward =
-        availableBelow < math.min(240, desiredPopupHeight * 0.7) &&
-            availableAbove > availableBelow;
 
     final left = bottomLeft.dx;
     final right = overlay.size.width - bottomRight.dx;
-    final top = openUpward
-        ? math.max(usableTop, topLeft.dy - popupHeight)
-        : math.min(bottomLeft.dy, usableBottom - popupHeight);
+    final top = bottomLeft.dy.clamp(usableTop, usableBottom).toDouble();
     final bottom = math.max(0.0, overlay.size.height - (top + popupHeight));
 
     return RelativeRect.fromLTRB(

@@ -7,6 +7,7 @@ import 'package:fintrack/features/receivable/data/models/receivable_model.dart';
 class ReceivableProvider extends ChangeNotifier {
   static const String _receivableIncomePrefix = 'receivable_income_';
   List<Receivable> _receivables = [];
+  bool _futureReceivableSanitized = false;
 
   double _normalizeAmount(double value) {
     return (value * 100).roundToDouble() / 100;
@@ -16,6 +17,7 @@ class ReceivableProvider extends ChangeNotifier {
 
   ReceivableProvider() {
     _loadData();
+    Future.microtask(_sanitizeFutureRecurringReceivablesOnce);
   }
 
   void _loadData() {
@@ -49,21 +51,39 @@ class ReceivableProvider extends ChangeNotifier {
     required Receivable original,
     required Receivable edited,
   }) async {
+    final groupId = _resolveGroupId(original);
     final enablingRecurring =
         edited.isRecurring && edited.recurringEndDate != null;
 
     if (!enablingRecurring) {
+      final siblings = _receivables
+          .where((r) => _isSeriesMember(r, groupId: groupId))
+          .where((r) => r.id != original.id)
+          .toList();
+
+      for (final sibling in siblings) {
+        await HiveService.deleteReceivable(sibling.id);
+      }
+      _receivables.removeWhere(
+          (r) => _isSeriesMember(r, groupId: groupId) && r.id != original.id);
+
       await updateReceivable(edited.copyWith(
         recurrenceGroupId: null,
+        isRecurring: false,
+        recurringEndDate: null,
       ));
       return;
     }
 
-    final groupId = original.recurrenceGroupId ?? original.id;
-
     final existingSeries = _receivables
-        .where((r) => r.recurrenceGroupId == groupId || r.id == original.id)
+        .where((r) => _isSeriesMember(r, groupId: groupId))
         .toList();
+
+    final existingByMonth = <String, Receivable>{
+      for (final item in existingSeries)
+        '${item.dueDate.year}-${item.dueDate.month.toString().padLeft(2, '0')}':
+            item,
+    };
 
     for (final item in existingSeries) {
       await HiveService.deleteReceivable(item.id);
@@ -73,23 +93,74 @@ class ReceivableProvider extends ChangeNotifier {
 
     final base = edited.copyWith(
       id: groupId,
-      isReceived: false,
-      receivedDate: null,
-      receivedAmount: 0,
       recurrenceGroupId: groupId,
     );
 
-    final series = _buildRecurringSeries(base);
+    final series = _buildRecurringSeries(
+      base,
+      existingByMonth: existingByMonth,
+    );
     for (final item in series) {
       await HiveService.addReceivable(item);
     }
-    _receivables.addAll(series);
+    _loadData();
     notifyListeners();
+  }
+
+  String _resolveGroupId(Receivable receivable) {
+    final explicit = receivable.recurrenceGroupId?.trim();
+    if (explicit != null && explicit.isNotEmpty) {
+      return explicit;
+    }
+
+    final match = RegExp(r'^(.*)_\d{4}_\d{1,2}$').firstMatch(receivable.id);
+    if (match != null) {
+      final root = match.group(1);
+      if (root != null && root.isNotEmpty) {
+        return root;
+      }
+    }
+
+    return receivable.id;
+  }
+
+  bool _isSeriesMember(Receivable receivable, {required String groupId}) {
+    final recurrenceGroup = receivable.recurrenceGroupId?.trim();
+    if (recurrenceGroup != null && recurrenceGroup == groupId) {
+      return true;
+    }
+
+    if (receivable.id == groupId || receivable.id.startsWith('${groupId}_')) {
+      return true;
+    }
+
+    return false;
   }
 
   Future<void> deleteReceivable(String id) async {
     await HiveService.deleteReceivable(id);
     _receivables.removeWhere((r) => r.id == id);
+    await _deleteLinkedIncomeTransaction(id);
+    notifyListeners();
+  }
+
+  Future<void> deleteRecurringSeries(Receivable receivable) async {
+    final groupId = _resolveGroupId(receivable);
+    final series = _receivables
+        .where((r) => _isSeriesMember(r, groupId: groupId))
+        .toList();
+
+    if (series.isEmpty) {
+      await deleteReceivable(receivable.id);
+      return;
+    }
+
+    for (final item in series) {
+      await HiveService.deleteReceivable(item.id);
+      await _deleteLinkedIncomeTransaction(item.id);
+    }
+
+    _receivables.removeWhere((r) => _isSeriesMember(r, groupId: groupId));
     notifyListeners();
   }
 
@@ -214,6 +285,51 @@ class ReceivableProvider extends ChangeNotifier {
 
   Future<void> refreshData() async {
     _loadData();
+    await _sanitizeFutureRecurringReceivablesOnce();
+    notifyListeners();
+  }
+
+  Future<void> _sanitizeFutureRecurringReceivablesOnce() async {
+    if (_futureReceivableSanitized) {
+      return;
+    }
+    _futureReceivableSanitized = true;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final pollutedFutureReceivables = _receivables.where((receivable) {
+      if (!receivable.isRecurring) return false;
+      if (receivable.recurrenceGroupId == null ||
+          receivable.recurrenceGroupId!.trim().isEmpty) {
+        return false;
+      }
+      if (!receivable.dueDate.isAfter(today)) return false;
+      return receivable.isReceived ||
+          receivable.receivedAmount > 0 ||
+          receivable.receivedDate != null;
+    }).toList();
+
+    if (pollutedFutureReceivables.isEmpty) {
+      return;
+    }
+
+    for (final receivable in pollutedFutureReceivables) {
+      final corrected = receivable.copyWith(
+        isReceived: false,
+        receivedAmount: 0.0,
+        receivedDate: null,
+      );
+      await HiveService.updateReceivable(corrected);
+
+      final index = _receivables.indexWhere((r) => r.id == receivable.id);
+      if (index != -1) {
+        _receivables[index] = corrected;
+      }
+
+      await _deleteLinkedIncomeTransaction(receivable.id);
+    }
+
     notifyListeners();
   }
 
@@ -316,7 +432,10 @@ class ReceivableProvider extends ChangeNotifier {
     await HiveService.deleteExpense('$_receivableIncomePrefix$receivableId');
   }
 
-  List<Receivable> _buildRecurringSeries(Receivable base) {
+  List<Receivable> _buildRecurringSeries(
+    Receivable base, {
+    Map<String, Receivable>? existingByMonth,
+  }) {
     final end = base.recurringEndDate;
     if (end == null) {
       return [base];
@@ -330,17 +449,31 @@ class ReceivableProvider extends ChangeNotifier {
 
     final groupId = base.recurrenceGroupId ?? base.id;
     final series = <Receivable>[];
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     var cursor = startMonth;
 
     while (!cursor.isAfter(endMonth)) {
       final dueDate =
           _safeDayInMonth(cursor.year, cursor.month, base.dueDate.day);
+
+      final monthKey =
+          '${dueDate.year}-${dueDate.month.toString().padLeft(2, '0')}';
+      final existing = existingByMonth?[monthKey];
+      final isFutureDue = dueDate.isAfter(today);
+      final preservedReceived = !isFutureDue && (existing?.isReceived ?? false);
+      final double preservedReceivedAmount =
+          !isFutureDue ? (existing?.receivedAmount ?? 0.0) : 0.0;
+      final preservedReceivedDate =
+          !isFutureDue ? existing?.receivedDate : null;
+
       final generated = base.copyWith(
-        id: '${groupId}_${cursor.year}_${cursor.month}',
+        id: existing?.id ?? '${groupId}_${cursor.year}_${cursor.month}',
         dueDate: dueDate,
-        isReceived: false,
-        receivedDate: null,
-        receivedAmount: 0,
+        isReceived: preservedReceived,
+        receivedDate: preservedReceivedDate,
+        receivedAmount: preservedReceivedAmount,
+        accountId: existing?.accountId ?? base.accountId,
         recurrenceGroupId: groupId,
       );
       series.add(generated);

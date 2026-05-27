@@ -54,7 +54,6 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: true,
         systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: surfaceColor,
           statusBarIconBrightness: Brightness.dark,
           statusBarBrightness: Brightness.light,
           systemStatusBarContrastEnforced: false,
@@ -235,7 +234,6 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: true,
         systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: darkSurfaceColor,
           statusBarIconBrightness: Brightness.light,
           statusBarBrightness: Brightness.dark,
           systemStatusBarContrastEnforced: false,
