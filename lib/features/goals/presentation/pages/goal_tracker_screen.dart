@@ -26,8 +26,9 @@ class _GoalTrackerScreenState extends State<GoalTrackerScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      Provider.of<GoalProvider>(context, listen: false).initGoals();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<GoalProvider>().initGoals();
     });
   }
 
@@ -80,7 +81,9 @@ class _GoalTrackerScreenState extends State<GoalTrackerScreen> {
                           gradient: LinearGradient(
                             colors: [
                               Theme.of(context).primaryColor,
-                              Theme.of(context).primaryColor.withOpacity(0.8)
+                              Theme.of(context)
+                                  .primaryColor
+                                  .withValues(alpha: 0.8)
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -264,7 +267,8 @@ class _GoalTrackerScreenState extends State<GoalTrackerScreen> {
               Provider.of<GoalProvider>(context, listen: false)
                   .deleteGoal(goal.id);
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
+              showTimedSnackBar(
+                context,
                 const SnackBar(content: Text('Goal deleted')),
               );
             },
@@ -686,7 +690,8 @@ class _AddEditGoalScreenState extends State<AddEditGoalScreen> {
 
   void _saveGoal(BuildContext context) {
     if (_nameController.text.isEmpty || _targetController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      showTimedSnackBar(
+        context,
         const SnackBar(content: Text('Please fill in all required fields')),
       );
       return;
@@ -724,7 +729,8 @@ class _AddEditGoalScreenState extends State<AddEditGoalScreen> {
     }
 
     Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
+    showTimedSnackBar(
+      context,
       SnackBar(
         content: Text(widget.goal != null ? 'Goal updated' : 'Goal created'),
       ),
@@ -802,7 +808,8 @@ class _AddProgressDialogState extends State<_AddProgressDialog> {
           onPressed: () {
             final amount = double.tryParse(_amountController.text) ?? 0;
             if (amount <= 0) {
-              ScaffoldMessenger.of(context).showSnackBar(
+              showTimedSnackBar(
+                context,
                 const SnackBar(content: Text('Please enter a valid amount')),
               );
               return;
@@ -821,7 +828,8 @@ class _AddProgressDialogState extends State<_AddProgressDialog> {
             Provider.of<GoalProvider>(context, listen: false)
                 .updateGoal(updatedGoal);
             Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
+            showTimedSnackBar(
+              context,
               const SnackBar(content: Text('Progress added')),
             );
           },

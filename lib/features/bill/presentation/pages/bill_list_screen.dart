@@ -40,32 +40,22 @@ class _BillListScreenState extends State<BillListScreen> {
   late DateTime _selectedMonth;
   final GlobalKey<ScaffoldMessengerState> _messengerKey =
       GlobalKey<ScaffoldMessengerState>();
-  int _paymentSnackBarToken = 0;
 
   void _showPaymentSnackBar(
     String message, {
     SnackBarAction? action,
     Color? backgroundColor,
   }) {
-    final token = ++_paymentSnackBarToken;
-    final messenger =
-        _messengerKey.currentState ?? ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
+    showTimedSnackBar(
+      context,
       SnackBar(
         content: Text(message, style: TextStyle()),
         action: action,
         duration: const Duration(seconds: 4),
         backgroundColor: backgroundColor,
       ),
+      forceCloseAfter: const Duration(seconds: 5),
     );
-
-    // Ensure payment snackbars are dismissed even if the platform keeps
-    // action snackbars visible for accessibility settings.
-    Future.delayed(const Duration(seconds: 5), () {
-      if (!mounted || token != _paymentSnackBarToken) return;
-      messenger.hideCurrentSnackBar();
-    });
   }
 
   void _openCompletedTab() {

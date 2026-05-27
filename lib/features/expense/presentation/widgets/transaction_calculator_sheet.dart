@@ -156,7 +156,8 @@ class _TransactionCalculatorSheetState
   Future<void> _submit() async {
     final amount = double.tryParse(_input) ?? 0;
     if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      showTimedSnackBar(
+        context,
         const SnackBar(content: Text('Please enter a valid amount')),
       );
       return;
@@ -165,7 +166,8 @@ class _TransactionCalculatorSheetState
     final requiresAccount = widget.transactionType == 'transfer' ||
         widget.transactionType == 'payment';
     if (requiresAccount && _selectedAccountId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      showTimedSnackBar(
+        context,
         SnackBar(
           content: Text(
             widget.transactionType == 'transfer'

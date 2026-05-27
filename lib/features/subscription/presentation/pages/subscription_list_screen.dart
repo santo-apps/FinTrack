@@ -35,6 +35,10 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
   String _selectedCategoryFilter = _allCategoriesFilter;
   String _searchQuery = '';
   bool _showArchived = false;
+  DateTime _activeMonth =
+      DateTime(DateTime.now().year, DateTime.now().month, 1);
+  DateTime _historyMonth =
+      DateTime(DateTime.now().year, DateTime.now().month, 1);
   late TabController _tabController;
 
   void _handleScreenSwipe(DragEndDetails details) {
@@ -84,8 +88,10 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
           : null,
       body: SafeArea(
         top: false,
-        child: Consumer2<SubscriptionProvider, SettingsProvider>(
-          builder: (context, subProvider, settingsProvider, _) {
+        child:
+            Consumer3<SubscriptionProvider, SettingsProvider, ExpenseProvider>(
+          builder:
+              (context, subProvider, settingsProvider, expenseProvider, _) {
             final currencySymbol = settingsProvider.currencySymbol;
             final categoryModels = settingsProvider.subscriptionCategories;
             final categoryByName = {
@@ -115,10 +121,28 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
                     return haystack.contains(query);
                   }).toList();
 
+            final now = DateTime.now();
+            final isCurrentActiveMonth = _activeMonth.year == now.year &&
+                _activeMonth.month == now.month;
+            final currentDay = now.day;
+            final activeMonthMaxDay =
+                _daysInMonth(_activeMonth.year, _activeMonth.month);
+            final activeReferenceDay = currentDay <= activeMonthMaxDay
+                ? currentDay
+                : activeMonthMaxDay;
+            final today = _showArchived
+                ? DateTime(now.year, now.month, now.day)
+                : DateTime(
+                    _activeMonth.year, _activeMonth.month, activeReferenceDay);
+
             final filteredSubscriptions = _getFilteredSubscriptions(
               searchedSubscriptions,
               _selectedCategoryFilter,
-            )..sort((a, b) => a.renewalDate.compareTo(b.renewalDate));
+            )..sort((a, b) {
+                final aAnchor = _statusAnchorRenewalDate(a, today);
+                final bAnchor = _statusAnchorRenewalDate(b, today);
+                return aAnchor.compareTo(bAnchor);
+              });
             final hasActiveFilter = _searchQuery.trim().isNotEmpty ||
                 _selectedCategoryFilter != _allCategoriesFilter;
 
@@ -126,41 +150,63 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
             for (var sub in filteredSubscriptions) {
               totalMonthly += sub.getMonthlyAmount();
             }
-
-            final now = DateTime.now();
-            final today = DateTime(now.year, now.month, now.day);
             final overdueSubscriptions = _showArchived
                 ? <Subscription>[]
                 : filteredSubscriptions.where((subscription) {
-                    final renewal = DateTime(
-                      subscription.renewalDate.year,
-                      subscription.renewalDate.month,
-                      subscription.renewalDate.day,
+                    final renewal = _statusAnchorRenewalDate(
+                      subscription,
+                      today,
                     );
-                    return renewal.isBefore(today);
+                    if (!renewal.isBefore(today)) {
+                      return false;
+                    }
+                    return !_isCurrentDueSettled(expenseProvider, subscription);
                   }).toList();
             final dueSoonSubscriptions = _showArchived
                 ? <Subscription>[]
-                : filteredSubscriptions.where((subscription) {
-                    final renewal = DateTime(
-                      subscription.renewalDate.year,
-                      subscription.renewalDate.month,
-                      subscription.renewalDate.day,
-                    );
-                    final days = renewal.difference(today).inDays;
-                    return days >= 0 && days <= 7;
-                  }).toList();
+                : !isCurrentActiveMonth
+                    ? <Subscription>[]
+                    : filteredSubscriptions.where((subscription) {
+                        final renewal = _statusAnchorRenewalDate(
+                          subscription,
+                          today,
+                        );
+                        final days = renewal.difference(today).inDays;
+                        if (days < 0 || days > 7) {
+                          return false;
+                        }
+                        return !_isCurrentDueSettled(
+                            expenseProvider, subscription);
+                      }).toList();
             final upcomingSubscriptions = _showArchived
                 ? filteredSubscriptions
                 : filteredSubscriptions.where((subscription) {
-                    final renewal = DateTime(
-                      subscription.renewalDate.year,
-                      subscription.renewalDate.month,
-                      subscription.renewalDate.day,
+                    final renewal = _statusAnchorRenewalDate(
+                      subscription,
+                      today,
                     );
                     final days = renewal.difference(today).inDays;
-                    return days > 7;
+                    if (_isCurrentDueSettled(expenseProvider, subscription)) {
+                      return true;
+                    }
+                    if (isCurrentActiveMonth) {
+                      return days > 7;
+                    }
+                    return !renewal.isBefore(today);
                   }).toList();
+
+            final historyPayments = expenseProvider.expenses
+                .where(_isSubscriptionPaymentEntry)
+                .where((expense) {
+              final date = expense.date;
+              return date.year == _historyMonth.year &&
+                  date.month == _historyMonth.month;
+            }).toList()
+              ..sort((a, b) => b.date.compareTo(a.date));
+            final historyTotal = historyPayments.fold<double>(
+              0,
+              (sum, payment) => sum + payment.amount,
+            );
 
             Widget sectionTitle(String title, int count, {Color? color}) {
               return Padding(
@@ -479,6 +525,50 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
                       ],
                     ),
                   ),
+                  if (!_showArchived)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _activeMonth = DateTime(
+                                  _activeMonth.year,
+                                  _activeMonth.month - 1,
+                                  1,
+                                );
+                              });
+                            },
+                            icon: const Icon(Icons.chevron_left),
+                          ),
+                          Expanded(
+                            child: Text(
+                              _formatHistoryMonth(_activeMonth),
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: _canMoveActiveMonthForward()
+                                ? () {
+                                    setState(() {
+                                      _activeMonth = DateTime(
+                                        _activeMonth.year,
+                                        _activeMonth.month + 1,
+                                        1,
+                                      );
+                                    });
+                                  }
+                                : null,
+                            icon: const Icon(Icons.chevron_right),
+                          ),
+                        ],
+                      ),
+                    ),
                   Expanded(
                     child: filteredSubscriptions.isEmpty
                         ? Center(
@@ -531,28 +621,209 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
                                           _restoreSubscription(context, sub),
                                     );
                                   }),
+                                  const SizedBox(height: 10),
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                                    child: Row(
+                                      children: [
+                                        IconButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              _historyMonth = DateTime(
+                                                _historyMonth.year,
+                                                _historyMonth.month - 1,
+                                                1,
+                                              );
+                                            });
+                                          },
+                                          icon: const Icon(Icons.chevron_left),
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            'Payments • ${_formatHistoryMonth(_historyMonth)}',
+                                            textAlign: TextAlign.center,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleSmall
+                                                ?.copyWith(
+                                                    fontWeight:
+                                                        FontWeight.w700),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          onPressed:
+                                              _canMoveHistoryMonthForward()
+                                                  ? () {
+                                                      setState(() {
+                                                        _historyMonth =
+                                                            DateTime(
+                                                          _historyMonth.year,
+                                                          _historyMonth.month +
+                                                              1,
+                                                          1,
+                                                        );
+                                                      });
+                                                    }
+                                                  : null,
+                                          icon: const Icon(Icons.chevron_right),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .surfaceContainerLow,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            'Total paid',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                          ),
+                                          const Spacer(),
+                                          Text(
+                                            '$currencySymbol${historyTotal.toStringAsFixed(2)}',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  if (historyPayments.isEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                          16, 0, 16, 6),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .surfaceContainerLow,
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          'No subscription payments found for this month.',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    ...historyPayments.map((expense) {
+                                      final subscriptionName = expense.title
+                                          .replaceFirst(
+                                              'Subscription Payment - ', '');
+                                      return Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                            16, 0, 16, 8),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .surfaceContainerLow,
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      subscriptionName,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodyMedium
+                                                          ?.copyWith(
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                          ),
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      _formatDate(expense.date),
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Text(
+                                                '${expense.currency} ${expense.amount.toStringAsFixed(2)}',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodyMedium
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }),
                                 ] else ...[
                                   if (overdueSubscriptions.isNotEmpty) ...[
                                     sectionTitle(
                                         'Overdue', overdueSubscriptions.length,
                                         color: Colors.red.shade700),
                                     ...overdueSubscriptions.map((sub) {
+                                      final isSettled = _isCurrentDueSettled(
+                                          expenseProvider, sub);
                                       return _SubscriptionCard(
                                         subscription: sub,
                                         categoryIcon: categoryByName[
                                                 (sub.category ?? 'other')
                                                     .toLowerCase()]
                                             ?.icon,
+                                        statusReferenceDate: today,
                                         onEdit: () =>
                                             _showAddEditDialog(context, sub),
                                         onDelete: () =>
                                             _deleteSubscription(context, sub),
                                         onRestore: null,
-                                        onMarkPaid: () =>
-                                            _showMarkSubscriptionPaidSheet(
-                                          context,
-                                          sub,
-                                        ),
+                                        onMarkPaid: isSettled
+                                            ? null
+                                            : () =>
+                                                _showMarkSubscriptionPaidSheet(
+                                                  context,
+                                                  sub,
+                                                ),
+                                        showPaidChip: isSettled,
                                       );
                                     }),
                                   ],
@@ -561,22 +832,28 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
                                         'Due Soon', dueSoonSubscriptions.length,
                                         color: Colors.orange.shade700),
                                     ...dueSoonSubscriptions.map((sub) {
+                                      final isSettled = _isCurrentDueSettled(
+                                          expenseProvider, sub);
                                       return _SubscriptionCard(
                                         subscription: sub,
                                         categoryIcon: categoryByName[
                                                 (sub.category ?? 'other')
                                                     .toLowerCase()]
                                             ?.icon,
+                                        statusReferenceDate: today,
                                         onEdit: () =>
                                             _showAddEditDialog(context, sub),
                                         onDelete: () =>
                                             _deleteSubscription(context, sub),
                                         onRestore: null,
-                                        onMarkPaid: () =>
-                                            _showMarkSubscriptionPaidSheet(
-                                          context,
-                                          sub,
-                                        ),
+                                        onMarkPaid: isSettled
+                                            ? null
+                                            : () =>
+                                                _showMarkSubscriptionPaidSheet(
+                                                  context,
+                                                  sub,
+                                                ),
+                                        showPaidChip: isSettled,
                                       );
                                     }),
                                   ],
@@ -584,22 +861,28 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
                                     sectionTitle('Upcoming',
                                         upcomingSubscriptions.length),
                                     ...upcomingSubscriptions.map((sub) {
+                                      final isSettled = _isCurrentDueSettled(
+                                          expenseProvider, sub);
                                       return _SubscriptionCard(
                                         subscription: sub,
                                         categoryIcon: categoryByName[
                                                 (sub.category ?? 'other')
                                                     .toLowerCase()]
                                             ?.icon,
+                                        statusReferenceDate: today,
                                         onEdit: () =>
                                             _showAddEditDialog(context, sub),
                                         onDelete: () =>
                                             _deleteSubscription(context, sub),
                                         onRestore: null,
-                                        onMarkPaid: () =>
-                                            _showMarkSubscriptionPaidSheet(
-                                          context,
-                                          sub,
-                                        ),
+                                        onMarkPaid: isSettled
+                                            ? null
+                                            : () =>
+                                                _showMarkSubscriptionPaidSheet(
+                                                  context,
+                                                  sub,
+                                                ),
+                                        showPaidChip: isSettled,
                                       );
                                     }),
                                   ],
@@ -654,7 +937,8 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
               Provider.of<SubscriptionProvider>(context, listen: false)
                   .deleteSubscription(subscription.id);
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
+              showTimedSnackBar(
+                context,
                 const SnackBar(content: Text('Subscription moved to Past')),
               );
             },
@@ -668,7 +952,8 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
   void _restoreSubscription(BuildContext context, Subscription subscription) {
     Provider.of<SubscriptionProvider>(context, listen: false)
         .restoreSubscription(subscription.id);
-    ScaffoldMessenger.of(context).showSnackBar(
+    showTimedSnackBar(
+      context,
       const SnackBar(content: Text('Subscription restored to Active')),
     );
   }
@@ -680,7 +965,8 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
     final accountProvider = context.read<PaymentAccountProvider>();
     final accounts = accountProvider.activeAccounts;
     if (accounts.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      showTimedSnackBar(
+        context,
         const SnackBar(content: Text('No active payment account found')),
       );
       return;
@@ -771,7 +1057,8 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
                         final amount =
                             double.tryParse(amountController.text.trim());
                         if (amount == null || amount <= 0) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          showTimedSnackBar(
+                            context,
                             const SnackBar(
                                 content: Text('Enter a valid amount')),
                           );
@@ -808,7 +1095,7 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
   ) async {
     final expenseProvider = context.read<ExpenseProvider>();
     final accountProvider = context.read<PaymentAccountProvider>();
-    final messenger = ScaffoldMessenger.of(context);
+    final subscriptionProvider = context.read<SubscriptionProvider>();
 
     try {
       final expenseId = const Uuid().v4();
@@ -834,31 +1121,63 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
         lastUpdated: DateTime.now(),
       );
 
+      final alreadyPaidForCurrentDue = _getPaidAmountForCurrentDue(
+        expenseProvider,
+        subscription,
+      );
+      final totalPaidForCurrentDue = alreadyPaidForCurrentDue + paymentAmount;
+      final settlesCurrentDue =
+          totalPaidForCurrentDue + 0.005 >= subscription.cost;
+
       await expenseProvider.addExpense(expense);
       await accountProvider.updateAccount(updatedAccount);
 
+      DateTime? previousRenewalDate;
+      DateTime? nextRenewalDate;
+      if (settlesCurrentDue) {
+        previousRenewalDate = subscription.renewalDate;
+        final currentDueDate =
+            _currentPayableDueDate(subscription, DateTime.now());
+        nextRenewalDate = _advanceByBillingCycle(
+          currentDueDate,
+          subscription.billingCycle,
+        );
+        await subscriptionProvider.updateSubscription(
+          subscription.copyWith(renewalDate: nextRenewalDate),
+        );
+      }
+
       if (!mounted) return;
-      messenger.showSnackBar(
+      showTimedSnackBar(
+        this.context,
         SnackBar(
+          duration: const Duration(milliseconds: 1400),
           content: Text(
-            paymentAmount >= subscription.cost
+            settlesCurrentDue
                 ? 'Subscription marked as paid'
                 : 'Partial subscription payment recorded',
           ),
           action: SnackBarAction(
             label: 'Undo',
-            onPressed: () => _reverseSubscriptionPayment(
-              selectedAccount,
-              expenseId,
-              paymentAmount,
-            ),
+            onPressed: () {
+              ScaffoldMessenger.of(this.context).hideCurrentSnackBar();
+              _reverseSubscriptionPayment(
+                selectedAccount,
+                expenseId,
+                paymentAmount,
+                subscriptionId: subscription.id,
+                previousRenewalDate: previousRenewalDate,
+              );
+            },
           ),
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(
+      showTimedSnackBar(
+        this.context,
         SnackBar(
+          duration: const Duration(milliseconds: 1400),
           content: Text('Error recording payment: $e'),
           backgroundColor: AppTheme.errorColor,
         ),
@@ -869,10 +1188,13 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
   Future<void> _reverseSubscriptionPayment(
     PaymentAccount originalAccount,
     String expenseId,
-    double paymentAmount,
-  ) async {
+    double paymentAmount, {
+    String? subscriptionId,
+    DateTime? previousRenewalDate,
+  }) async {
     final expenseProvider = context.read<ExpenseProvider>();
     final accountProvider = context.read<PaymentAccountProvider>();
+    final subscriptionProvider = context.read<SubscriptionProvider>();
 
     try {
       await expenseProvider.deleteExpense(expenseId);
@@ -888,19 +1210,208 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
           lastUpdated: DateTime.now(),
         ),
       );
+
+      if (subscriptionId != null && previousRenewalDate != null) {
+        final currentSubscription = subscriptionProvider.subscriptions
+            .where((sub) => sub.id == subscriptionId)
+            .firstOrNull;
+        if (currentSubscription != null) {
+          await subscriptionProvider.updateSubscription(
+            currentSubscription.copyWith(renewalDate: previousRenewalDate),
+          );
+        }
+      }
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Payment reverted')),
+      showTimedSnackBar(
+        context,
+        const SnackBar(
+          duration: Duration(milliseconds: 1400),
+          content: Text('Payment reverted'),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      showTimedSnackBar(
+        context,
         SnackBar(
+          duration: const Duration(milliseconds: 1400),
           content: Text('Unable to revert payment: $e'),
           backgroundColor: AppTheme.errorColor,
         ),
       );
     }
+  }
+
+  DateTime _statusAnchorRenewalDate(Subscription subscription, DateTime today) {
+    final currentDate = DateTime(today.year, today.month, today.day);
+    final base = DateTime(
+      subscription.renewalDate.year,
+      subscription.renewalDate.month,
+      subscription.renewalDate.day,
+    );
+
+    if (!base.isBefore(currentDate)) {
+      return base;
+    }
+
+    var next = base;
+    while (next.isBefore(currentDate)) {
+      next = _advanceByBillingCycle(next, subscription.billingCycle);
+    }
+
+    return _rewindByBillingCycle(next, subscription.billingCycle);
+  }
+
+  DateTime _currentPayableDueDate(Subscription subscription, DateTime now) {
+    final today = DateTime(now.year, now.month, now.day);
+    final nextDue = _nextRenewalAfter(
+      subscription.renewalDate,
+      subscription.billingCycle,
+      today,
+    );
+    final daysToNext = nextDue.difference(today).inDays;
+    if (daysToNext <= 7) {
+      return nextDue;
+    }
+    return _rewindByBillingCycle(nextDue, subscription.billingCycle);
+  }
+
+  DateTime _rewindByBillingCycle(DateTime date, String billingCycle) {
+    switch (billingCycle.toLowerCase()) {
+      case 'weekly':
+        return date.subtract(const Duration(days: 7));
+      case 'quarterly':
+        return _addMonthsClamped(date, -3);
+      case 'yearly':
+      case 'annual':
+        return _addMonthsClamped(date, -12);
+      case 'monthly':
+      default:
+        return _addMonthsClamped(date, -1);
+    }
+  }
+
+  DateTime _nextRenewalAfter(
+    DateTime renewalDate,
+    String billingCycle,
+    DateTime referenceDate,
+  ) {
+    final today = DateTime(
+      referenceDate.year,
+      referenceDate.month,
+      referenceDate.day,
+    );
+    var next = DateTime(renewalDate.year, renewalDate.month, renewalDate.day);
+    while (!next.isAfter(today)) {
+      next = _advanceByBillingCycle(next, billingCycle);
+    }
+    return next;
+  }
+
+  DateTime _advanceByBillingCycle(DateTime date, String billingCycle) {
+    switch (billingCycle.toLowerCase()) {
+      case 'weekly':
+        return date.add(const Duration(days: 7));
+      case 'quarterly':
+        return _addMonthsClamped(date, 3);
+      case 'yearly':
+      case 'annual':
+        return _addMonthsClamped(date, 12);
+      case 'monthly':
+      default:
+        return _addMonthsClamped(date, 1);
+    }
+  }
+
+  DateTime _addMonthsClamped(DateTime date, int monthsToAdd) {
+    final targetMonth = date.month + monthsToAdd;
+    final targetYear = date.year + ((targetMonth - 1) ~/ 12);
+    final normalizedMonth = ((targetMonth - 1) % 12) + 1;
+    final maxDay = _daysInMonth(targetYear, normalizedMonth);
+    final day = date.day <= maxDay ? date.day : maxDay;
+    return DateTime(targetYear, normalizedMonth, day);
+  }
+
+  int _daysInMonth(int year, int month) {
+    if (month == 12) {
+      return DateTime(year + 1, 1, 0).day;
+    }
+    return DateTime(year, month + 1, 0).day;
+  }
+
+  double _getPaidAmountForCurrentDue(
+    ExpenseProvider expenseProvider,
+    Subscription subscription,
+  ) {
+    final dueDate = _currentPayableDueDate(subscription, DateTime.now());
+    final cycleEnd = _advanceByBillingCycle(dueDate, subscription.billingCycle);
+
+    return expenseProvider.expenses
+        .where(
+            (expense) => _isSubscriptionPaymentExpense(expense, subscription))
+        .where((expense) {
+      final paidDate = DateTime(
+        expense.date.year,
+        expense.date.month,
+        expense.date.day,
+      );
+      return !paidDate.isBefore(dueDate) && paidDate.isBefore(cycleEnd);
+    }).fold<double>(0, (sum, expense) => sum + expense.amount);
+  }
+
+  bool _isCurrentDueSettled(
+    ExpenseProvider expenseProvider,
+    Subscription subscription,
+  ) {
+    final paid = _getPaidAmountForCurrentDue(expenseProvider, subscription);
+    return paid + 0.005 >= subscription.cost;
+  }
+
+  bool _isSubscriptionPaymentEntry(Expense expense) {
+    final type = (expense.transactionType ?? 'expense').toLowerCase();
+    return type == 'payment' &&
+        expense.category == 'Subscriptions' &&
+        expense.title.startsWith('Subscription Payment - ');
+  }
+
+  bool _canMoveHistoryMonthForward() {
+    final currentMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
+    return _historyMonth.isBefore(currentMonth);
+  }
+
+  bool _canMoveActiveMonthForward() {
+    final currentMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
+    return _activeMonth.isBefore(currentMonth);
+  }
+
+  String _formatHistoryMonth(DateTime month) {
+    const names = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return '${names[month.month - 1]} ${month.year}';
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  bool _isSubscriptionPaymentExpense(
+      Expense expense, Subscription subscription) {
+    final type = (expense.transactionType ?? 'expense').toLowerCase();
+    return type == 'payment' &&
+        expense.category == 'Subscriptions' &&
+        expense.title == 'Subscription Payment - ${subscription.name}';
   }
 
   void _deleteSubscriptionPermanently(
@@ -921,7 +1432,8 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
               Provider.of<SubscriptionProvider>(context, listen: false)
                   .deleteSubscriptionPermanently(subscription.id);
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
+              showTimedSnackBar(
+                context,
                 const SnackBar(
                     content: Text('Subscription deleted permanently')),
               );
@@ -971,34 +1483,37 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
 class _SubscriptionCard extends StatelessWidget {
   final Subscription subscription;
   final String? categoryIcon;
+  final DateTime? statusReferenceDate;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onRestore;
   final VoidCallback? onMarkPaid;
+  final bool showPaidChip;
 
   const _SubscriptionCard({
     required this.subscription,
     this.categoryIcon,
+    this.statusReferenceDate,
     this.onEdit,
     this.onDelete,
     this.onRestore,
     this.onMarkPaid,
+    this.showPaidChip = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final renewalDay = DateTime(
-      subscription.renewalDate.year,
-      subscription.renewalDate.month,
-      subscription.renewalDate.day,
-    );
+    final ref = statusReferenceDate ?? DateTime.now();
+    final today = DateTime(ref.year, ref.month, ref.day);
+    final renewalDay = _statusAnchorRenewalDate(subscription, today);
     final daysToRenewal = renewalDay.difference(today).inDays;
 
     Color statusColor;
     String statusLabel;
-    if (daysToRenewal < 0) {
+    if (showPaidChip) {
+      statusColor = Colors.green.shade700;
+      statusLabel = 'Paid';
+    } else if (daysToRenewal < 0) {
       statusColor = Colors.red.shade700;
       statusLabel = 'Overdue ${daysToRenewal.abs()}d';
     } else if (daysToRenewal == 0) {
@@ -1059,49 +1574,6 @@ class _SubscriptionCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (onEdit != null ||
-                      onDelete != null ||
-                      onRestore != null ||
-                      onMarkPaid != null)
-                    PopupMenuButton(
-                      itemBuilder: (context) {
-                        final items = <PopupMenuEntry>[];
-                        if (onMarkPaid != null) {
-                          items.add(
-                            PopupMenuItem(
-                              onTap: onMarkPaid,
-                              child: const Text('Mark as Paid'),
-                            ),
-                          );
-                        }
-                        if (onEdit != null) {
-                          items.add(
-                            PopupMenuItem(
-                              onTap: onEdit,
-                              child: const Text('Edit'),
-                            ),
-                          );
-                        }
-                        if (onRestore != null) {
-                          items.add(
-                            PopupMenuItem(
-                              onTap: onRestore,
-                              child: const Text('Restore'),
-                            ),
-                          );
-                        }
-                        if (onDelete != null) {
-                          items.add(
-                            PopupMenuItem(
-                              onTap: onDelete,
-                              child: const Text('Delete',
-                                  style: TextStyle(color: Colors.red)),
-                            ),
-                          );
-                        }
-                        return items;
-                      },
-                    ),
                 ],
               ),
               const SizedBox(height: 10),
@@ -1143,11 +1615,78 @@ class _SubscriptionCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'Renews on ${_formatDate(subscription.renewalDate)}',
+                    'Renews on ${_formatDate(renewalDay)}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
               ),
+              if (onMarkPaid != null ||
+                  showPaidChip ||
+                  onEdit != null ||
+                  onDelete != null ||
+                  onRestore != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    if (showPaidChip)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          'Paid',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                      )
+                    else if (onMarkPaid != null)
+                      FilledButton.icon(
+                        onPressed: onMarkPaid,
+                        icon: const Icon(Icons.check_circle_outline, size: 16),
+                        label: const Text('Mark as Paid'),
+                        style: FilledButton.styleFrom(
+                          visualDensity: const VisualDensity(
+                            horizontal: -2,
+                            vertical: -2,
+                          ),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                        ),
+                      ),
+                    const Spacer(),
+                    if (onRestore != null)
+                      IconButton(
+                        tooltip: 'Restore',
+                        icon: const Icon(Icons.restore),
+                        onPressed: onRestore,
+                      ),
+                    if (onEdit != null)
+                      IconButton(
+                        tooltip: 'Edit',
+                        icon: const Icon(Icons.edit_outlined),
+                        onPressed: onEdit,
+                      ),
+                    if (onDelete != null)
+                      IconButton(
+                        tooltip: 'Delete',
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: onDelete,
+                        color: Colors.red,
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -1199,6 +1738,79 @@ class _SubscriptionCard extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  DateTime _statusAnchorRenewalDate(Subscription subscription, DateTime today) {
+    final currentDate = DateTime(today.year, today.month, today.day);
+    final base = DateTime(
+      subscription.renewalDate.year,
+      subscription.renewalDate.month,
+      subscription.renewalDate.day,
+    );
+
+    var next = base;
+    while (next.isBefore(currentDate)) {
+      next = _advanceByBillingCycle(next, subscription.billingCycle);
+    }
+
+    if (next == base) {
+      return base;
+    }
+
+    var previous = _rewindByBillingCycle(next, subscription.billingCycle);
+    if (previous.isBefore(base)) {
+      previous = base;
+    }
+
+    final daysToNext = next.difference(currentDate).inDays.abs();
+    final daysFromPrevious = currentDate.difference(previous).inDays.abs();
+    return daysFromPrevious <= daysToNext ? previous : next;
+  }
+
+  DateTime _advanceByBillingCycle(DateTime date, String billingCycle) {
+    switch (billingCycle.toLowerCase()) {
+      case 'weekly':
+        return date.add(const Duration(days: 7));
+      case 'quarterly':
+        return _addMonthsClamped(date, 3);
+      case 'yearly':
+      case 'annual':
+        return _addMonthsClamped(date, 12);
+      case 'monthly':
+      default:
+        return _addMonthsClamped(date, 1);
+    }
+  }
+
+  DateTime _rewindByBillingCycle(DateTime date, String billingCycle) {
+    switch (billingCycle.toLowerCase()) {
+      case 'weekly':
+        return date.subtract(const Duration(days: 7));
+      case 'quarterly':
+        return _addMonthsClamped(date, -3);
+      case 'yearly':
+      case 'annual':
+        return _addMonthsClamped(date, -12);
+      case 'monthly':
+      default:
+        return _addMonthsClamped(date, -1);
+    }
+  }
+
+  DateTime _addMonthsClamped(DateTime date, int monthsToAdd) {
+    final targetMonth = date.month + monthsToAdd;
+    final targetYear = date.year + ((targetMonth - 1) ~/ 12);
+    final normalizedMonth = ((targetMonth - 1) % 12) + 1;
+    final maxDay = _daysInMonth(targetYear, normalizedMonth);
+    final day = date.day <= maxDay ? date.day : maxDay;
+    return DateTime(targetYear, normalizedMonth, day);
+  }
+
+  int _daysInMonth(int year, int month) {
+    if (month == 12) {
+      return DateTime(year + 1, 1, 0).day;
+    }
+    return DateTime(year, month + 1, 0).day;
   }
 
   String _displayCategory(String? category) {
@@ -1658,7 +2270,8 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
 
   void _saveSubscription(BuildContext context) {
     if (_nameController.text.isEmpty || _costController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      showTimedSnackBar(
+        context,
         const SnackBar(content: Text('Please fill in all required fields')),
       );
       return;
@@ -1700,7 +2313,8 @@ class _AddEditSubscriptionScreenState extends State<AddEditSubscriptionScreen> {
     }
 
     Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
+    showTimedSnackBar(
+      context,
       SnackBar(
         content: Text(widget.subscription != null
             ? 'Subscription updated'

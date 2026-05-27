@@ -1834,6 +1834,18 @@ class ExpenseCard extends StatelessWidget {
     return accountProvider.getAccountById(expense.accountId!);
   }
 
+  String _displayTitle() {
+    const subscriptionPrefix = 'Subscription Payment - ';
+    if (expense.title.startsWith(subscriptionPrefix)) {
+      final subscriptionName =
+          expense.title.substring(subscriptionPrefix.length).trim();
+      if (subscriptionName.isNotEmpty) {
+        return subscriptionName;
+      }
+    }
+    return expense.title;
+  }
+
   @override
   Widget build(BuildContext context) {
     final currencySymbol = context.watch<SettingsProvider>().currencySymbol;
@@ -1905,7 +1917,7 @@ class ExpenseCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    expense.title,
+                    _displayTitle(),
                     style: TextStyle(
                       fontSize: titleFontSize,
                       fontWeight: FontWeight.w600,
@@ -2213,6 +2225,18 @@ class ExpenseDetailScreen extends StatelessWidget {
 
   const ExpenseDetailScreen({super.key, required this.expense});
 
+  String _displayTitle() {
+    const subscriptionPrefix = 'Subscription Payment - ';
+    if (expense.title.startsWith(subscriptionPrefix)) {
+      final subscriptionName =
+          expense.title.substring(subscriptionPrefix.length).trim();
+      if (subscriptionName.isNotEmpty) {
+        return subscriptionName;
+      }
+    }
+    return expense.title;
+  }
+
   String _getTransactionTypeLabel() {
     final transactionType = expense.transactionType ?? 'expense';
     switch (transactionType) {
@@ -2363,7 +2387,7 @@ class ExpenseDetailScreen extends StatelessWidget {
               _ModernDetailCard(
                 icon: Icons.receipt_long,
                 label: 'Transaction',
-                value: expense.title,
+                value: _displayTitle(),
                 isDarkMode: isDarkMode,
               ),
               const SizedBox(height: 12),
@@ -3422,11 +3446,10 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
   Future<void> _saveExpense() async {
     final title = titleController.text.trim();
     final amount = double.tryParse(amountController.text) ?? 0;
-    final messenger = ScaffoldMessenger.of(context);
 
     if (title.isEmpty || amount <= 0) {
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
+      showTimedSnackBar(
+        context,
         const SnackBar(
           content: Text('Please fill all required fields'),
           duration: Duration(seconds: 3),
@@ -3436,8 +3459,8 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
     }
 
     if (selectedAccountId == null) {
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
+      showTimedSnackBar(
+        context,
         const SnackBar(
           content: Text('Please select an account'),
           duration: Duration(seconds: 3),
@@ -3450,8 +3473,8 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
     if ((selectedTransactionType == 'transfer' ||
             selectedTransactionType == 'payment') &&
         selectedDestinationAccountId == null) {
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
+      showTimedSnackBar(
+        context,
         const SnackBar(
           content: Text('Please select a destination account'),
           duration: Duration(seconds: 3),

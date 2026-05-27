@@ -25,6 +25,7 @@ import 'package:fintrack/features/goals/presentation/providers/goal_provider.dar
 import 'package:fintrack/features/bill/presentation/providers/bill_provider.dart';
 import 'package:fintrack/features/receivable/presentation/providers/receivable_provider.dart';
 import 'package:fintrack/features/receivable/presentation/pages/receivable_list_screen.dart';
+import 'package:fintrack/features/subscription/data/models/subscription_model.dart';
 import 'package:fintrack/features/subscription/presentation/providers/subscription_provider.dart';
 
 /// DashboardScreen: Premium financial control center
@@ -1932,6 +1933,72 @@ class _GoalsSection extends StatelessWidget {
 class _SubscriptionsSection extends StatelessWidget {
   const _SubscriptionsSection();
 
+  DateTime _statusAnchorRenewalDate(Subscription subscription, DateTime today) {
+    final currentDate = DateTime(today.year, today.month, today.day);
+    final base = DateTime(
+      subscription.renewalDate.year,
+      subscription.renewalDate.month,
+      subscription.renewalDate.day,
+    );
+
+    if (!base.isBefore(currentDate)) {
+      return base;
+    }
+
+    var next = base;
+    while (next.isBefore(currentDate)) {
+      next = _advanceByBillingCycle(next, subscription.billingCycle);
+    }
+
+    return _rewindByBillingCycle(next, subscription.billingCycle);
+  }
+
+  DateTime _advanceByBillingCycle(DateTime date, String billingCycle) {
+    switch (billingCycle.toLowerCase()) {
+      case 'weekly':
+        return date.add(const Duration(days: 7));
+      case 'quarterly':
+        return _addMonthsClamped(date, 3);
+      case 'yearly':
+      case 'annual':
+        return _addMonthsClamped(date, 12);
+      case 'monthly':
+      default:
+        return _addMonthsClamped(date, 1);
+    }
+  }
+
+  DateTime _rewindByBillingCycle(DateTime date, String billingCycle) {
+    switch (billingCycle.toLowerCase()) {
+      case 'weekly':
+        return date.subtract(const Duration(days: 7));
+      case 'quarterly':
+        return _addMonthsClamped(date, -3);
+      case 'yearly':
+      case 'annual':
+        return _addMonthsClamped(date, -12);
+      case 'monthly':
+      default:
+        return _addMonthsClamped(date, -1);
+    }
+  }
+
+  DateTime _addMonthsClamped(DateTime date, int monthsToAdd) {
+    final targetMonth = date.month + monthsToAdd;
+    final targetYear = date.year + ((targetMonth - 1) ~/ 12);
+    final normalizedMonth = ((targetMonth - 1) % 12) + 1;
+    final maxDay = _daysInMonth(targetYear, normalizedMonth);
+    final day = date.day <= maxDay ? date.day : maxDay;
+    return DateTime(targetYear, normalizedMonth, day);
+  }
+
+  int _daysInMonth(int year, int month) {
+    if (month == 12) {
+      return DateTime(year + 1, 1, 0).day;
+    }
+    return DateTime(year, month + 1, 0).day;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer2<SubscriptionProvider, SettingsProvider>(
@@ -1942,27 +2009,23 @@ class _SubscriptionsSection extends StatelessWidget {
         }
 
         final monthlyTotal = subscriptionProvider.getMonthlySubscriptionTotal();
-        final sortedByRenewal = List.of(subscriptions)
-          ..sort((a, b) => a.renewalDate.compareTo(b.renewalDate));
-        final nextRenewal = sortedByRenewal.first;
-        final nextThree = sortedByRenewal.take(3).toList();
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
+        final sortedByRenewal = List.of(subscriptions)
+          ..sort((a, b) {
+            final aDate = _statusAnchorRenewalDate(a, today);
+            final bDate = _statusAnchorRenewalDate(b, today);
+            return aDate.compareTo(bDate);
+          });
+        final nextRenewal = sortedByRenewal.first;
+        final nextThree = sortedByRenewal.take(3).toList();
         final dueSoonCount = subscriptions.where((subscription) {
-          final due = DateTime(
-            subscription.renewalDate.year,
-            subscription.renewalDate.month,
-            subscription.renewalDate.day,
-          );
+          final due = _statusAnchorRenewalDate(subscription, today);
           final days = due.difference(today).inDays;
           return days >= 0 && days <= 7;
         }).length;
         final overdueCount = subscriptions.where((subscription) {
-          final due = DateTime(
-            subscription.renewalDate.year,
-            subscription.renewalDate.month,
-            subscription.renewalDate.day,
-          );
+          final due = _statusAnchorRenewalDate(subscription, today);
           return due.isBefore(today);
         }).length;
 
@@ -2100,7 +2163,7 @@ class _SubscriptionsSection extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Next renewal: ${nextRenewal.name} • ${AppUtils.formatDate(nextRenewal.renewalDate)}',
+                    'Next renewal: ${nextRenewal.name} • ${AppUtils.formatDate(_statusAnchorRenewalDate(nextRenewal, today))}',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -2116,7 +2179,7 @@ class _SubscriptionsSection extends StatelessWidget {
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         label: Text(
-                          '${subscription.name} • ${AppUtils.formatDate(subscription.renewalDate)}',
+                          '${subscription.name} • ${AppUtils.formatDate(_statusAnchorRenewalDate(subscription, today))}',
                           overflow: TextOverflow.ellipsis,
                         ),
                         backgroundColor: Theme.of(context)

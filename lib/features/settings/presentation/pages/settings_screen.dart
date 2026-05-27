@@ -193,8 +193,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         if (!context.mounted) {
                                           return;
                                         }
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
+                                        showTimedSnackBar(
+                                          context,
                                           const SnackBar(
                                             content: Text(
                                               '✓ Biometric authentication enabled',
@@ -208,8 +208,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         if (!context.mounted) {
                                           return;
                                         }
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
+                                        showTimedSnackBar(
+                                          context,
                                           SnackBar(
                                             content: Text(
                                               '✗ ${errorMessage ?? 'Failed to enable biometric. Please check permissions.'}',
@@ -226,6 +226,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                   )
                                                 : null,
                                           ),
+                                          forceCloseAfter:
+                                              const Duration(seconds: 6),
                                         );
                                       }
                                     } else {
@@ -249,8 +251,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         if (!context.mounted) {
                                           return;
                                         }
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
+                                        showTimedSnackBar(
+                                          context,
                                           const SnackBar(
                                             content: Text(
                                               'Biometric authentication disabled',
@@ -296,7 +298,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   if (!context.mounted) {
                                     return;
                                   }
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  showTimedSnackBar(
+                                    context,
                                     const SnackBar(
                                       content: Text('PIN protection disabled'),
                                     ),
@@ -350,7 +353,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 await settingsProvider
                                     .setDailyReminderEnabled(value);
                                 if (value && context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  showTimedSnackBar(
+                                    context,
                                     const SnackBar(
                                       content: Text('Daily reminder enabled'),
                                       backgroundColor: Colors.green,
@@ -359,7 +363,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 }
                               } catch (e) {
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  showTimedSnackBar(
+                                    context,
                                     SnackBar(
                                       content: Text(
                                         'Permission required: Please enable "Alarms & reminders" permission in your device settings for FinTrack',
@@ -367,6 +372,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       backgroundColor: Colors.red,
                                       duration: const Duration(seconds: 5),
                                     ),
+                                    forceCloseAfter: const Duration(seconds: 5),
                                   );
                                 }
                               }
@@ -749,7 +755,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   symbolController.text,
                 );
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
+                showTimedSnackBar(
+                  context,
                   const SnackBar(
                     content: Text('Currency added successfully'),
                   ),
@@ -791,7 +798,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   symbolController.text,
                 );
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
+                showTimedSnackBar(
+                  context,
                   const SnackBar(
                     content: Text('Currency updated successfully'),
                   ),
@@ -821,7 +829,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: () {
               provider.removeCustomCurrency(code);
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
+              showTimedSnackBar(
+                context,
                 const SnackBar(
                   content: Text('Currency removed'),
                 ),
@@ -875,7 +884,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     // No authentication method available or all failed
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      showTimedSnackBar(
+        context,
         const SnackBar(
           content: Text('Authentication failed'),
           duration: Duration(seconds: 2),
@@ -956,7 +966,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       try {
         await settingsProvider.setDailyReminderTime(picked.hour, picked.minute);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          showTimedSnackBar(
+            context,
             SnackBar(
               content: Text(
                 'Daily reminder set for ${_formatTime(picked.hour, picked.minute)}. ${_getNextReminderText(picked.hour, picked.minute)}',
@@ -964,11 +975,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               backgroundColor: Colors.green,
               duration: const Duration(seconds: 4),
             ),
+            forceCloseAfter: const Duration(seconds: 4),
           );
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          showTimedSnackBar(
+            context,
             const SnackBar(
               content: Text(
                 'Permission required: Please enable "Alarms & reminders" permission in your device settings for FinTrack',
@@ -976,6 +989,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               backgroundColor: Colors.red,
               duration: Duration(seconds: 5),
             ),
+            forceCloseAfter: const Duration(seconds: 5),
           );
         }
       }
@@ -1040,12 +1054,14 @@ class _PINDialogState extends State<_PINDialog> {
                 await widget.settingsProvider.setPINEnabled(true);
                 if (context.mounted) {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  showTimedSnackBar(
+                    context,
                     const SnackBar(content: Text('PIN set successfully')),
                   );
                 }
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
+                showTimedSnackBar(
+                  context,
                   const SnackBar(content: Text('PIN must be 6 digits')),
                 );
               }

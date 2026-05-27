@@ -230,34 +230,36 @@ class _SettingsDataManagementScreenState
   }
 
   Future<void> _createBackup() async {
-    final messenger = ScaffoldMessenger.of(context);
     try {
-      messenger.showSnackBar(
+      showTimedSnackBar(
+        context,
         const SnackBar(content: Text('Creating backup...')),
       );
 
       await BackupService.createLocalBackup();
       if (!mounted) return;
 
-      messenger.showSnackBar(
+      showTimedSnackBar(
+        context,
         const SnackBar(content: Text('Backup created successfully')),
       );
     } catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(
+      showTimedSnackBar(
+        context,
         SnackBar(content: Text('Error creating backup: $e')),
       );
     }
   }
 
   Future<void> _restoreBackup() async {
-    final messenger = ScaffoldMessenger.of(context);
     try {
       final backupPaths = await BackupService.getLocalBackups();
 
       if (backupPaths.isEmpty) {
         if (!mounted) return;
-        messenger.showSnackBar(
+        showTimedSnackBar(
+          context,
           const SnackBar(content: Text('No backups found')),
         );
         return;
@@ -283,14 +285,16 @@ class _SettingsDataManagementScreenState
                       await BackupService.restoreFromBackup(backupPath);
                       await _refreshAllProviders();
                       if (!mounted) return;
-                      messenger.showSnackBar(
+                      showTimedSnackBar(
+                        context,
                         const SnackBar(
                           content: Text('Backup restored successfully'),
                         ),
                       );
                     } catch (e) {
                       if (!mounted) return;
-                      messenger.showSnackBar(
+                      showTimedSnackBar(
+                        context,
                         SnackBar(
                           content: Text('Error restoring backup: $e'),
                         ),
@@ -305,20 +309,21 @@ class _SettingsDataManagementScreenState
       );
     } catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(
+      showTimedSnackBar(
+        context,
         SnackBar(content: Text('Error: $e')),
       );
     }
   }
 
   Future<void> _showBackupsDialog() async {
-    final messenger = ScaffoldMessenger.of(context);
     try {
       final backupPaths = await BackupService.getLocalBackups();
 
       if (backupPaths.isEmpty) {
         if (!mounted) return;
-        messenger.showSnackBar(
+        showTimedSnackBar(
+          context,
           const SnackBar(content: Text('No backups found')),
         );
         return;
@@ -358,13 +363,15 @@ class _SettingsDataManagementScreenState
                               backupFile.deleteSync();
                             }
                             Navigator.pop(dialogContext);
-                            messenger.showSnackBar(
+                            showTimedSnackBar(
+                              context,
                               const SnackBar(
                                 content: Text('Backup deleted'),
                               ),
                             );
                           } catch (e) {
-                            messenger.showSnackBar(
+                            showTimedSnackBar(
+                              context,
                               SnackBar(content: Text('Error: $e')),
                             );
                           }
@@ -386,7 +393,8 @@ class _SettingsDataManagementScreenState
       );
     } catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(
+      showTimedSnackBar(
+        context,
         SnackBar(content: Text('Error: $e')),
       );
     }
@@ -399,7 +407,8 @@ class _SettingsDataManagementScreenState
       await _refreshAllProviders();
       if (!mounted) return;
       Navigator.pop(context);
-      messenger.showSnackBar(
+      showTimedSnackBar(
+        context,
         const SnackBar(content: Text('Backup restored successfully')),
       );
     } catch (e) {

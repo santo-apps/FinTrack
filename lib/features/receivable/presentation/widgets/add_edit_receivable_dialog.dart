@@ -84,12 +84,10 @@ class _AddEditReceivableDialogState extends State<AddEditReceivableDialog> {
       return;
     }
 
-    final messenger = ScaffoldMessenger.of(context);
-
     final amount = double.tryParse(_amountController.text.trim());
     if (amount == null || amount <= 0) {
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
+      showTimedSnackBar(
+        context,
         const SnackBar(
           content: Text('Please enter a valid amount'),
           duration: Duration(seconds: 3),
@@ -107,8 +105,8 @@ class _AddEditReceivableDialogState extends State<AddEditReceivableDialog> {
     }
 
     if (_isRecurring && _recurringEndDate!.isBefore(_dueDate)) {
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
+      showTimedSnackBar(
+        context,
         const SnackBar(
           content: Text('Recurring end date must be on/after due date'),
           duration: Duration(seconds: 3),

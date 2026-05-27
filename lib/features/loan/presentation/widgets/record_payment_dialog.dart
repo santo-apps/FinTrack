@@ -43,7 +43,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
     super.dispose();
   }
 
-  void _recordPayment() {
+  Future<void> _recordPayment() async {
     if (!_formKey.currentState!.validate()) return;
 
     final amount = double.parse(_amountController.text);
@@ -53,7 +53,8 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
         : accountProvider.getAccountById(_selectedSourceAccountId!);
 
     if (sourceAccount == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      showTimedSnackBar(
+        context,
         const SnackBar(
           content: Text('Please select a source account'),
           backgroundColor: Colors.red,
@@ -63,7 +64,8 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
     }
 
     if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      showTimedSnackBar(
+        context,
         const SnackBar(
           content: Text('Amount must be greater than 0'),
           backgroundColor: Colors.red,
@@ -71,6 +73,10 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
       );
       return;
     }
+
+    final loanProvider = context.read<LoanProvider>();
+    final expenseProvider = context.read<ExpenseProvider>();
+    final settingsProvider = context.read<SettingsProvider>();
 
     // Only check for regular payments, not interest-only
     if (_paymentType != 'interest') {
@@ -97,53 +103,49 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
       }
     }
 
-    Future.microtask(() async {
-      // Call appropriate payment method based on payment type
-      if (_paymentType == 'interest') {
-        await context
-            .read<LoanProvider>()
-            .makeInterestPayment(widget.loan.id, amount);
-      } else {
-        await context.read<LoanProvider>().makePayment(widget.loan.id, amount);
-      }
+    // Call appropriate payment method based on payment type
+    if (_paymentType == 'interest') {
+      await loanProvider.makeInterestPayment(widget.loan.id, amount);
+    } else {
+      await loanProvider.makePayment(widget.loan.id, amount);
+    }
 
-      // Persist a linked payment transaction for traceability and bill status.
-      final paymentExpense = Expense(
-        id: AppUtils.generateId(),
-        title: _paymentType == 'interest'
-            ? 'Loan Interest Payment - ${widget.loan.lender}'
-            : 'Loan EMI Payment - ${widget.loan.lender}',
-        amount: amount,
-        category: 'Loan Payment',
-        paymentMethod: sourceAccount.accountType,
-        date: DateTime.now(),
-        accountId: sourceAccount.id,
-        transactionType: 'payment',
-        notes: _paymentType == 'interest'
-            ? 'Interest-only payment'
-            : 'Loan repayment',
-      );
-      await context.read<ExpenseProvider>().addExpense(paymentExpense);
+    // Persist a linked payment transaction for traceability and bill status.
+    final paymentExpense = Expense(
+      id: AppUtils.generateId(),
+      title: _paymentType == 'interest'
+          ? 'Loan Interest Payment - ${widget.loan.lender}'
+          : 'Loan EMI Payment - ${widget.loan.lender}',
+      amount: amount,
+      category: 'Loan Payment',
+      paymentMethod: sourceAccount.accountType,
+      date: DateTime.now(),
+      accountId: sourceAccount.id,
+      transactionType: 'payment',
+      notes: _paymentType == 'interest'
+          ? 'Interest-only payment'
+          : 'Loan repayment',
+    );
+    await expenseProvider.addExpense(paymentExpense);
 
-      // Reflect debit in selected source account.
-      final isCredit =
-          sourceAccount.accountType.toLowerCase().contains('credit');
-      final sourceDelta = isCredit ? amount : -amount;
-      await accountProvider.adjustAccountBalance(sourceAccount.id, sourceDelta);
+    // Reflect debit in selected source account.
+    final isCredit = sourceAccount.accountType.toLowerCase().contains('credit');
+    final sourceDelta = isCredit ? amount : -amount;
+    await accountProvider.adjustAccountBalance(sourceAccount.id, sourceDelta);
 
-      if (!mounted) return;
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _paymentType == 'interest'
-                ? 'Interest payment of ${AppUtils.formatCurrency(amount, currencySymbol: context.read<SettingsProvider>().currencySymbol)} recorded'
-                : 'Payment of ${AppUtils.formatCurrency(amount, currencySymbol: context.read<SettingsProvider>().currencySymbol)} recorded',
-          ),
-          backgroundColor: AppTheme.successColor,
+    if (!mounted) return;
+    Navigator.pop(context);
+    showTimedSnackBar(
+      context,
+      SnackBar(
+        content: Text(
+          _paymentType == 'interest'
+              ? 'Interest payment of ${AppUtils.formatCurrency(amount, currencySymbol: settingsProvider.currencySymbol)} recorded'
+              : 'Payment of ${AppUtils.formatCurrency(amount, currencySymbol: settingsProvider.currencySymbol)} recorded',
         ),
-      );
-    });
+        backgroundColor: AppTheme.successColor,
+      ),
+    );
   }
 
   @override
@@ -232,7 +234,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(

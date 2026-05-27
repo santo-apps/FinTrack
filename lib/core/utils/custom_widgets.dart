@@ -26,6 +26,26 @@ double contentBottomPadding(BuildContext context, {bool hasFab = true}) {
   return effectiveBottomInset(context) + (hasFab ? 128 : 40);
 }
 
+void showTimedSnackBar(
+  BuildContext context,
+  SnackBar snackBar, {
+  Duration forceCloseAfter = const Duration(milliseconds: 1800),
+}) {
+  final messenger = ScaffoldMessenger.of(context);
+  messenger.removeCurrentSnackBar(reason: SnackBarClosedReason.remove);
+  final controller = messenger.showSnackBar(snackBar);
+
+  var isClosed = false;
+  controller.closed.then((_) => isClosed = true);
+
+  Future.delayed(forceCloseAfter, () {
+    if (!context.mounted || isClosed) {
+      return;
+    }
+    controller.close();
+  });
+}
+
 class AdaptiveBottomFab extends StatelessWidget {
   final Widget child;
   final double spacing;

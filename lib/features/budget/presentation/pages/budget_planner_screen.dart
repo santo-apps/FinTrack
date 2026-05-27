@@ -1239,7 +1239,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                                 }
                               }
                               Navigator.pop(context);
-                              ScaffoldMessenger.of(rootContext).showSnackBar(
+                              showTimedSnackBar(
+                                rootContext,
                                 const SnackBar(content: Text('Budget added')),
                               );
                             },
@@ -1290,7 +1291,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
             onPressed: () {
               final amount = double.tryParse(amountController.text) ?? 0;
               if (amount <= 0) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                showTimedSnackBar(
+                  context,
                   const SnackBar(content: Text('Please enter a valid amount')),
                 );
                 return;
@@ -1321,7 +1323,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
               }
 
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
+              showTimedSnackBar(
+                context,
                 const SnackBar(content: Text('Budget updated')),
               );
             },
@@ -1393,7 +1396,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
       }
     }
 
-    ScaffoldMessenger.of(scaffoldContext).showSnackBar(
+    showTimedSnackBar(
+      scaffoldContext,
       const SnackBar(content: Text('Budget deleted')),
     );
     return true;
@@ -1471,7 +1475,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                   _selectedMonth.year,
                 );
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
+                showTimedSnackBar(
+                  context,
                   SnackBar(
                     content: Text(
                       'Budget for ${_getMonthYearString(_selectedMonth)} deleted',
@@ -1497,7 +1502,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen>
                 );
               }
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
+              showTimedSnackBar(
+                context,
                 SnackBar(
                   content: Text(
                     (budget.recurrenceType == 'monthly' &&

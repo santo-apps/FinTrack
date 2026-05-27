@@ -144,7 +144,8 @@ class _SettingsNavigationScreenState extends State<SettingsNavigationScreen>
 
                                 if (value == true) {
                                   if (selected.length >= 3) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    showTimedSnackBar(
+                                      context,
                                       const SnackBar(
                                         content: Text(
                                             'You can select up to 3 items only.'),
@@ -156,7 +157,8 @@ class _SettingsNavigationScreenState extends State<SettingsNavigationScreen>
                                 } else {
                                   if (selected.length <= 1 &&
                                       selected.contains(option.id)) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    showTimedSnackBar(
+                                      context,
                                       const SnackBar(
                                         content: Text(
                                           'At least one menu item should be selected.',
@@ -233,7 +235,8 @@ class _SettingsNavigationScreenState extends State<SettingsNavigationScreen>
 
                                 if (value == true) {
                                   if (selected.length >= _navOptions.length) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    showTimedSnackBar(
+                                      context,
                                       SnackBar(
                                         content: Text(
                                             'You can select up to ${_navOptions.length} items only.'),
@@ -245,7 +248,8 @@ class _SettingsNavigationScreenState extends State<SettingsNavigationScreen>
                                 } else {
                                   if (selected.length <= 1 &&
                                       selected.contains(option.id)) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    showTimedSnackBar(
+                                      context,
                                       const SnackBar(
                                         content: Text(
                                           'At least one Home FAB action should be selected.',
